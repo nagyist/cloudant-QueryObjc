@@ -25,7 +25,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   CDTDatastore: 3dba74f8512f13943e8cd31a93d5cf47e4b8b2bb
-  CloudantQueryObjc: 0bb20397fde196813df911bd5fa7ffda4fbea5f9
+  CloudantQueryObjc: 46eaf0d97533c0f93d51dff81335da86c6a92b5a
   Expecta: 03aabd0a89d8dea843baecb19a7fd7466a69a31d
   FMDB: 0b2fa25e5264ef177973c0cb8c02c711107979aa
   Specta: 9141310f46b1f68b676650ff2854e1ed0b74163a

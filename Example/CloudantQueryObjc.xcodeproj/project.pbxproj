@@ -10,6 +10,61 @@
 	<string>46</string>
 	<key>objects</key>
 	<dict>
+		<key>00812880AAAA958F54030777</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array/>
+			<key>inputPaths</key>
+			<array/>
+			<key>isa</key>
+			<string>PBXShellScriptBuildPhase</string>
+			<key>name</key>
+			<string>Copy Pods Resources</string>
+			<key>outputPaths</key>
+			<array/>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+			<key>shellPath</key>
+			<string>/bin/sh</string>
+			<key>shellScript</key>
+			<string>"${SRCROOT}/Pods/Target Support Files/Pods-CloudantQueryObjc/Pods-CloudantQueryObjc-resources.sh"
+</string>
+			<key>showEnvVarsInLog</key>
+			<string>0</string>
+		</dict>
+		<key>01763427789C186EF19E30AE</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array/>
+			<key>inputPaths</key>
+			<array/>
+			<key>isa</key>
+			<string>PBXShellScriptBuildPhase</string>
+			<key>name</key>
+			<string>Copy Pods Resources</string>
+			<key>outputPaths</key>
+			<array/>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+			<key>shellPath</key>
+			<string>/bin/sh</string>
+			<key>shellScript</key>
+			<string>"${SRCROOT}/Pods/Target Support Files/Pods-Tests/Pods-Tests-resources.sh"
+</string>
+			<key>showEnvVarsInLog</key>
+			<string>0</string>
+		</dict>
+		<key>532AA87119ED450D28CEC7B4</key>
+		<dict>
+			<key>fileRef</key>
+			<string>D728A7B1A7B0124B6C08CC18</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
 		<key>6003F581195388D10070C39A</key>
 		<dict>
 			<key>children</key>
@@ -19,6 +74,7 @@
 				<string>6003F5B5195388D20070C39A</string>
 				<string>6003F58C195388D20070C39A</string>
 				<string>6003F58B195388D20070C39A</string>
+				<string>877EE8E80B47168E5C8CD932</string>
 			</array>
 			<key>isa</key>
 			<string>PBXGroup</string>
@@ -113,6 +169,7 @@
 				<string>6003F590195388D20070C39A</string>
 				<string>6003F592195388D20070C39A</string>
 				<string>6003F58E195388D20070C39A</string>
+				<string>532AA87119ED450D28CEC7B4</string>
 			</array>
 			<key>isa</key>
 			<string>PBXFrameworksBuildPhase</string>
@@ -141,9 +198,11 @@
 			<string>6003F5BF195388D20070C39A</string>
 			<key>buildPhases</key>
 			<array>
+				<string>EB05A81205436DD9FE944041</string>
 				<string>6003F586195388D20070C39A</string>
 				<string>6003F587195388D20070C39A</string>
 				<string>6003F588195388D20070C39A</string>
+				<string>00812880AAAA958F54030777</string>
 			</array>
 			<key>buildRules</key>
 			<array/>
@@ -195,6 +254,8 @@
 				<string>6003F58F195388D20070C39A</string>
 				<string>6003F591195388D20070C39A</string>
 				<string>6003F5AF195388D20070C39A</string>
+				<string>D728A7B1A7B0124B6C08CC18</string>
+				<string>FF673B5E498B99CA0743E9C9</string>
 			</array>
 			<key>isa</key>
 			<string>PBXGroup</string>
@@ -536,6 +597,7 @@
 				<string>6003F5B0195388D20070C39A</string>
 				<string>6003F5B2195388D20070C39A</string>
 				<string>6003F5B1195388D20070C39A</string>
+				<string>F055C16D9F7BF733E655981D</string>
 			</array>
 			<key>isa</key>
 			<string>PBXFrameworksBuildPhase</string>
@@ -561,9 +623,11 @@
 			<string>6003F5C2195388D20070C39A</string>
 			<key>buildPhases</key>
 			<array>
+				<string>B21C0EFC5C758E3F2CA6E32A</string>
 				<string>6003F5AA195388D20070C39A</string>
 				<string>6003F5AB195388D20070C39A</string>
 				<string>6003F5AC195388D20070C39A</string>
+				<string>01763427789C186EF19E30AE</string>
 			</array>
 			<key>buildRules</key>
 			<array/>
@@ -895,6 +959,8 @@
 		</dict>
 		<key>6003F5C0195388D20070C39A</key>
 		<dict>
+			<key>baseConfigurationReference</key>
+			<string>CE6B854AAA76401DFCFBA689</string>
 			<key>buildSettings</key>
 			<dict>
 				<key>ASSETCATALOG_COMPILER_APPICON_NAME</key>
@@ -919,6 +985,8 @@
 		</dict>
 		<key>6003F5C1195388D20070C39A</key>
 		<dict>
+			<key>baseConfigurationReference</key>
+			<string>7D2FF5055D8CEB931C7BDD68</string>
 			<key>buildSettings</key>
 			<dict>
 				<key>ASSETCATALOG_COMPILER_APPICON_NAME</key>
@@ -957,6 +1025,8 @@
 		</dict>
 		<key>6003F5C3195388D20070C39A</key>
 		<dict>
+			<key>baseConfigurationReference</key>
+			<string>BBC23D0739813A44E6C7E622</string>
 			<key>buildSettings</key>
 			<dict>
 				<key>BUNDLE_LOADER</key>
@@ -992,6 +1062,8 @@
 		</dict>
 		<key>6003F5C4195388D20070C39A</key>
 		<dict>
+			<key>baseConfigurationReference</key>
+			<string>BCEBEBED17811A0373FCB306</string>
 			<key>buildSettings</key>
 			<dict>
 				<key>BUNDLE_LOADER</key>
@@ -1046,6 +1118,37 @@
 			<key>sourceTree</key>
 			<string>&lt;group&gt;</string>
 		</dict>
+		<key>7D2FF5055D8CEB931C7BDD68</key>
+		<dict>
+			<key>includeInIndex</key>
+			<string>1</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text.xcconfig</string>
+			<key>name</key>
+			<string>Pods-CloudantQueryObjc.release.xcconfig</string>
+			<key>path</key>
+			<string>Pods/Target Support Files/Pods-CloudantQueryObjc/Pods-CloudantQueryObjc.release.xcconfig</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>877EE8E80B47168E5C8CD932</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>CE6B854AAA76401DFCFBA689</string>
+				<string>7D2FF5055D8CEB931C7BDD68</string>
+				<string>BBC23D0739813A44E6C7E622</string>
+				<string>BCEBEBED17811A0373FCB306</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>name</key>
+			<string>Pods</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
 		<key>8E1E056393FB8EF38FDB0032</key>
 		<dict>
 			<key>includeInIndex</key>
@@ -1056,6 +1159,66 @@
 			<string>CloudantQueryObjc.podspec</string>
 			<key>path</key>
 			<string>../CloudantQueryObjc.podspec</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>B21C0EFC5C758E3F2CA6E32A</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array/>
+			<key>inputPaths</key>
+			<array/>
+			<key>isa</key>
+			<string>PBXShellScriptBuildPhase</string>
+			<key>name</key>
+			<string>Check Pods Manifest.lock</string>
+			<key>outputPaths</key>
+			<array/>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+			<key>shellPath</key>
+			<string>/bin/sh</string>
+			<key>shellScript</key>
+			<string>diff "${PODS_ROOT}/../Podfile.lock" "${PODS_ROOT}/Manifest.lock" &gt; /dev/null
+if [[ $? != 0 ]] ; then
+    cat &lt;&lt; EOM
+error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.
+EOM
+    exit 1
+fi
+</string>
+			<key>showEnvVarsInLog</key>
+			<string>0</string>
+		</dict>
+		<key>BBC23D0739813A44E6C7E622</key>
+		<dict>
+			<key>includeInIndex</key>
+			<string>1</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text.xcconfig</string>
+			<key>name</key>
+			<string>Pods-Tests.debug.xcconfig</string>
+			<key>path</key>
+			<string>Pods/Target Support Files/Pods-Tests/Pods-Tests.debug.xcconfig</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>BCEBEBED17811A0373FCB306</key>
+		<dict>
+			<key>includeInIndex</key>
+			<string>1</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text.xcconfig</string>
+			<key>name</key>
+			<string>Pods-Tests.release.xcconfig</string>
+			<key>path</key>
+			<string>Pods/Target Support Files/Pods-Tests/Pods-Tests.release.xcconfig</string>
 			<key>sourceTree</key>
 			<string>&lt;group&gt;</string>
 		</dict>
@@ -1072,6 +1235,71 @@
 			<key>sourceTree</key>
 			<string>&lt;group&gt;</string>
 		</dict>
+		<key>CE6B854AAA76401DFCFBA689</key>
+		<dict>
+			<key>includeInIndex</key>
+			<string>1</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text.xcconfig</string>
+			<key>name</key>
+			<string>Pods-CloudantQueryObjc.debug.xcconfig</string>
+			<key>path</key>
+			<string>Pods/Target Support Files/Pods-CloudantQueryObjc/Pods-CloudantQueryObjc.debug.xcconfig</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>D728A7B1A7B0124B6C08CC18</key>
+		<dict>
+			<key>explicitFileType</key>
+			<string>archive.ar</string>
+			<key>includeInIndex</key>
+			<string>0</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>libPods-CloudantQueryObjc.a</string>
+			<key>sourceTree</key>
+			<string>BUILT_PRODUCTS_DIR</string>
+		</dict>
+		<key>EB05A81205436DD9FE944041</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array/>
+			<key>inputPaths</key>
+			<array/>
+			<key>isa</key>
+			<string>PBXShellScriptBuildPhase</string>
+			<key>name</key>
+			<string>Check Pods Manifest.lock</string>
+			<key>outputPaths</key>
+			<array/>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+			<key>shellPath</key>
+			<string>/bin/sh</string>
+			<key>shellScript</key>
+			<string>diff "${PODS_ROOT}/../Podfile.lock" "${PODS_ROOT}/Manifest.lock" &gt; /dev/null
+if [[ $? != 0 ]] ; then
+    cat &lt;&lt; EOM
+error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.
+EOM
+    exit 1
+fi
+</string>
+			<key>showEnvVarsInLog</key>
+			<string>0</string>
+		</dict>
+		<key>F055C16D9F7BF733E655981D</key>
+		<dict>
+			<key>fileRef</key>
+			<string>FF673B5E498B99CA0743E9C9</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
 		<key>FF0A8C9DA8A8092DB7885190</key>
 		<dict>
 			<key>includeInIndex</key>
@@ -1084,6 +1312,19 @@
 			<string>../LICENSE</string>
 			<key>sourceTree</key>
 			<string>&lt;group&gt;</string>
+		</dict>
+		<key>FF673B5E498B99CA0743E9C9</key>
+		<dict>
+			<key>explicitFileType</key>
+			<string>archive.ar</string>
+			<key>includeInIndex</key>
+			<string>0</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>libPods-Tests.a</string>
+			<key>sourceTree</key>
+			<string>BUILT_PRODUCTS_DIR</string>
 		</dict>
 	</dict>
 	<key>rootObject</key>
