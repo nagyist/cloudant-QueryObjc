@@ -11,6 +11,11 @@ To run the example project, clone the repo, and run `pod install` from the Examp
 
 ## Requirements
 
+This package requires:
+
+- CDTDatastore
+- FMDB
+
 ## Installation
 
 CloudantQueryObjc is available through [CocoaPods](http://cocoapods.org). To install
@@ -18,11 +23,7 @@ it, simply add the following line to your Podfile:
 
     pod "CloudantQueryObjc"
 
-## Author
-
-Michael Rhodes, mike.rhodes@gmail.com
-
 ## License
 
-CloudantQueryObjc is available under the MIT license. See the LICENSE file for more info.
+CloudantQueryObjc is available under the Apache V2 license. See the LICENSE file for more info.
 
