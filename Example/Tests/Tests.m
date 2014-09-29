@@ -131,6 +131,30 @@ describe(@"cloudant query", ^{
             expect(indexes[@"petname"]).to.beSupersetOf(@[@"cat"]);
         });
         
+        it(@"can create indexes specified with asc/desc", ^{
+            NSString *name = [im ensureIndexed:@[@{@"name": @"asc"}, @{@"age": @"desc"}]
+                                      withName:@"basic"];
+            expect(name).to.equal(@"basic");
+            
+            NSDictionary *indexes = [im listIndexes];
+            expect(indexes.allKeys.count).to.equal(1);
+            expect(indexes.allKeys).to.contain(@"basic");
+            
+            expect([indexes[@"basic"] count]).to.equal(2);
+            expect(indexes[@"basic"]).to.beSupersetOf(@[@"name", @"age"]);
+        });
+        
+    });
+    
+    describe(@"when normalising index fields", ^{
+       
+        it(@"removes directions from the field specifiers", ^{
+            NSArray *fields = [CDTQIndexCreator removeDirectionsFromFields:@[@{@"name": @"asc"},
+                                                                             @{@"pet": @"asc"},
+                                                                             @"age"]]; 
+            expect(fields).to.equal(@[@"name", @"pet", @"age"]);
+        });
+        
     });
     
     describe(@"when SQL statements to create indexes", ^{

@@ -26,6 +26,8 @@
                 inDatabase:(FMDatabaseQueue*)database
              fromDatastore:(CDTDatastore*)datastore;
 
++ (NSArray/*NSDictionary or NSString*/*)removeDirectionsFromFields:(NSArray*)fieldNames;
+
 + (NSArray/*CDTQSqlParts*/*)insertMetadataStatementsForIndexName:(NSString*)indexName
                                                       fieldNames:(NSArray/*NSString*/*)fieldNames;
 

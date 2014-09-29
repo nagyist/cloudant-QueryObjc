@@ -65,6 +65,8 @@
         return nil;
     }
     
+    fieldNames = [CDTQIndexCreator removeDirectionsFromFields:fieldNames];
+    
     __block BOOL success = YES;
     
     // TODO validate field names
@@ -110,6 +112,29 @@
     }
     
     return success ? indexName : nil;
+}
+
+/**
+ We don't support directions on field names, but they are an optimisation so
+ we can discard them safely.
+ */
++ (NSArray/*NSDictionary or NSString*/*)removeDirectionsFromFields:(NSArray*)fieldNames
+{
+    NSMutableArray *result = [NSMutableArray array];
+    
+    for (NSObject *field in fieldNames) {
+        if ([field isKindOfClass:[NSDictionary class]]) {
+            NSDictionary *specifier = (NSDictionary*)field;
+            if (specifier.count == 1) {
+                NSString *fieldName = [specifier allKeys][0];
+                [result addObject:fieldName];
+            }
+        } else if ([field isKindOfClass:[NSString class]]) {
+            [result addObject:field];
+        }
+    }
+    
+    return result;
 }
 
 + (NSArray/*CDTQSqlParts*/*)insertMetadataStatementsForIndexName:(NSString*)indexName
