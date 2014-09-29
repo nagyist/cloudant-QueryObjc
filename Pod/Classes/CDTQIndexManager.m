@@ -37,6 +37,7 @@
 #import "CDTQResultSet.h"
 #import "CDTQIndexUpdater.h"
 #import "CDTQQueryExecutor.h"
+#import "CDTQIndexCreator.h"
 
 #import "TD_Database.h"
 #import "TD_Body.h"
@@ -190,70 +191,10 @@ static const int VERSION = 1;
         return nil;
     }
     
-    __block BOOL success = YES;
-    
-    // TODO validate field names
-    // TODO validate index name
-    // TODO make sure an index with the same name but different structure doesn't exist
-    // TODO create index table
-    
-    [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
-        
-        NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
-        NSString *sqlIndexName = [tableName stringByAppendingString:@"_index"];
-        
-        // Insert metadata table entries
-        for (NSString *fieldName in fieldNames) {
-            NSString *sql = @"INSERT INTO %@ "
-            "(index_name, field_name, last_sequence) "
-            "VALUES (:index_name, :field_name, 0);";
-            sql = [NSString stringWithFormat:sql, kCDTQIndexMetadataTableName];
-            NSDictionary *args = @{@"index_name": indexName, 
-                                   @"field_name": fieldName};
-            success = success && [db executeUpdate:sql withParameterDictionary:args];
-            
-            if (!success) {
-                break;
-            }
-        }
-        
-        // Create the table for the index
-        NSMutableArray *clauses = [NSMutableArray arrayWithObject:@"docid"];
-        for (NSString *fieldName in fieldNames) {
-            NSString *clause = [NSString stringWithFormat:@"%@ NONE", fieldName];
-            [clauses addObject:clause];
-        }
-        
-        NSString *sql = [NSString stringWithFormat:@"CREATE TABLE %@ ( %@ );", 
-                         tableName,
-                         [clauses componentsJoinedByString:@", "]];
-        success = success && [db executeUpdate:sql];
-        
-        // Create the SQLite index on the index table
-        clauses = [NSMutableArray arrayWithObject:@"docid"];
-        for (NSString *fieldName in fieldNames) {
-            [clauses addObject:fieldName];
-        }
-        
-        sql = [NSString stringWithFormat:@"CREATE INDEX %@ ON %@ ( %@ );",
-               sqlIndexName, tableName, [clauses componentsJoinedByString:@", "]];
-        success = success && [db executeUpdate:sql];
-        
-        if (!success) {
-            *rollback = YES;
-        }
-    }];
-    
-    // Update the new index if it's been created
-    if (success) {
-        [CDTQIndexUpdater updateIndex:indexName
-                           withFields:fieldNames
-                           inDatabase:_database
-                        fromDatastore:_datastore
-                                error:nil];
-    }
-    
-    return success ? indexName : nil;
+    return [CDTQIndexCreator ensureIndexed:fieldNames
+                                  withName:indexName
+                                inDatabase:_database 
+                             fromDatastore:_datastore];
 }
 
 #pragma mark Delete Indexes
