@@ -39,7 +39,7 @@
     return self;
 }
 
-- (CDTQResultSet*)query:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes
+- (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes
 {
     NSString *chosenIndex = [CDTQQueryExecutor chooseIndexForQuery:query
                                                        fromIndexes:indexes];

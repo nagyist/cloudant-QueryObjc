@@ -172,14 +172,14 @@ describe(@"cloudant query", ^{
         
         it(@"can query over one string field", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet *result = [im query:query];
+            CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
             expect(result.documentIds.count).to.equal(3);
         });
         
         it(@"can query over one number field", ^{
             NSDictionary *query = @{@"age": @{@"$eq": @12}};
-            CDTQResultSet *result = [im query:query];
+            CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
             expect(result.documentIds.count).to.equal(2);
         });
@@ -187,7 +187,7 @@ describe(@"cloudant query", ^{
         it(@"can query over two string fields", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"mike"}, 
                                     @"pet": @{@"$eq": @"cat"}};
-            CDTQResultSet *result = [im query:query];
+            CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
             expect(result.documentIds.count).to.equal(2);
         });
@@ -195,14 +195,14 @@ describe(@"cloudant query", ^{
         it(@"can query over two mixed fields", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"mike"}, 
                                     @"age": @{@"$eq": @12}};
-            CDTQResultSet *result = [im query:query];
+            CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
             expect(result.documentIds.count).to.equal(1);
         });
         
         it(@"returns no results when query is for one predicate without match", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"bill"}};
-            CDTQResultSet *result = [im query:query];
+            CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
             expect(result.documentIds.count).to.equal(0);
         });
@@ -210,7 +210,7 @@ describe(@"cloudant query", ^{
         it(@"returns no results when query is for two predicates, one without matches", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"bill"}, 
                                     @"age": @{@"$eq": @12}};
-            CDTQResultSet *result = [im query:query];
+            CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
             expect(result.documentIds.count).to.equal(0);
         });
@@ -218,7 +218,7 @@ describe(@"cloudant query", ^{
         it(@"returns no results when query is for two predicates, both without matches", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"bill"}, 
                                     @"age": @{@"$eq": @17}};
-            CDTQResultSet *result = [im query:query];
+            CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
             expect(result.documentIds.count).to.equal(0);
         });
@@ -226,7 +226,7 @@ describe(@"cloudant query", ^{
         it(@"query without index", ^{
             NSDictionary *query = @{@"pet": @{@"$eq": @"mike"}, 
                                     @"age": @{@"$eq": @12}};
-            CDTQResultSet *result = [im query:query];
+            CDTQResultSet *result = [im find:query];
             expect(result).to.beNil();
         });
         

@@ -78,7 +78,7 @@ typedef NS_ENUM(NSInteger, CDTQQueryError) {
 
 - (BOOL)updateAllIndexes;
 
-- (CDTQResultSet*)query:(NSDictionary*)query;
+- (CDTQResultSet*)find:(NSDictionary*)query;
 
 + (NSString*)tableNameForIndex:(NSString*)indexName;
 

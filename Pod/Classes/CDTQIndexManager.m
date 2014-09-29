@@ -303,7 +303,7 @@ static const int VERSION = 1;
 
 #pragma mark Query indexes
 
-- (CDTQResultSet*)query:(NSDictionary*)query
+- (CDTQResultSet*)find:(NSDictionary*)query
 {
     if (![self updateAllIndexes]) {
         return nil;
@@ -312,7 +312,7 @@ static const int VERSION = 1;
     NSDictionary *indexes = [self listIndexes];
     CDTQQueryExecutor *executor = [[CDTQQueryExecutor alloc] initWithDatabase:_database
                                                                     datastore:_datastore];
-    return [executor query:query usingIndexes:indexes];
+    return [executor find:query usingIndexes:indexes];
 }
 
 #pragma mark Utilities

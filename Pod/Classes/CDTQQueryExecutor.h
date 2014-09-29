@@ -42,7 +42,7 @@
  @param query query to execute.
  @param indexes indexes to use (this method will select the most appropriate).
  */
-- (CDTQResultSet*)query:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes;
+- (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes;
 
 /**
  Selects an index to use for a given query from the set provided.
