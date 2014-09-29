@@ -26,6 +26,26 @@
 @interface CDTQIndexUpdater : NSObject
 
 /**
+ Update all the indexes in a set.
+ 
+ The indexes are assumed to already exist.
+ */
++ (BOOL)updateAllIndexes:(NSDictionary/*NSString -> NSArray[NSString]*/*)indexes
+              inDatabase:(FMDatabaseQueue*)database
+           fromDatastore:(CDTDatastore*)datastore;
+
+/**
+ Update a single index.
+ 
+ The index is assumed to already exist.
+ */
++ (BOOL)updateIndex:(NSString*)indexName
+         withFields:(NSArray/* NSString */*)fieldNames
+         inDatabase:(FMDatabaseQueue*)database
+      fromDatastore:(CDTDatastore*)datastore
+              error:(NSError * __autoreleasing *)error;
+
+/**
  Constructs a new CDTQQueryExecutor using the indexes in `database` to index documents from
  `datastore`.
  */

@@ -24,6 +24,23 @@
  */
 @interface CDTQQueryExecutor : NSObject
 
+
+/**
+ Execute the query passed using the selection of index definition provided.
+ 
+ The index definitions are presumed to already exist and be up to date for the
+ datastore and database passed to the constructor.
+ 
+ A covering index for the query must exist in the selection passed to the method.
+ 
+ @param query query to execute.
+ @param indexes indexes to use (this method will select the most appropriate).
+ */
++ (CDTQResultSet*)find:(NSDictionary*)query 
+          usingIndexes:(NSDictionary*)indexes
+            inDatabase:(FMDatabaseQueue*)database
+         fromDatastore:(CDTDatastore*)datastore;
+
 /**
  Constructs a new CDTQQueryExecutor using the indexes in `database` to find documents from
  `datastore`.

@@ -246,11 +246,11 @@ static const int VERSION = 1;
     
     // Update the new index if it's been created
     if (success) {
-        CDTQIndexUpdater *updater = [[CDTQIndexUpdater alloc] initWithDatabase:_database
-                                                                     datastore:_datastore];
-        [updater updateIndex:indexName
-                  withFields:fieldNames
-                       error:nil];
+        [CDTQIndexUpdater updateIndex:indexName
+                           withFields:fieldNames
+                           inDatabase:_database
+                        fromDatastore:_datastore
+                                error:nil];
     }
     
     return success ? indexName : nil;
@@ -295,10 +295,9 @@ static const int VERSION = 1;
     // To start with, assume top-level fields only
     
     NSDictionary *indexes = [self listIndexes];
-    CDTQIndexUpdater *updater = [[CDTQIndexUpdater alloc] initWithDatabase:_database
-                                                                 datastore:_datastore];
-    BOOL success = [updater updateAllIndexes:indexes];
-    return success;
+    return [CDTQIndexUpdater updateAllIndexes:indexes
+                                   inDatabase:_database
+                                fromDatastore:_datastore];
 }
 
 #pragma mark Query indexes
@@ -310,9 +309,11 @@ static const int VERSION = 1;
     }
     
     NSDictionary *indexes = [self listIndexes];
-    CDTQQueryExecutor *executor = [[CDTQQueryExecutor alloc] initWithDatabase:_database
-                                                                    datastore:_datastore];
-    return [executor find:query usingIndexes:indexes];
+    
+    return [CDTQQueryExecutor find:query
+                      usingIndexes:indexes
+                        inDatabase:_database
+                     fromDatastore:_datastore];
 }
 
 #pragma mark Utilities

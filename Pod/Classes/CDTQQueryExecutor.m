@@ -39,6 +39,20 @@
     return self;
 }
 
+#pragma mark Convenience methods
+
++ (CDTQResultSet*)find:(NSDictionary*)query 
+          usingIndexes:(NSDictionary*)indexes
+            inDatabase:(FMDatabaseQueue*)database
+         fromDatastore:(CDTDatastore*)datastore
+{
+    CDTQQueryExecutor *executor = [[CDTQQueryExecutor alloc] initWithDatabase:database
+                                                                    datastore:datastore];
+    return [executor find:query usingIndexes:indexes];
+}
+
+#pragma mark Instance methods
+
 - (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes
 {
     NSString *chosenIndex = [CDTQQueryExecutor chooseIndexForQuery:query
