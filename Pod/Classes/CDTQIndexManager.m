@@ -132,7 +132,7 @@ static const int VERSION = 1;
     NSMutableDictionary *indexes = [NSMutableDictionary dictionary];
     
     [_database inDatabase:^(FMDatabase *db) {
-        NSString *sql = @"SELECT index_name, field_name FROM %@ ORDER BY index_name;";
+        NSString *sql = @"SELECT index_name, field_name FROM %@;";
         sql = [NSString stringWithFormat:sql, kCDTQIndexMetadataTableName];
         FMResultSet *rs= [db executeQuery:sql];
         while ([rs next]) {
