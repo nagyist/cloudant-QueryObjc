@@ -155,7 +155,12 @@
             // Insert new values if the rev isn't deleted
             if (!rev.deleted) {
                 // TODO
-                CDTDocumentRevision *cdtRev = [[CDTDocumentRevision alloc] initWithTDRevision:rev];
+                CDTDocumentRevision *cdtRev = [[CDTDocumentRevision alloc] initWithDocId:rev.docID
+                                                                              revisionId:rev.revID
+                                                                                    body:rev.body.properties
+                                                                                 deleted:rev.deleted 
+                                                                             attachments:@{} 
+                                                                                sequence:rev.sequence];
                 CDTQSqlParts *insert = [CDTQIndexUpdater partsToIndexRevision:cdtRev
                                                                       inIndex:indexName
                                                                withFieldNames:fieldNames];

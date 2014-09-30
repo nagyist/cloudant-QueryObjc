@@ -1,16 +1,16 @@
 PODS:
-  - CDTDatastore (0.7.0):
+  - CDTDatastore (0.8.0):
     - CDTDatastore/no-arc
-    - FMDB (>= 2.2)
-  - CDTDatastore/no-arc (0.7.0):
-    - FMDB (>= 2.2)
+    - FMDB (= 2.3)
+  - CDTDatastore/no-arc (0.8.0):
+    - FMDB (= 2.3)
   - CloudantQueryObjc (0.1.0):
     - CDTDatastore (~> 0.7)
   - Expecta (0.3.1)
-  - FMDB (2.4):
+  - FMDB (2.3):
     - FMDB/standard
-  - FMDB/common (2.4)
-  - FMDB/standard (2.4):
+  - FMDB/common (2.3)
+  - FMDB/standard (2.3):
     - FMDB/common
   - Specta (0.2.1)
 
@@ -24,10 +24,10 @@ EXTERNAL SOURCES:
     :path: ../
 
 SPEC CHECKSUMS:
-  CDTDatastore: 3dba74f8512f13943e8cd31a93d5cf47e4b8b2bb
+  CDTDatastore: e753dfa8073c3ba56505b11ad3af29da0f333e5b
   CloudantQueryObjc: 46eaf0d97533c0f93d51dff81335da86c6a92b5a
   Expecta: 03aabd0a89d8dea843baecb19a7fd7466a69a31d
-  FMDB: 0b2fa25e5264ef177973c0cb8c02c711107979aa
+  FMDB: 31ec26773c7f7b7890a6038235a1f2bbd933a7cb
   Specta: 9141310f46b1f68b676650ff2854e1ed0b74163a
 
 COCOAPODS: 0.34.1
