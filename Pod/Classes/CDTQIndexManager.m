@@ -72,6 +72,11 @@ static const int VERSION = 1;
     return parts;
 }
 
+- (NSString*)description {
+    return [NSString stringWithFormat:@"sql: %@ vals: %@", 
+            self.sqlWithPlaceholders, self.placeholderValues];
+}
+
 @end
 
 @implementation CDTQIndexManager

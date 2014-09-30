@@ -104,11 +104,11 @@
     
     // Update the new index if it's been created
     if (success) {
-        [CDTQIndexUpdater updateIndex:indexName
-                           withFields:fieldNames
-                           inDatabase:_database
-                        fromDatastore:_datastore
-                                error:nil];
+        success = success && [CDTQIndexUpdater updateIndex:indexName
+                                                withFields:fieldNames
+                                                inDatabase:_database
+                                             fromDatastore:_datastore
+                                                     error:nil];
     }
     
     return success ? indexName : nil;
@@ -176,7 +176,7 @@
     NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
     NSMutableArray *clauses = [NSMutableArray arrayWithObject:@"docid"];
     for (NSString *fieldName in fieldNames) {
-        NSString *clause = [NSString stringWithFormat:@"%@ NONE", fieldName];
+        NSString *clause = [NSString stringWithFormat:@"\"%@\" NONE", fieldName];
         [clauses addObject:clause];
     }
     
@@ -202,7 +202,7 @@
     
     NSMutableArray *clauses = [NSMutableArray arrayWithObject:@"docid"];
     for (NSString *fieldName in fieldNames) {
-        [clauses addObject:fieldName];
+        [clauses addObject:[NSString stringWithFormat:@"\"%@\"", fieldName]];
     }
     
     NSString *sql = [NSString stringWithFormat:@"CREATE INDEX %@ ON %@ ( %@ );",

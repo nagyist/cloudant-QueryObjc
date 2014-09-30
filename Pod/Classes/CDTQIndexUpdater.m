@@ -244,7 +244,7 @@
         NSObject *value = rev.body[fieldName];
         
         if (value) {
-            [includedFieldNames addObject:fieldName];
+            [includedFieldNames addObject:[NSString stringWithFormat:@"\"%@\"", fieldName]];
             [args addObject:value];
             [placeholders addObject:@"?"];
             

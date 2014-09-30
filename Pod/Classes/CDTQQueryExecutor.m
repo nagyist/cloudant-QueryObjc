@@ -115,7 +115,7 @@
     NSMutableArray *clauses = [NSMutableArray array];
     NSMutableArray *parameters = [NSMutableArray array];
     for (NSString *field in fields) {
-        NSString *clause = [NSString stringWithFormat:@"%@ = ?", field];
+        NSString *clause = [NSString stringWithFormat:@"\"%@\" = ?", field];
         [clauses addObject:clause];
         
         NSDictionary *predicate = [query objectForKey:field];
