@@ -58,6 +58,66 @@
 			<key>showEnvVarsInLog</key>
 			<string>0</string>
 		</dict>
+		<key>2756496419DB1596007BAA32</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>CDTQIndexCreatorTests.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>2756496519DB1596007BAA32</key>
+		<dict>
+			<key>fileRef</key>
+			<string>2756496419DB1596007BAA32</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>2756496719DB1605007BAA32</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>CDTQIndexUpdaterTests.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>2756496819DB1605007BAA32</key>
+		<dict>
+			<key>fileRef</key>
+			<string>2756496719DB1605007BAA32</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>2756496A19DB16C4007BAA32</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>CDTQQueryExecutorTests.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>2756496B19DB16C4007BAA32</key>
+		<dict>
+			<key>fileRef</key>
+			<string>2756496A19DB16C4007BAA32</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
 		<key>532AA87119ED450D28CEC7B4</key>
 		<dict>
 			<key>fileRef</key>
@@ -581,7 +641,10 @@
 			<string>2147483647</string>
 			<key>files</key>
 			<array>
+				<string>2756496819DB1605007BAA32</string>
 				<string>6003F5BC195388D20070C39A</string>
+				<string>2756496519DB1596007BAA32</string>
+				<string>2756496B19DB16C4007BAA32</string>
 			</array>
 			<key>isa</key>
 			<string>PBXSourcesBuildPhase</string>
@@ -720,7 +783,10 @@
 			<key>children</key>
 			<array>
 				<string>6003F5BB195388D20070C39A</string>
+				<string>2756496419DB1596007BAA32</string>
 				<string>6003F5B6195388D20070C39A</string>
+				<string>2756496719DB1605007BAA32</string>
+				<string>2756496A19DB16C4007BAA32</string>
 			</array>
 			<key>isa</key>
 			<string>PBXGroup</string>
@@ -1155,6 +1221,8 @@
 			<string>1</string>
 			<key>isa</key>
 			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text</string>
 			<key>name</key>
 			<string>CloudantQueryObjc.podspec</string>
 			<key>path</key>
@@ -1228,6 +1296,8 @@ fi
 			<string>1</string>
 			<key>isa</key>
 			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text</string>
 			<key>name</key>
 			<string>README.md</string>
 			<key>path</key>
@@ -1306,6 +1376,8 @@ fi
 			<string>1</string>
 			<key>isa</key>
 			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text</string>
 			<key>name</key>
 			<string>LICENSE</string>
 			<key>path</key>
