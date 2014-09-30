@@ -5,4 +5,4 @@ install:
   - gem install cocoapods
   - cd Example && pod install && cd -
 script:
-- xcodebuild -workspace Example/CloudantQueryObjc.xcworkspace -scheme 'CloudantQueryObjc' -destination 'platform=iOS Simulator,OS=7.1,name=iPhone Retina (3.5-inch)' ONLY_ACTIVE_ARCH=NO build test
+  - xctool test -workspace Example/CloudantQueryObjc.xcworkspace -scheme CloudantQueryObjc -sdk iphonesimulator ONLY_ACTIVE_ARCH=NO
