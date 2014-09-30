@@ -1,6 +1,8 @@
 # reference: http://www.objc.io/issue-6/travis-ci.html
 
 language: objective-c
-before_install: cd Example && pod install && cd -
+install:
+  - gem install xcpretty --no-document
+  - cd Example && pod install && cd -
 script:
-- xctool test -workspace Example/CloudantQueryObjc.xcworkspace -scheme CloudantQueryObjc -sdk iphonesimulator ONLY_ACTIVE_ARCH=NO
+- xcodebuild -workspace Example/CloudantQueryObjc.xcworkspace -scheme 'CloudantQueryObjc' -destination 'platform=iOS Simulator,OS=7.1,name=iPhone Retina (3.5-inch)' ONLY_ACTIVE_ARCH=NO build test | xcpretty; exit ${PIPESTATUS[0]}
