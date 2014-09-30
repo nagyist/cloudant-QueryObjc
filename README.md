@@ -1,6 +1,6 @@
 # CloudantQueryObjc
 
-[![CI Status](http://img.shields.io/travis/Michael Rhodes/CloudantQueryObjc.svg?style=flat)](https://travis-ci.org/Michael Rhodes/CloudantQueryObjc)
+[![Build Status](https://magnum.travis-ci.com/cloudant/CloudantQueryObjc.svg?token=YYmxubNGds1Kt16kQ9v7&branch=master)](https://magnum.travis-ci.com/cloudant/CloudantQueryObjc)
 [![Version](https://img.shields.io/cocoapods/v/CloudantQueryObjc.svg?style=flat)](http://cocoadocs.org/docsets/CloudantQueryObjc)
 [![License](https://img.shields.io/cocoapods/l/CloudantQueryObjc.svg?style=flat)](http://cocoadocs.org/docsets/CloudantQueryObjc)
 [![Platform](https://img.shields.io/cocoapods/p/CloudantQueryObjc.svg?style=flat)](http://cocoadocs.org/docsets/CloudantQueryObjc)
