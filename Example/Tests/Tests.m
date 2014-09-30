@@ -365,6 +365,59 @@ describe(@"cloudant query", ^{
         
     });
     
+    describe(@"when using non-ascii text", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", @"age": @12, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike34";
+            rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @"dog" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike72";
+            rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"اسم34";
+            rev.body = @{ @"name": @"اسم", @"age": @34, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred12";
+            rev.body = @{ @"name": @"fred", @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fredarabic";
+            rev.body = @{ @"اسم": @"fred", @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"freddatatype";
+            rev.body = @{ @"@datatype": @"fred", @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+        });
+        
+        it(@"can query for values non-ascii", ^{
+            expect([im ensureIndexed:@[@"name"] withName:@"nonascii"]).toNot.beNil();
+            
+            NSDictionary *query = @{@"name": @{@"$eq": @"اسم"}};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+        });
+    });
+    
     describe(@"when selecting an index to use", ^{
         
         __block CDTDatastore *ds;
@@ -572,6 +625,18 @@ describe(@"cloudant query", ^{
             "( docid, name, pet ) VALUES ( ?, ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"id123", @"mike", @"cat"]);
+        });
+        
+        it(@"returns nil if a document has no indexable fields", ^{
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            rev.docId = @"id123";
+            rev.body = @{@"name": @"mike", 
+                         @"pet": @"cat",
+                         @"ignored": @"something"};
+            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:rev 
+                                                                 inIndex:@"anIndex"
+                                                          withFieldNames:@[@"car", @"van"]];
+            expect(parts).to.beNil();
         });
         
     });

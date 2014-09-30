@@ -155,17 +155,26 @@
             // Insert new values if the rev isn't deleted
             if (!rev.deleted) {
                 // TODO
+                // Ignoring the attachments seems reasonable right now as we don't index them.
                 CDTDocumentRevision *cdtRev = [[CDTDocumentRevision alloc] initWithDocId:rev.docID
                                                                               revisionId:rev.revID
                                                                                     body:rev.body.properties
                                                                                  deleted:rev.deleted 
-                                                                             attachments:@{} 
+                                                                             attachments:@{}  
                                                                                 sequence:rev.sequence];
                 CDTQSqlParts *insert = [CDTQIndexUpdater partsToIndexRevision:cdtRev
                                                                       inIndex:indexName
                                                                withFieldNames:fieldNames];
-                success = success && [db executeUpdate:insert.sqlWithPlaceholders
-                                  withArgumentsInArray:insert.placeholderValues];
+                
+                // partsToIndexRevision:... returns nil if there are no applicable fields to index
+                if (insert) {
+                    success = success && [db executeUpdate:insert.sqlWithPlaceholders
+                                      withArgumentsInArray:insert.placeholderValues];
+                }
+                
+                if (!success) {
+                    NSLog(@"%@", insert);
+                }
             }
             if (!success) {
                 // TODO fill in error
@@ -242,6 +251,11 @@
             // TODO validate here whether the derived value is suitable for indexing
             //      in addition to its presence.
         }
+    }
+    
+    // Return nil if there are no fields to index
+    if (includedFieldNames.count == 0) {
+        return nil;
     }
     
     NSString *sql = @"INSERT INTO %@ ( docid, %@ ) VALUES ( ?, %@ );";
