@@ -23,6 +23,7 @@
  */
 + (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames 
                   withName:(NSString*)indexName
+                      type:(NSString*)type
                 inDatabase:(FMDatabaseQueue*)database
              fromDatastore:(CDTDatastore*)datastore;
 

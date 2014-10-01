@@ -146,6 +146,47 @@ describe(@"cloudant query", ^{
         
     });
     
+    describe(@"when creating indexes with a type", ^{
+        
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            CDTDatastore *ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+        });
+       
+        it(@"supports using the json type", ^{
+            NSString *name = [im ensureIndexed:@[@{@"name": @"asc"}, @{@"age": @"desc"}]
+                                      withName:@"basic"
+                                          type:@"json"];
+            expect(name).to.equal(@"basic");
+        });
+        
+        it(@"doesn't support using the text type", ^{
+            NSString *name = [im ensureIndexed:@[@{@"name": @"asc"}, @{@"age": @"desc"}]
+                                      withName:@"basic"
+                                          type:@"text"];
+            expect(name).to.beNil();
+        });
+        
+        it(@"doesn't support using the geo type", ^{
+            NSString *name = [im ensureIndexed:@[@{@"name": @"asc"}, @{@"age": @"desc"}]
+                                      withName:@"basic"
+                                          type:@"geo"];
+            expect(name).to.beNil();
+        });
+        
+        it(@"doesn't support using the unplanned type", ^{
+            NSString *name = [im ensureIndexed:@[@{@"name": @"asc"}, @{@"age": @"desc"}]
+                                      withName:@"basic"
+                                          type:@"frog"];
+            expect(name).to.beNil();
+        });
+        
+    });
+    
     
     describe(@"when using non-ascii text", ^{
         

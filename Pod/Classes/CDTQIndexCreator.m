@@ -38,8 +38,9 @@
 
 + (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames 
                   withName:(NSString*)indexName
-            inDatabase:(FMDatabaseQueue*)database
-         fromDatastore:(CDTDatastore*)datastore
+                      type:(NSString*)type
+                inDatabase:(FMDatabaseQueue*)database
+             fromDatastore:(CDTDatastore*)datastore
 {
     CDTQIndexCreator *executor = [[CDTQIndexCreator alloc] initWithDatabase:database
                                                                     datastore:datastore];

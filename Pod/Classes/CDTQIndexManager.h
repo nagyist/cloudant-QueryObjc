@@ -74,6 +74,10 @@ typedef NS_ENUM(NSInteger, CDTQQueryError) {
 
 - (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames withName:(NSString*)indexName;
 
+- (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames 
+                  withName:(NSString*)indexName
+                      type:(NSString*)type;
+
 - (BOOL)deleteIndexNamed:(NSString*)indexName;
 
 - (BOOL)updateAllIndexes;

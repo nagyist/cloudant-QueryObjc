@@ -188,6 +188,23 @@ static const int VERSION = 1;
  */
 - (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames withName:(NSString*)indexName
 {
+    return [self ensureIndexed:fieldNames
+                      withName:indexName
+                          type:@"json"];
+}
+
+/**
+ Add a single, possibly compound, index for the given field names.
+ 
+ @param fieldNames List of fieldnames in the sort format
+ @param indexName Name of index to create.
+ @param type "json" is the only supported type for now
+ @returns name of created index
+ */
+- (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames 
+                  withName:(NSString*)indexName
+                      type:(NSString*)type
+{
     if (fieldNames.count == 0) { 
         return nil;
     }
@@ -196,8 +213,13 @@ static const int VERSION = 1;
         return nil;
     }
     
+    if (![type isEqualToString:@"json"]) {
+        return nil;
+    }
+    
     return [CDTQIndexCreator ensureIndexed:fieldNames
                                   withName:indexName
+                                      type:type
                                 inDatabase:_database 
                              fromDatastore:_datastore];
 }
