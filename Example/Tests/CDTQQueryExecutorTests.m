@@ -151,6 +151,83 @@ describe(@"cloudant query", ^{
         
     });
     
+    describe(@"when using dotted notation", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @12, 
+                          @"pet": @{@"species": @"cat", @"name": @"mike"}};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike23";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @23, 
+                          @"pet": @{@"species": @"cat", @"name": @{ @"first": @"mike" }}};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike34";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @34, 
+                          @"pet": @{@"species": @"cat", @"name": @"mike" } };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike72";
+            rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred34";
+            rev.body = @{ @"name": @"fred", @"age": @34, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred12";
+            rev.body = @{ @"name": @"fred", @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            expect([im ensureIndexed:@[@"age", @"pet.name", @"pet.species"] withName:@"pet"]).toNot.beNil();
+            expect([im ensureIndexed:@[@"age", @"pet.name.first"] withName:@"firstname"]).toNot.beNil();
+        });
+        
+        it(@"query with two level dotted no results", ^{
+            NSDictionary *query = @{@"pet.name": @{@"$eq": @"fred"}, 
+                                    @"age": @{@"$eq": @12}};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds).to.equal(@[]);
+        });
+        
+        it(@"query with two level dotted one result", ^{
+            NSDictionary *query = @{@"pet.name": @{@"$eq": @"mike"}, 
+                                    @"age": @{@"$eq": @12}};
+            CDTQResultSet *result = [im find:query];
+            expect(result.documentIds).to.equal(@[@"mike12"]);
+        });
+        
+        it(@"query with two level dotted multiple results", ^{
+            NSDictionary *query = @{@"pet.species": @{@"$eq": @"cat"}};
+            CDTQResultSet *result = [im find:query];
+            expect(result.documentIds).to.equal(@[@"mike12", @"mike23", @"mike34"]);
+        });
+        
+        it(@"query with three level dotted", ^{
+            NSDictionary *query = @{@"pet.name.first": @{@"$eq": @"mike"}};
+            CDTQResultSet *result = [im find:query];
+            expect(result.documentIds).to.equal(@[@"mike23"]);
+        });
+        
+    });
+    
     describe(@"when using non-ascii text", ^{
         
         __block CDTDatastore *ds;

@@ -112,6 +112,16 @@ describe(@"cloudant query", ^{
             expect(indexes[@"basic"]).to.beSupersetOf(@[@"name", @"age"]);
         });
         
+        it(@"can create an index using dotted notation", ^{
+            NSString *name = [im ensureIndexed:@[@"name.first", @"age.years"] withName:@"basic"];
+            expect(name).to.equal(@"basic");
+            
+            NSDictionary *indexes = [im listIndexes];
+            expect(indexes.allKeys).to.equal(@[@"basic"]);
+            expect(indexes[@"basic"]).to.equal(@[@"name.first", @"age.years"]);
+        });
+
+        
         it(@"can create more than one index", ^{
             [im ensureIndexed:@[@"name", @"age"] withName:@"basic"];
             [im ensureIndexed:@[@"name", @"age"] withName:@"another"];

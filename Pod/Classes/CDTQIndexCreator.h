@@ -29,6 +29,8 @@
 
 + (NSArray/*NSDictionary or NSString*/*)removeDirectionsFromFields:(NSArray*)fieldNames;
 
++ (BOOL)validFieldName:(NSString*)fieldName;
+
 + (NSArray/*CDTQSqlParts*/*)insertMetadataStatementsForIndexName:(NSString*)indexName
                                                       fieldNames:(NSArray/*NSString*/*)fieldNames;
 

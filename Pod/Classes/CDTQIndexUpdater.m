@@ -16,6 +16,7 @@
 
 #import "CDTQIndexManager.h"
 #import "CDTQResultSet.h"
+#import "CDTQValueExtractor.h"
 
 #import "CloudantSync.h"
 
@@ -241,7 +242,8 @@
     NSMutableArray *includedFieldNames = [NSMutableArray array];
     
     for (NSString *fieldName in fieldNames) {
-        NSObject *value = rev.body[fieldName];
+        NSObject *value = [CDTQValueExtractor extractValueForFieldName:fieldName
+                                                        fromDictionary:rev.body];
         
         if (value) {
             [includedFieldNames addObject:[NSString stringWithFormat:@"\"%@\"", fieldName]];

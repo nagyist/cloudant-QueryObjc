@@ -118,6 +118,26 @@
 			<key>isa</key>
 			<string>PBXBuildFile</string>
 		</dict>
+		<key>2756496F19DC2CDB007BAA32</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>CDTQValueExtractorTests.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>2756497019DC2CDB007BAA32</key>
+		<dict>
+			<key>fileRef</key>
+			<string>2756496F19DC2CDB007BAA32</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
 		<key>532AA87119ED450D28CEC7B4</key>
 		<dict>
 			<key>fileRef</key>
@@ -645,6 +665,7 @@
 				<string>6003F5BC195388D20070C39A</string>
 				<string>2756496519DB1596007BAA32</string>
 				<string>2756496B19DB16C4007BAA32</string>
+				<string>2756497019DC2CDB007BAA32</string>
 			</array>
 			<key>isa</key>
 			<string>PBXSourcesBuildPhase</string>
@@ -787,6 +808,7 @@
 				<string>6003F5B6195388D20070C39A</string>
 				<string>2756496719DB1605007BAA32</string>
 				<string>2756496A19DB16C4007BAA32</string>
+				<string>2756496F19DC2CDB007BAA32</string>
 			</array>
 			<key>isa</key>
 			<string>PBXGroup</string>
