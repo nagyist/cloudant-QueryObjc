@@ -88,7 +88,7 @@
     BOOL success = YES;
     
     for (NSString *indexName in [indexes allKeys]) {
-        NSArray *fields = indexes[indexName];
+        NSArray *fields = indexes[indexName][@"fields"];
         success = [self updateIndex:indexName
                          withFields:fields
                               error:nil];

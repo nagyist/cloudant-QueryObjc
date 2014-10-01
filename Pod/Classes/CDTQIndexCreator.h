@@ -32,6 +32,7 @@
 + (BOOL)validFieldName:(NSString*)fieldName;
 
 + (NSArray/*CDTQSqlParts*/*)insertMetadataStatementsForIndexName:(NSString*)indexName
+                                                            type:(NSString*)indexType
                                                       fieldNames:(NSArray/*NSString*/*)fieldNames;
 
 + (CDTQSqlParts*)createIndexTableStatementForIndexName:(NSString*)indexName

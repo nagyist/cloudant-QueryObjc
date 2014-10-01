@@ -318,41 +318,63 @@ describe(@"cloudant query", ^{
         });
         
         it(@"selects an index for single field queries", ^{
-            NSDictionary *indexes = @{@"named": @[@"name"]};
+            NSDictionary *indexes = @{@"named": @{@"name": @"named", 
+                                                  @"type": @"json", 
+                                                  @"fields": @[@"name"]}};
             NSString *idx = [CDTQQueryExecutor chooseIndexForQuery:@{@"name": @"mike"} 
                                                        fromIndexes:indexes];
             expect(idx).to.equal(@"named");
         });
         
         it(@"selects an index for multi-field queries", ^{
-            NSDictionary *indexes = @{@"named": @[@"name", @"age", @"pet"]};
+            NSDictionary *indexes = @{@"named": @{@"name": @"named", 
+                                                  @"type": @"json", 
+                                                  @"fields": @[@"name", @"age", @"pet"]}};
             NSString *idx = [CDTQQueryExecutor chooseIndexForQuery:@{@"name": @"mike", @"pet": @"cat"} 
                                                        fromIndexes:indexes];
             expect(idx).to.equal(@"named");
         });
         
         it(@"selects an index from several indexes for multi-field queries", ^{
-            NSDictionary *indexes = @{@"named": @[@"name", @"age", @"pet"],
-                                      @"bopped": @[@"house_number", @"pet"],
-                                      @"unsuitable": @[@"name"],};
+            NSDictionary *indexes = @{@"named": @{@"name": @"named", 
+                                                  @"type": @"json", 
+                                                  @"fields": @[@"name", @"age", @"pet"]},
+                                      @"bopped": @{@"name": @"named", 
+                                                   @"type": @"json", 
+                                                   @"fields": @[@"house_number", @"pet"]},
+                                      @"unsuitable": @{@"name": @"named", 
+                                                       @"type": @"json", 
+                                                       @"fields": @[@"name"]},};
             NSString *idx = [CDTQQueryExecutor chooseIndexForQuery:@{@"name": @"mike", @"pet": @"cat"} 
                                                        fromIndexes:indexes];
             expect(idx).to.equal(@"named");
         });
         
         it(@"selects an correct index when several match", ^{
-            NSDictionary *indexes = @{@"named": @[@"name", @"age", @"pet"],
-                                      @"bopped": @[@"name", @"age", @"pet"],
-                                      @"many_field": @[@"name", @"age", @"pet", @"car", @"van"],
-                                      @"unsuitable": @[@"name"],};
+            NSDictionary *indexes = @{@"named": @{@"name": @"named", 
+                                                  @"type": @"json", 
+                                                  @"fields": @[@"name", @"age", @"pet"]},
+                                      @"bopped": @{@"name": @"named", 
+                                                   @"type": @"json", 
+                                                   @"fields": @[@"name", @"age", @"pet"]},
+                                      @"many_field": @{@"name": @"named", 
+                                                       @"type": @"json", 
+                                                       @"fields": @[@"name", @"age", @"pet", @"car", @"van"]},
+                                      @"unsuitable": @{@"name": @"named", 
+                                                       @"type": @"json", 
+                                                       @"fields": @[@"name"]},};
             NSString *idx = [CDTQQueryExecutor chooseIndexForQuery:@{@"name": @"mike", @"pet": @"cat"} 
                                                        fromIndexes:indexes];
             expect([@[@"named", @"bopped"] containsObject:idx]).to.beTruthy();
         });
         
         it(@"fails if no suitable index is available", ^{
-            NSDictionary *indexes = @{@"named": @[@"name", @"age"],
-                                      @"unsuitable": @[@"name"],};
+            NSDictionary *indexes = @{@"named": @{@"name": @"named", 
+                                                  @"type": @"json", 
+                                                  @"fields": @[@"name", @"age"]},
+                                      @"unsuitable": @{@"name": @"named", 
+                                                       @"type": @"json", 
+                                                       @"fields": @[@"name"]},};
             expect([CDTQQueryExecutor chooseIndexForQuery:@{@"pet": @"cat"} 
                                               fromIndexes:indexes]).to.beNil();
         });

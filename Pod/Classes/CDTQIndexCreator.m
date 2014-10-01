@@ -38,13 +38,13 @@
 
 + (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames 
                   withName:(NSString*)indexName
-                      type:(NSString*)type
+                      type:(NSString*)indexType
                 inDatabase:(FMDatabaseQueue*)database
              fromDatastore:(CDTDatastore*)datastore
 {
     CDTQIndexCreator *executor = [[CDTQIndexCreator alloc] initWithDatabase:database
                                                                     datastore:datastore];
-    return [executor ensureIndexed:fieldNames withName:indexName];
+    return [executor ensureIndexed:fieldNames withName:indexName type:indexType];
 }
 
 #pragma mark Instance methods
@@ -56,7 +56,9 @@
  @param indexName Name of index to create.
  @returns name of created index
  */
-- (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames withName:(NSString*)indexName
+- (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames 
+                  withName:(NSString*)indexName
+                      type:(NSString*)indexType
 {
     if (fieldNames.count == 0) { 
         return nil;
@@ -85,6 +87,7 @@
         
         // Insert metadata table entries
         NSArray *inserts = [CDTQIndexCreator insertMetadataStatementsForIndexName:indexName
+                                                                             type:indexType
                                                                        fieldNames:fieldNames];
         for (CDTQSqlParts *sql in inserts) {
             success = success && [db executeUpdate:sql.sqlWithPlaceholders
@@ -162,6 +165,7 @@
 }
 
 + (NSArray/*CDTQSqlParts*/*)insertMetadataStatementsForIndexName:(NSString*)indexName
+                                                            type:(NSString*)indexType
                                                       fieldNames:(NSArray/*NSString*/*)fieldNames
 {
     if (!indexName) {
@@ -175,12 +179,12 @@
     NSMutableArray *result = [NSMutableArray array];
     for (NSString *fieldName in fieldNames) {
         NSString *sql = @"INSERT INTO %@ "
-        "(index_name, field_name, last_sequence) "
-        "VALUES (?, ?, 0);";
+        "(index_name, index_type, field_name, last_sequence) "
+        "VALUES (?, ?, ?, 0);";
         sql = [NSString stringWithFormat:sql, kCDTQIndexMetadataTableName];
         
         CDTQSqlParts *parts = [CDTQSqlParts partsForSql:sql
-                                             parameters:@[indexName, fieldName]];
+                                             parameters:@[indexName, indexType, fieldName]];
         [result addObject:parts];
     }
     return result;

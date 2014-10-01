@@ -15,11 +15,11 @@
 //
 // The metadata for an index is represented in the database table as follows:
 //
-//   index_name  |  field_name  |  last_sequence
-//   -------------------------------------------
-//     name      |  firstName   |     0
-//     name      |  lastName    |     0
-//     age       |  age         |     0
+//   index_name  |  index_type  |  field_name  |  last_sequence
+//   -----------------------------------------------------------
+//     name      |  json        |   firstName  |     0
+//     name      |  json        |   lastName   |     0
+//     age       |  json        |   age        |     0
 //
 // The index itself is a single table, with a colum for docId and each of the indexed fields:
 //
@@ -138,27 +138,33 @@ static const int VERSION = 1;
     NSMutableDictionary *indexes = [NSMutableDictionary dictionary];
     
     [_database inDatabase:^(FMDatabase *db) {
-        NSString *sql = @"SELECT index_name, field_name FROM %@;";
+        NSString *sql = @"SELECT index_name, index_type, field_name FROM %@;";
         sql = [NSString stringWithFormat:sql, kCDTQIndexMetadataTableName];
         FMResultSet *rs= [db executeQuery:sql];
         while ([rs next]) {
             NSString *rowIndex = [rs stringForColumn:@"index_name"];
+            NSString *rowType = [rs stringForColumn:@"index_type"];
             NSString *rowField = [rs stringForColumn:@"field_name"];
             
             if (indexes[rowIndex] == nil) {
-                indexes[rowIndex] = [NSMutableArray array];
+                indexes[rowIndex] = @{@"type": rowType,
+                                      @"name": rowIndex,
+                                      @"fields": [NSMutableArray array]};
             }
             
-            [indexes[rowIndex] addObject:rowField];
+            [indexes[rowIndex][@"fields"] addObject:rowField];
         }
         [rs close];
     }];
     
     // Now we need to make the return value immutable
     
-    for (NSString *k in [indexes allKeys]) {
-        NSMutableArray *v = indexes[k];
-        indexes[k] = [v copy];  // -copy makes arrays immutable
+    for (NSString *indexName in [indexes allKeys]) {
+        NSMutableDictionary *details = indexes[indexName];
+        indexes[indexName] = @{@"type": details[@"type"],
+                               @"name": details[@"name"],
+                               @"fields": [details[@"fields"] copy]  // -copy makes arrays immutable
+                               };
     }
     
     return [NSDictionary dictionaryWithDictionary:indexes];  // make dictionary immutable
@@ -297,6 +303,7 @@ static const int VERSION = 1;
 {
     NSString* SCHEMA_INDEX = @"CREATE TABLE _t_cloudant_sync_query_metadata ( "
     @"        index_name TEXT NOT NULL, "
+    @"        index_type TEXT NOT NULL, "
     @"        field_name TEXT NOT NULL, "
     @"        last_sequence INTEGER NOT NULL);";
     

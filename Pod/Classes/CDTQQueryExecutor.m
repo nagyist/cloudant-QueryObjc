@@ -94,7 +94,7 @@
     
     NSString *chosenIndex = nil;
     for (NSString *indexName in indexes) {
-        NSSet *providedFields = [NSSet setWithArray:indexes[indexName]];
+        NSSet *providedFields = [NSSet setWithArray:indexes[indexName][@"fields"]];
         if ([neededFields isSubsetOfSet:providedFields]) {
             chosenIndex = indexName;
             break;

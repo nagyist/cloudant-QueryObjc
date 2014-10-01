@@ -96,8 +96,8 @@ describe(@"cloudant query", ^{
             expect(indexes.allKeys.count).to.equal(1);
             expect(indexes.allKeys).to.contain(@"basic");
             
-            expect([indexes[@"basic"] count]).to.equal(1);
-            expect(indexes[@"basic"]).to.beSupersetOf(@[@"name"]);
+            expect([indexes[@"basic"][@"fields"] count]).to.equal(1);
+            expect(indexes[@"basic"][@"fields"]).to.equal(@[@"name"]);
         });
         
         it(@"can create an index over two fields", ^{
@@ -108,8 +108,8 @@ describe(@"cloudant query", ^{
             expect(indexes.allKeys.count).to.equal(1);
             expect(indexes.allKeys).to.contain(@"basic");
             
-            expect([indexes[@"basic"] count]).to.equal(2);
-            expect(indexes[@"basic"]).to.beSupersetOf(@[@"name", @"age"]);
+            expect([indexes[@"basic"][@"fields"] count]).to.equal(2);
+            expect(indexes[@"basic"][@"fields"]).to.beSupersetOf(@[@"name", @"age"]);
         });
         
         it(@"can create an index using dotted notation", ^{
@@ -118,7 +118,7 @@ describe(@"cloudant query", ^{
             
             NSDictionary *indexes = [im listIndexes];
             expect(indexes.allKeys).to.equal(@[@"basic"]);
-            expect(indexes[@"basic"]).to.equal(@[@"name.first", @"age.years"]);
+            expect(indexes[@"basic"][@"fields"]).to.equal(@[@"name.first", @"age.years"]);
         });
 
         
@@ -131,14 +131,14 @@ describe(@"cloudant query", ^{
             expect(indexes.allKeys.count).to.equal(3);
             expect(indexes.allKeys).to.beSupersetOf(@[@"basic", @"another", @"petname"]);
             
-            expect([indexes[@"basic"] count]).to.equal(2);
-            expect(indexes[@"basic"]).to.beSupersetOf(@[@"name", @"age"]);
+            expect([indexes[@"basic"][@"fields"] count]).to.equal(2);
+            expect(indexes[@"basic"][@"fields"]).to.beSupersetOf(@[@"name", @"age"]);
             
-            expect([indexes[@"another"] count]).to.equal(2);
-            expect(indexes[@"another"]).to.beSupersetOf(@[@"name", @"age"]);
+            expect([indexes[@"another"][@"fields"] count]).to.equal(2);
+            expect(indexes[@"another"][@"fields"]).to.beSupersetOf(@[@"name", @"age"]);
             
-            expect([indexes[@"petname"] count]).to.equal(1);
-            expect(indexes[@"petname"]).to.beSupersetOf(@[@"cat"]);
+            expect([indexes[@"petname"][@"fields"] count]).to.equal(1);
+            expect(indexes[@"petname"][@"fields"]).to.beSupersetOf(@[@"cat"]);
         });
         
         it(@"can create indexes specified with asc/desc", ^{
@@ -150,8 +150,8 @@ describe(@"cloudant query", ^{
             expect(indexes.allKeys.count).to.equal(1);
             expect(indexes.allKeys).to.contain(@"basic");
             
-            expect([indexes[@"basic"] count]).to.equal(2);
-            expect(indexes[@"basic"]).to.beSupersetOf(@[@"name", @"age"]);
+            expect([indexes[@"basic"][@"fields"] count]).to.equal(2);
+            expect(indexes[@"basic"][@"fields"]).to.beSupersetOf(@[@"name", @"age"]);
         });
         
     });
@@ -282,6 +282,7 @@ describe(@"cloudant query", ^{
         it(@"doesn't create insert statements when there are no fields", ^{
             NSArray *fieldNames = @[];
             NSArray *parts = [CDTQIndexCreator insertMetadataStatementsForIndexName:@"anIndex"
+                                                                               type:@"json"
                                                                          fieldNames:fieldNames];
             expect(parts).to.beNil();
         });
@@ -289,41 +290,43 @@ describe(@"cloudant query", ^{
         it(@"can create insert statements for an index with one field", ^{
             NSArray *fieldNames = @[@"name"];
             NSArray *parts = [CDTQIndexCreator insertMetadataStatementsForIndexName:@"anIndex"
+                                                                               type:@"json"
                                                                          fieldNames:fieldNames];
             
             CDTQSqlParts *part;
             
             part = parts[0];
             expect(part.sqlWithPlaceholders).to.equal(@"INSERT INTO _t_cloudant_sync_query_metadata" 
-                                                      " (index_name, field_name, last_sequence) "
-                                                      "VALUES (?, ?, 0);");
-            expect(part.placeholderValues).to.equal(@[@"anIndex", @"name"]);
+                                                      " (index_name, index_type, field_name, last_sequence) "
+                                                      "VALUES (?, ?, ?, 0);");
+            expect(part.placeholderValues).to.equal(@[@"anIndex", @"json", @"name"]);
         });
         
         it(@"can create insert statements for an index with many fields", ^{
             NSArray *fieldNames = @[@"name", @"age", @"pet"];
             NSArray *parts = [CDTQIndexCreator insertMetadataStatementsForIndexName:@"anIndex"
+                                                                               type:@"json"
                                                                          fieldNames:fieldNames];
             
             CDTQSqlParts *part;
             
             part = parts[0];
             expect(part.sqlWithPlaceholders).to.equal(@"INSERT INTO _t_cloudant_sync_query_metadata" 
-                                                      " (index_name, field_name, last_sequence) "
-                                                      "VALUES (?, ?, 0);");
-            expect(part.placeholderValues).to.equal(@[@"anIndex", @"name"]);
+                                                      " (index_name, index_type, field_name, last_sequence) "
+                                                      "VALUES (?, ?, ?, 0);");
+            expect(part.placeholderValues).to.equal(@[@"anIndex", @"json", @"name"]);
             
             part = parts[1];
             expect(part.sqlWithPlaceholders).to.equal(@"INSERT INTO _t_cloudant_sync_query_metadata" 
-                                                      " (index_name, field_name, last_sequence) "
-                                                      "VALUES (?, ?, 0);");
-            expect(part.placeholderValues).to.equal(@[@"anIndex", @"age"]);
+                                                      " (index_name, index_type, field_name, last_sequence) "
+                                                      "VALUES (?, ?, ?, 0);");
+            expect(part.placeholderValues).to.equal(@[@"anIndex", @"json", @"age"]);
             
             part = parts[2];
             expect(part.sqlWithPlaceholders).to.equal(@"INSERT INTO _t_cloudant_sync_query_metadata" 
-                                                      " (index_name, field_name, last_sequence) "
-                                                      "VALUES (?, ?, 0);");
-            expect(part.placeholderValues).to.equal(@[@"anIndex", @"pet"]);
+                                                      " (index_name, index_type, field_name, last_sequence) "
+                                                      "VALUES (?, ?, ?, 0);");
+            expect(part.placeholderValues).to.equal(@[@"anIndex", @"json", @"pet"]);
         });
         
         // CREATE TABLE for Cloudant Query index
