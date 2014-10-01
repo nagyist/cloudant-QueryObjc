@@ -227,6 +227,54 @@ describe(@"cloudant query", ^{
         
     });
     
+    describe(@"when validating field names", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+        });
+        
+        it(@"rejects indexes with $ at start", ^{
+            expect([im ensureIndexed:@[@"$name", @"@datatype"] withName:@"nonascii"]).to.beNil();
+        });
+        
+        it(@"rejects indexes with $ in but not at start", ^{
+            expect([im ensureIndexed:@[@"na$me", @"@datatype$"] withName:@"nonascii"]).toNot.beNil();
+        });
+        
+        it(@"allows single fields", ^{
+            expect([CDTQIndexCreator validFieldName:@"name"]).to.beTruthy();
+        });
+        
+        it(@"allows dotted notation fields", ^{
+            expect([CDTQIndexCreator validFieldName:@"name.first"]).to.beTruthy();
+            expect([CDTQIndexCreator validFieldName:@"name.first.prefix"]).to.beTruthy();
+        });
+        
+        it(@"allows dollars in positions other than first letter of a part", ^{
+            expect([CDTQIndexCreator validFieldName:@"na$me"]).to.beTruthy();
+            expect([CDTQIndexCreator validFieldName:@"name.fir$t"]).to.beTruthy();
+            expect([CDTQIndexCreator validFieldName:@"name.fir$t.pref$x"]).to.beTruthy();
+            expect([CDTQIndexCreator validFieldName:@"name.fir$t.pref$x"]).to.beTruthy();
+        });
+        
+        it(@"rejects dollars in first letter of a part", ^{
+            expect([CDTQIndexCreator validFieldName:@"$name"]).to.beFalsy();
+            expect([CDTQIndexCreator validFieldName:@"name.$first"]).to.beFalsy();
+            expect([CDTQIndexCreator validFieldName:@"name.$first.$prefix"]).to.beFalsy();
+            expect([CDTQIndexCreator validFieldName:@"name.first.$prefix"]).to.beFalsy();
+            expect([CDTQIndexCreator validFieldName:@"name.first.$pr$efix"]).to.beFalsy();
+            expect([CDTQIndexCreator validFieldName:@"name.$$$$.prefix"]).to.beFalsy();
+        });
+        
+    });
+    
     describe(@"when SQL statements to create indexes", ^{
         
         // INSERT INTO metdata table

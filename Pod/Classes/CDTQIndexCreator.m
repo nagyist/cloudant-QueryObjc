@@ -68,6 +68,12 @@
     
     fieldNames = [CDTQIndexCreator removeDirectionsFromFields:fieldNames];
     
+    for (NSString *fieldName in fieldNames) {
+        if (![CDTQIndexCreator validFieldName:fieldName]) {
+            return nil;
+        }
+    }
+    
     __block BOOL success = YES;
     
     // TODO validate field names
@@ -113,6 +119,23 @@
     }
     
     return success ? indexName : nil;
+}
+
+/**
+ Validate the field name string is usable.
+ 
+ The only restriction so far is that the parts don't start with
+ a $ sign, as this makes the query language ambiguous.
+ */
++ (BOOL)validFieldName:(NSString*)fieldName
+{
+    NSArray *parts = [fieldName componentsSeparatedByString:@"."];
+    for (NSString *part in parts) {
+        if ([part hasPrefix:@"$"]) {
+            return NO;
+        }
+    }
+    return YES;
 }
 
 /**
