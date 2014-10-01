@@ -14,7 +14,7 @@
 #import <CDTQQueryExecutor.h>
 
 
-SpecBegin(CDTQIndexUpdaterSpecs)
+SpecBegin(CDTQIndexUpdater)
 
 
 describe(@"cloudant query", ^{
