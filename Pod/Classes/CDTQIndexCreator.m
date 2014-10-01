@@ -43,7 +43,7 @@
              fromDatastore:(CDTDatastore*)datastore
 {
     CDTQIndexCreator *executor = [[CDTQIndexCreator alloc] initWithDatabase:database
-                                                                    datastore:datastore];
+                                                                  datastore:datastore];
     return [executor ensureIndexed:fieldNames withName:indexName type:indexType];
 }
 
@@ -72,6 +72,26 @@
     
     for (NSString *fieldName in fieldNames) {
         if (![CDTQIndexCreator validFieldName:fieldName]) {
+            return nil;
+        }
+    }
+    
+    // Does the index already exist; return success if it does and is same, else fail
+    NSDictionary *existingIndexes = [CDTQIndexManager listIndexesInDatabase:self.database];
+    if (existingIndexes[indexName] != nil) {
+        NSDictionary *index = existingIndexes[indexName];
+        NSString *existingType = index[@"type"];
+        NSSet *existingFields = [NSSet setWithArray:index[@"fields"]];
+        NSSet *newFields = [NSSet setWithArray:fieldNames];
+        
+        if ([existingType isEqualToString:indexType] && [existingFields isEqualToSet:newFields]) {
+            BOOL success = [CDTQIndexUpdater updateIndex:indexName
+                                              withFields:fieldNames
+                                              inDatabase:_database
+                                           fromDatastore:_datastore
+                                                   error:nil];
+            return success ? indexName : nil;
+        } else {
             return nil;
         }
     }

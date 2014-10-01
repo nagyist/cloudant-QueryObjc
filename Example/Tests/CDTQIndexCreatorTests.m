@@ -156,6 +156,35 @@ describe(@"cloudant query", ^{
         
     });
     
+    describe(@"when calling ensureIndexed on an index name that already exists", ^{
+        
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            CDTDatastore *ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            NSString *name = [im ensureIndexed:@[@{@"name": @"asc"}, @{@"age": @"desc"}]
+                                      withName:@"basic"];
+            expect(name).to.equal(@"basic");
+        });
+        
+        it(@"succeeds when the index definition is the same", ^{
+            NSString *name = [im ensureIndexed:@[@{@"name": @"asc"}, @{@"age": @"desc"}]
+                                      withName:@"basic"];
+            expect(name).to.equal(@"basic");
+        });
+        
+        it(@"fails when the index definition is different", ^{
+            NSString *name = [im ensureIndexed:@[@{@"name": @"asc"}, @{@"pet": @"desc"}]
+                                      withName:@"basic"];
+            expect(name).to.beNil();
+        });
+        
+    });
+    
     describe(@"when creating indexes with a type", ^{
         
         __block CDTQIndexManager *im;

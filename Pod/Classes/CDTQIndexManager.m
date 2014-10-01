@@ -133,11 +133,16 @@ static const int VERSION = 1;
 
 - (NSDictionary*/* NSString -> NSArray[NSString]*/)listIndexes
 {
+    return [CDTQIndexManager listIndexesInDatabase:_database];
+}
+
++ (NSDictionary/* NSString -> NSArray[NSString]*/*)listIndexesInDatabase:(FMDatabaseQueue*)db
+{
     // Accumulate indexes and definitions into a dictionary
     
     NSMutableDictionary *indexes = [NSMutableDictionary dictionary];
     
-    [_database inDatabase:^(FMDatabase *db) {
+    [db inDatabase:^(FMDatabase *db) {
         NSString *sql = @"SELECT index_name, index_type, field_name FROM %@;";
         sql = [NSString stringWithFormat:sql, kCDTQIndexMetadataTableName];
         FMResultSet *rs= [db executeQuery:sql];
