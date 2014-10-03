@@ -296,6 +296,54 @@ describe(@"cloudant query", ^{
         
     });
     
+    describe(@"when normalising queries", ^{
+        
+        it(@"expands top-level implicit $and single field", ^{
+            NSDictionary *actual = [CDTQQueryExecutor normaliseQuery:@{@"name": @"mike"}];
+            expect(actual).to.equal(@{@"$and": @[@{@"name": @"mike"}]});
+        });
+        
+        it(@"expands top-level implicit $and multi field", ^{
+            NSDictionary *actual = [CDTQQueryExecutor normaliseQuery:@{@"name": @"mike",
+                                                                       @"pet": @"cat",
+                                                                       @"age": @12}];
+            expect(actual).to.equal(@{@"$and": @[@{@"pet": @"cat"}, 
+                                                 @{@"name": @"mike"}, 
+                                                 @{@"age": @12}]});
+        });
+        
+        it(@"doesn't change already normalised query", ^{
+            NSDictionary *actual = [CDTQQueryExecutor normaliseQuery:@{@"$and": @[@{@"name": @"mike"}, 
+                                                                                  @{@"pet": @"cat"}, 
+                                                                                  @{@"age": @12}]}];
+            expect(actual).to.equal(@{@"$and": @[@{@"name": @"mike"}, 
+                                                 @{@"pet": @"cat"}, 
+                                                 @{@"age": @12}]});
+        });
+        
+    });
+    
+    describe(@"when extracting and clause field names", ^{
+        
+        it(@"extracts a no field names", ^{
+            NSArray *fields = [CDTQQueryExecutor fieldsForAndClause:@[]];
+            expect(fields).to.equal(@[]);
+        });
+        
+        it(@"extracts a single field name", ^{
+            NSArray *fields = [CDTQQueryExecutor fieldsForAndClause:@[@{@"name": @"mike"}]];
+            expect(fields).to.equal(@[@"name"]);
+        });
+        
+        it(@"extracts a multiple field names", ^{
+            NSArray *fields = [CDTQQueryExecutor fieldsForAndClause:@[@{@"name": @"mike"}, 
+                                                                      @{@"pet": @"cat"}, 
+                                                                      @{@"age": @12}]];
+            expect(fields).to.equal(@[@"name", @"pet", @"age"]);
+        });
+        
+    });
+    
     describe(@"when using non-ascii text", ^{
         
         __block CDTDatastore *ds;
@@ -376,21 +424,22 @@ describe(@"cloudant query", ^{
         });
         
         it(@"fails if no indexes available", ^{
-            expect([CDTQQueryExecutor chooseIndexForQuery:@{@"name": @"mike"}
-                                              fromIndexes:@{}]).to.beNil();
+            expect([CDTQQueryExecutor chooseIndexForAndClause:@[@{@"name": @"mike"}]
+                                                  fromIndexes:@{}]).to.beNil();
         });
         
         it(@"fails if no keys in query", ^{
             NSDictionary *indexes = @{@"named": @[@"name", @"age", @"pet"]};
-            expect([CDTQQueryExecutor chooseIndexForQuery:@{} fromIndexes:indexes]).to.beNil();
+            expect([CDTQQueryExecutor chooseIndexForAndClause:@[@{}]
+                                                  fromIndexes:indexes]).to.beNil();
         });
         
         it(@"selects an index for single field queries", ^{
             NSDictionary *indexes = @{@"named": @{@"name": @"named", 
                                                   @"type": @"json", 
                                                   @"fields": @[@"name"]}};
-            NSString *idx = [CDTQQueryExecutor chooseIndexForQuery:@{@"name": @"mike"} 
-                                                       fromIndexes:indexes];
+            NSString *idx = [CDTQQueryExecutor chooseIndexForAndClause:@[@{@"name": @"mike"}]
+                                                           fromIndexes:indexes];
             expect(idx).to.equal(@"named");
         });
         
@@ -398,8 +447,9 @@ describe(@"cloudant query", ^{
             NSDictionary *indexes = @{@"named": @{@"name": @"named", 
                                                   @"type": @"json", 
                                                   @"fields": @[@"name", @"age", @"pet"]}};
-            NSString *idx = [CDTQQueryExecutor chooseIndexForQuery:@{@"name": @"mike", @"pet": @"cat"} 
-                                                       fromIndexes:indexes];
+            NSString *idx = [CDTQQueryExecutor chooseIndexForAndClause:@[@{@"name": @"mike"}, 
+                                                                         @{@"pet": @"cat"}]
+                                                           fromIndexes:indexes];
             expect(idx).to.equal(@"named");
         });
         
@@ -413,8 +463,9 @@ describe(@"cloudant query", ^{
                                       @"unsuitable": @{@"name": @"named", 
                                                        @"type": @"json", 
                                                        @"fields": @[@"name"]},};
-            NSString *idx = [CDTQQueryExecutor chooseIndexForQuery:@{@"name": @"mike", @"pet": @"cat"} 
-                                                       fromIndexes:indexes];
+            NSString *idx = [CDTQQueryExecutor chooseIndexForAndClause:@[@{@"name": @"mike"},
+                                                                         @{@"pet": @"cat"}]
+                                                           fromIndexes:indexes];
             expect(idx).to.equal(@"named");
         });
         
@@ -431,8 +482,9 @@ describe(@"cloudant query", ^{
                                       @"unsuitable": @{@"name": @"named", 
                                                        @"type": @"json", 
                                                        @"fields": @[@"name"]},};
-            NSString *idx = [CDTQQueryExecutor chooseIndexForQuery:@{@"name": @"mike", @"pet": @"cat"} 
-                                                       fromIndexes:indexes];
+            NSString *idx = [CDTQQueryExecutor chooseIndexForAndClause:@[@{@"name": @"mike"}, 
+                                                                         @{@"pet": @"cat"}]
+                                                           fromIndexes:indexes];
             expect([@[@"named", @"bopped"] containsObject:idx]).to.beTruthy();
         });
         
@@ -443,8 +495,8 @@ describe(@"cloudant query", ^{
                                       @"unsuitable": @{@"name": @"named", 
                                                        @"type": @"json", 
                                                        @"fields": @[@"name"]},};
-            expect([CDTQQueryExecutor chooseIndexForQuery:@{@"pet": @"cat"} 
-                                              fromIndexes:indexes]).to.beNil();
+            expect([CDTQQueryExecutor chooseIndexForAndClause:@[@{@"pet": @"cat"}]
+                                                  fromIndexes:indexes]).to.beNil();
         });
         
     });
@@ -452,62 +504,78 @@ describe(@"cloudant query", ^{
     describe(@"when generating query WHERE clauses", ^{
         
         it(@"returns nil when no query terms", ^{
-            CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{}];
+            CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:@[]];
             expect(parts).to.beNil();
         });
-        
-        
+                
         describe(@"when using $eq operator", ^{
             
             it(@"returns correctly for a single term", ^{
-                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$eq": @"mike"}}];
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:@[@{@"name": @{@"$eq": @"mike"}}]];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ?");
                 expect(parts.placeholderValues).to.equal(@[@"mike"]);
             });
             
             it(@"returns correctly for many query terms", ^{
-                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$eq": @"mike"},
-                                                                              @"age": @{@"$eq": @12},
-                                                                              @"pet": @{@"$eq": @"cat"}}];
-                expect(parts.sqlWithPlaceholders).to.equal(@"\"age\" = ? AND \"name\" = ? AND \"pet\" = ?");
-                expect(parts.placeholderValues).to.equal(@[@12, @"mike", @"cat"]);
+                NSArray *query = @[@{@"name": @{@"$eq": @"mike"}},
+                                   @{@"age": @{@"$eq": @12}},
+                                   @{@"pet": @{@"$eq": @"cat"}}];
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:query];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ? AND \"age\" = ? AND \"pet\" = ?");
+                expect(parts.placeholderValues).to.equal(@[@"mike", @12, @"cat"]);
             });
             
         });
         
         describe(@"when using unsupported operator", ^{
             it(@"uses correct SQL operator", ^{
-                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$blah": @"mike"}}];
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:@[@{@"name": @{@"$blah": @"mike"}}]];
                 expect(parts).to.beNil();
             });
         });
         
         describe(@"when using $gt operator", ^{
             it(@"uses correct SQL operator", ^{
-                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$gt": @"mike"}}];
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:@[@{@"name": @{@"$gt": @"mike"}}]];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" > ?");
             });
         });
         
         describe(@"when using $gte operator", ^{
             it(@"uses correct SQL operator", ^{
-                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$gte": @"mike"}}];
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:@[@{@"name": @{@"$gte": @"mike"}}]];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" >= ?");
             });
         });
         
         describe(@"when using $lt operator", ^{
             it(@"uses correct SQL operator", ^{
-                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$lt": @"mike"}}];
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:@[@{@"name": @{@"$lt": @"mike"}}]];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" < ?");
             });
         });
         
         describe(@"when using $lte operator", ^{
             it(@"uses correct SQL operator", ^{
-                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$lte": @"mike"}}];
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:@[@{@"name": @{@"$lte": @"mike"}}]];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" <= ?");
             });
+        });
+            
+        it(@"returns correctly for a single term", ^{
+            CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:@[@{@"name": @{@"$eq": @"mike"}}]];
+            expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ?");
+            expect(parts.placeholderValues).to.equal(@[@"mike"]);
+        });
+        
+        it(@"returns correctly for many query terms", ^{
+            NSArray *andClause = @[@{@"name": @{@"$eq": @"mike"}},
+                                   @{@"age": @{@"$eq": @12}},
+                                   @{@"pet": @{@"$eq": @"cat"}}];
+            CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForAndClause:andClause];
+            expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ? AND \"age\" = ? AND \"pet\" = ?");
+            expect(parts.placeholderValues).to.equal(@[@"mike", @12, @"cat"]);
+            
         });
         
     });
@@ -515,20 +583,20 @@ describe(@"cloudant query", ^{
     describe(@"when generating query SELECT clauses", ^{
         
         it(@"returns nil for no query terms", ^{
-            CDTQSqlParts *parts = [CDTQQueryExecutor selectStatementForQuery:@{}
-                                                                  usingIndex:@"named"];
+            CDTQSqlParts *parts = [CDTQQueryExecutor selectStatementForAndClause:@[]
+                                                                      usingIndex:@"named"];
             expect(parts).to.beNil();
         });
         
         it(@"returns nil for no index name", ^{
-            CDTQSqlParts *parts = [CDTQQueryExecutor selectStatementForQuery:@{}
-                                                                  usingIndex:nil];
+            CDTQSqlParts *parts = [CDTQQueryExecutor selectStatementForAndClause:@[@{@"name": @{@"$eq": @"mike"}}]
+                                                                      usingIndex:nil];
             expect(parts).to.beNil();
         });
         
         it(@"returns correctly for single query term", ^{
-            CDTQSqlParts *parts = [CDTQQueryExecutor selectStatementForQuery:@{@"name": @{@"$eq": @"mike"}}
-                                                                  usingIndex:@"anIndex"];
+            CDTQSqlParts *parts = [CDTQQueryExecutor selectStatementForAndClause:@[@{@"name": @{@"$eq": @"mike"}}]
+                                                                      usingIndex:@"anIndex"];
             NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_anIndex "
             "WHERE \"name\" = ?;";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
@@ -536,14 +604,15 @@ describe(@"cloudant query", ^{
         });
         
         it(@"returns correctly for many query terms", ^{
-            CDTQSqlParts *parts = [CDTQQueryExecutor selectStatementForQuery:@{@"name": @{@"$eq": @"mike"},
-                                                                               @"age": @{@"$eq": @12},
-                                                                               @"pet": @{@"$eq": @"cat"}}
-                                                                  usingIndex:@"anIndex"];
+            NSArray *andClause = @[@{@"name": @{@"$eq": @"mike"}},
+                                   @{@"age": @{@"$eq": @12}},
+                                   @{@"pet": @{@"$eq": @"cat"}}];
+            CDTQSqlParts *parts = [CDTQQueryExecutor selectStatementForAndClause:andClause
+                                                                      usingIndex:@"anIndex"];
             NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_anIndex "
-            "WHERE \"age\" = ? AND \"name\" = ? AND \"pet\" = ?;";
+            "WHERE \"name\" = ? AND \"age\" = ? AND \"pet\" = ?;";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
-            expect(parts.placeholderValues).to.equal(@[@12, @"mike", @"cat"]);
+            expect(parts.placeholderValues).to.equal(@[@"mike", @12, @"cat"]);
         });
         
     });

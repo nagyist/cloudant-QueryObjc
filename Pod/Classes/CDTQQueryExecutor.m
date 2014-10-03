@@ -28,6 +28,8 @@
 
 @implementation CDTQQueryExecutor
 
+static NSString *const AND = @"$and";
+
 - (instancetype)initWithDatabase:(FMDatabaseQueue*)database
                        datastore:(CDTDatastore*)datastore
 {
@@ -55,19 +57,21 @@
 
 - (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes
 {
-    NSString *chosenIndex = [CDTQQueryExecutor chooseIndexForQuery:query
-                                                       fromIndexes:indexes];
+    query = [CDTQQueryExecutor normaliseQuery:query];
+    
+    NSString *chosenIndex = [CDTQQueryExecutor chooseIndexForAndClause:query[AND]
+                                                           fromIndexes:indexes];
     if (!chosenIndex) {
         return nil;
     }
     
     // Execute SQL on that index with appropriate values
-    CDTQSqlParts *select = [CDTQQueryExecutor selectStatementForQuery:query
-                                                           usingIndex:chosenIndex];
+    CDTQSqlParts *select = [CDTQQueryExecutor selectStatementForAndClause:query[AND]
+                                                               usingIndex:chosenIndex];
     if (!select) {
         return nil;
     }
-    
+
     NSMutableArray *docIds = [NSMutableArray array];
     
     [_database inDatabase:^(FMDatabase *db) {
@@ -83,14 +87,45 @@
     return [[CDTQResultSet alloc] initWithDocIds:docIds datastore:self.datastore];
 }
 
-+ (NSArray*)neededFieldsForQuery:(NSDictionary*)query
+#pragma mark Pre-process query
+
++ (NSDictionary*)normaliseQuery:(NSDictionary*)query
 {
-    return [query allKeys];  // for now, support one level
+    if (query.count == 1 && query[AND]) {
+        return query;
+    }
+    
+    NSMutableArray *andClause = [NSMutableArray array];
+    for (NSString *k in query) {
+        [andClause addObject:@{k: query[k]}];
+    }
+    
+    return @{AND: [NSArray arrayWithArray:andClause]};
 }
 
-+ (NSString*)chooseIndexForQuery:(NSDictionary*)query fromIndexes:(NSDictionary*)indexes
+#pragma mark Process single AND clause with no sub-clauses
+
++ (NSArray*)neededFieldsForAndClause:(NSArray*)clause
 {
-    NSSet *neededFields = [NSSet setWithArray:[self neededFieldsForQuery:query]];
+    // @[@{@"fieldName": @"mike"}, ...]
+    // for now support one level of AND
+    return [CDTQQueryExecutor fieldsForAndClause:clause];
+}
+
++ (NSArray*)fieldsForAndClause:(NSArray*)clause 
+{
+    NSMutableArray *fieldNames = [NSMutableArray array];
+    for (NSDictionary* term in clause) {
+        if (term.count == 1) {
+            [fieldNames addObject:[term allKeys][0]];
+        }
+    }
+    return [NSArray arrayWithArray:fieldNames];
+}
+
++ (NSString*)chooseIndexForAndClause:(NSArray*)clause fromIndexes:(NSDictionary*)indexes
+{
+    NSSet *neededFields = [NSSet setWithArray:[self neededFieldsForAndClause:clause]];
     
     if (neededFields.count == 0) {
         return nil;  // no point in querying empty set of fields
@@ -108,25 +143,30 @@
     return chosenIndex;
 }
 
-+ (CDTQSqlParts*)wherePartsForQuery:(NSDictionary*)query
++ (CDTQSqlParts*)wherePartsForAndClause:(NSArray*)clause
 {
-    NSArray *fields = [[query allKeys] sortedArrayUsingSelector:@selector(compare:)];
-    
-    if (fields.count == 0) {
+    if (clause.count == 0) {
         return nil;  // no point in querying empty set of fields
     }
     
-    NSMutableArray *clauses = [NSMutableArray array];
-    NSMutableArray *parameters = [NSMutableArray array];
+    // @[@{@"fieldName": @"mike"}, ...]
+    
+    NSMutableArray *sqlClauses = [NSMutableArray array];
+    NSMutableArray *sqlParameters = [NSMutableArray array];
     NSDictionary *operatorMap = @{@"$eq": @"=",
                                   @"$gt": @">",
                                   @"$gte": @">=",
                                   @"$lt": @"<",
                                   @"$lte": @"<=",
                                   };
-    for (NSString *field in fields) {
+    for (NSDictionary *component in clause) {
         
-        NSDictionary *predicate = [query objectForKey:field];
+        if (component.count != 1) {
+            return nil;
+        }
+        
+        NSString *fieldName = component.allKeys[0];
+        NSDictionary *predicate = component[fieldName];
         
         if (predicate.count != 1) {
             return nil;
@@ -139,21 +179,21 @@
             return nil;
         }
         
-        NSString *clause = [NSString stringWithFormat:@"\"%@\" %@ ?", 
-                            field, sqlOperator];
-        [clauses addObject:clause];
+        NSString *sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", 
+                            fieldName, sqlOperator];
+        [sqlClauses addObject:sqlClause];
         
-        [parameters addObject:[predicate objectForKey:operator]];
+        [sqlParameters addObject:[predicate objectForKey:operator]];
     }
     
-    return [CDTQSqlParts partsForSql:[clauses componentsJoinedByString:@" AND "]
-                          parameters:parameters];
+    return [CDTQSqlParts partsForSql:[sqlClauses componentsJoinedByString:@" AND "]
+                          parameters:sqlParameters];
     
 }
 
-+ (CDTQSqlParts*)selectStatementForQuery:(NSDictionary*)query usingIndex:(NSString*)indexName
++ (CDTQSqlParts*)selectStatementForAndClause:(NSArray*)clause usingIndex:(NSString*)indexName
 {
-    if (query.count == 0) {
+    if (clause.count == 0) {
         return nil;  // no query here
     }
     
@@ -161,12 +201,12 @@
         return nil;
     }
     
-    CDTQSqlParts *where = [CDTQQueryExecutor wherePartsForQuery:query];
+    CDTQSqlParts *where = [CDTQQueryExecutor wherePartsForAndClause:clause];
     
     if (!where) {
         return nil;
     }
-    
+
     NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
     
     NSString *sql = @"SELECT docid FROM %@ WHERE %@;";

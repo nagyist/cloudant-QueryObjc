@@ -62,6 +62,23 @@
 - (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes;
 
 /**
+ Expand implicit operators in a query.
+ */
++ (NSDictionary*)normaliseQuery:(NSDictionary*)query;
+
+
+/**
+ Extract fields from an AND clause
+ 
+ `fieldName` and so on from:
+ 
+ ```
+ @[@{@"fieldName": @"mike"}, ...]
+ ```
+ */
++ (NSArray*)fieldsForAndClause:(NSArray*)clause;
+
+/**
  Selects an index to use for a given query from the set provided.
  
  Here we're looking for the index which supports all the fields used in the query.
@@ -70,12 +87,12 @@
  @param indexes index list of the form @{indexName: @[fieldName1, fieldName2]}
  @return name of index from `indexes` to ues for `query`, or `nil` if none found.
  */
-+ (NSString*)chooseIndexForQuery:(NSDictionary*)query fromIndexes:(NSDictionary*)indexes;
++ (NSString*)chooseIndexForAndClause:(NSArray*)clause fromIndexes:(NSDictionary*)indexes;
 
 /**
  Returns the SQL WHERE clause for a query.
  */
-+ (CDTQSqlParts*)wherePartsForQuery:(NSDictionary*)query;
++ (CDTQSqlParts*)wherePartsForAndClause:(NSArray*)clause;
 
 /**
  Returns the SQL statement to find document IDs matching query.
@@ -83,6 +100,6 @@
  @param query the query being executed.
  @param indexName the index selected for use in this query
  */
-+ (CDTQSqlParts*)selectStatementForQuery:(NSDictionary*)query usingIndex:(NSString*)indexName;
++ (CDTQSqlParts*)selectStatementForAndClause:(NSArray*)clause usingIndex:(NSString*)indexName;
 
 @end
