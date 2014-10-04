@@ -93,6 +93,22 @@
         
         return [NSSet setWithSet:accumulator];
         
+    } if ([node isKindOfClass:[CDTQOrQueryNode class]]) {
+        
+        NSMutableSet *accumulator = nil;
+        
+        CDTQOrQueryNode *andNode = (CDTQOrQueryNode*)node;
+        for (CDTQQueryNode *node in andNode.children) {
+            NSSet *childIds = [self executeQueryTree:node inDatabase:db];
+            if (!accumulator) {
+                accumulator = [NSMutableSet setWithSet:childIds];
+            } else {
+                [accumulator unionSet:childIds];
+            }
+        }
+        
+        return [NSSet setWithSet:accumulator];
+        
     } else if ([node isKindOfClass:[CDTQSqlQueryNode class]]) {
         
         CDTQSqlQueryNode *sqlNode = (CDTQSqlQueryNode*)node;

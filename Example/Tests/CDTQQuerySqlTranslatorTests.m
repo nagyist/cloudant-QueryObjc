@@ -52,6 +52,143 @@ describe(@"cdtq", ^{
         [[NSFileManager defaultManager] removeItemAtPath:factoryPath error:&error];
     });
     
+    describe(@"when creating a tree", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        __block NSDictionary *indexes;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            
+            [im ensureIndexed:@[@"name", @"age", @"pet"] withName:@"basic"];
+            
+            indexes = [im listIndexes];
+        });
+       
+        it(@"can cope with single level ANDed query", ^{
+            CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:@{@"name": @"mike"}
+                                                            toUseIndexes:indexes];
+            expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            
+            CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
+            expect(and.children.count).to.equal(1);
+            
+            CDTQSqlQueryNode *sqlNode = and.children[0];
+            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ?;";
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike"]);
+        });
+        
+        it(@"can cope with single level ANDed query", ^{
+            CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:@{@"name": @"mike",
+                                                                           @"pet": @"cat"}
+                                                            toUseIndexes:indexes];
+            expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            
+            CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
+            expect(and.children.count).to.equal(1);
+            
+            CDTQSqlQueryNode *sqlNode = and.children[0];
+            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"pet\" = ? AND \"name\" = ?;";
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"cat", @"mike"]);
+        });
+        
+        it(@"can cope with longhand single level ANDed query", ^{
+            NSDictionary *query = @{@"$and": @[@{@"name": @"mike"},
+                                               @{@"pet": @"cat"}]};
+            CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
+                                                            toUseIndexes:indexes];
+            expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            
+            CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
+            expect(and.children.count).to.equal(1);
+            
+            CDTQSqlQueryNode *sqlNode = and.children[0];
+            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ? AND \"pet\" = ?;";
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike", @"cat"]);
+        });
+        
+        it(@"can cope with longhand two level ANDed query", ^{
+            NSDictionary *query = @{@"$and": @[@{@"name": @"mike"},
+                                               @{@"pet": @"cat"},
+                                               @{@"$and": @[@{@"name": @"mike"},
+                                                            @{@"pet": @"cat"}
+                                                            ]}
+                                               ]
+                                    };
+            CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
+                                                            toUseIndexes:indexes];
+            expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            
+            //        AND
+            //       /   \
+            //      sql  AND
+            //             \
+            //             sql
+            
+            CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
+            expect(and.children.count).to.equal(2);
+            
+            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ? AND \"pet\" = ?;";
+            
+            // As the embedded AND is the same as the top-level AND, both
+            // children should have the same embedded SQL.
+            
+            CDTQSqlQueryNode *sqlNode = and.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike", @"cat"]);
+            
+            sqlNode = ((CDTQAndQueryNode*)and.children[1]).children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike", @"cat"]);
+        });
+        
+        it(@"orders AND nodes last in trees", ^{
+            NSDictionary *query = @{@"$and": @[@{@"$and": @[@{@"name": @"mike"},
+                                                            @{@"pet": @"cat"}
+                                                            ]},
+                                               @{@"name": @"mike"},
+                                               @{@"pet": @"cat"}
+                                               ]
+                                    };
+            CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
+                                                            toUseIndexes:indexes];
+            expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            
+            //        AND
+            //       /   \
+            //      sql  AND
+            //             \
+            //             sql
+            
+            CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
+            expect(and.children.count).to.equal(2);
+            
+            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ? AND \"pet\" = ?;";
+            
+            // As the embedded AND is the same as the top-level AND, both
+            // children should have the same embedded SQL.
+            
+            CDTQSqlQueryNode *sqlNode = and.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike", @"cat"]);
+            
+            sqlNode = ((CDTQAndQueryNode*)and.children[1]).children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike", @"cat"]);
+        });
+        
+    });
+    
     describe(@"when selecting an index to use", ^{
         
         __block CDTDatastore *ds;
@@ -246,25 +383,25 @@ describe(@"cdtq", ^{
         
         it(@"expands top-level implicit $and single field", ^{
             NSDictionary *actual = [CDTQQuerySqlTranslator normaliseQuery:@{@"name": @"mike"}];
-            expect(actual).to.equal(@{@"$and": @[@{@"name": @"mike"}]});
+            expect(actual).to.equal(@{@"$and": @[@{@"name": @{@"$eq": @"mike"}}]});
         });
         
         it(@"expands top-level implicit $and multi field", ^{
             NSDictionary *actual = [CDTQQuerySqlTranslator normaliseQuery:@{@"name": @"mike",
                                                                             @"pet": @"cat",
                                                                             @"age": @12}];
-            expect(actual).to.equal(@{@"$and": @[@{@"pet": @"cat"}, 
-                                                 @{@"name": @"mike"}, 
-                                                 @{@"age": @12}]});
+            expect(actual).to.equal(@{@"$and": @[@{@"pet": @{@"$eq": @"cat"}}, 
+                                                 @{@"name": @{@"$eq": @"mike"}}, 
+                                                 @{@"age": @{@"$eq": @12}}]});
         });
         
         it(@"doesn't change already normalised query", ^{
             NSDictionary *actual = [CDTQQuerySqlTranslator normaliseQuery:@{@"$and": @[@{@"name": @"mike"}, 
                                                                                        @{@"pet": @"cat"}, 
                                                                                        @{@"age": @12}]}];
-            expect(actual).to.equal(@{@"$and": @[@{@"name": @"mike"}, 
-                                                 @{@"pet": @"cat"}, 
-                                                 @{@"age": @12}]});
+            expect(actual).to.equal(@{@"$and": @[@{@"name": @{@"$eq": @"mike"}}, 
+                                                 @{@"pet": @{@"$eq": @"cat"}}, 
+                                                 @{@"age": @{@"$eq": @12}}]});
         });
         
     });

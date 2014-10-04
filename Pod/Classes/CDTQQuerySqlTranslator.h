@@ -22,6 +22,8 @@
 
 @interface CDTQOrQueryNode : CDTQQueryNode
 
+@property (nonatomic,strong) NSMutableArray *children;
+
 @end
 
 @interface CDTQSqlQueryNode : CDTQQueryNode
