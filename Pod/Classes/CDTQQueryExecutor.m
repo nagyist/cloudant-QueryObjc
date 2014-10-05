@@ -64,6 +64,10 @@
     // Execute SQL on that index with appropriate values
     CDTQSqlParts *select = [CDTQQueryExecutor selectStatementForQuery:query
                                                            usingIndex:chosenIndex];
+    if (!select) {
+        return nil;
+    }
+    
     NSMutableArray *docIds = [NSMutableArray array];
     
     [_database inDatabase:^(FMDatabase *db) {
@@ -114,13 +118,32 @@
     
     NSMutableArray *clauses = [NSMutableArray array];
     NSMutableArray *parameters = [NSMutableArray array];
+    NSDictionary *operatorMap = @{@"$eq": @"=",
+                                  @"$gt": @">",
+                                  @"$gte": @">=",
+                                  @"$lt": @"<",
+                                  @"$lte": @"<=",
+                                  };
     for (NSString *field in fields) {
-        NSString *clause = [NSString stringWithFormat:@"\"%@\" = ?", field];
-        [clauses addObject:clause];
         
         NSDictionary *predicate = [query objectForKey:field];
-        // We only support $eq right now
-        [parameters addObject:[predicate objectForKey:@"$eq"]];
+        
+        if (predicate.count != 1) {
+            return nil;
+        }
+        
+        NSString *operator = predicate.allKeys[0];
+        NSString *sqlOperator = operatorMap[operator];
+        
+        if (!sqlOperator) {
+            return nil;
+        }
+        
+        NSString *clause = [NSString stringWithFormat:@"\"%@\" %@ ?", 
+                            field, sqlOperator];
+        [clauses addObject:clause];
+        
+        [parameters addObject:[predicate objectForKey:operator]];
     }
     
     return [CDTQSqlParts partsForSql:[clauses componentsJoinedByString:@" AND "]
@@ -139,6 +162,11 @@
     }
     
     CDTQSqlParts *where = [CDTQQueryExecutor wherePartsForQuery:query];
+    
+    if (!where) {
+        return nil;
+    }
+    
     NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
     
     NSString *sql = @"SELECT docid FROM %@ WHERE %@;";

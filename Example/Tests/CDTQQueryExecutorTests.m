@@ -149,6 +149,74 @@ describe(@"cloudant query", ^{
             expect(result).to.beNil();
         });
         
+        describe(@"when using unsupported operator", ^{
+            it(@"uses correct SQL operator", ^{
+                NSDictionary *query = @{@"age": @{@"$blah": @12}};
+                CDTQResultSet *result = [im find:query];
+                expect(result).to.beNil();
+            });
+        });
+        
+        describe(@"when using $gt operator", ^{
+            it(@"works used alone", ^{
+                NSDictionary *query = @{@"age": @{@"$gt": @12}};
+                CDTQResultSet *result = [im find:query];
+                expect(result.documentIds.count).to.equal(3);
+            });
+            
+            it(@"works used with other predicates", ^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}, 
+                                        @"age": @{@"$gt": @12}};
+                CDTQResultSet *result = [im find:query];
+                expect(result.documentIds.count).to.equal(2);
+            });
+        });
+        
+        describe(@"when using $gte operator", ^{
+            it(@"works used alone", ^{
+                NSDictionary *query = @{@"age": @{@"$gte": @12}};
+                CDTQResultSet *result = [im find:query];
+                expect(result.documentIds.count).to.equal(5);
+            });
+            
+            it(@"works used with other predicates", ^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}, 
+                                        @"age": @{@"$gte": @12}};
+                CDTQResultSet *result = [im find:query];
+                expect(result.documentIds.count).to.equal(3);
+            });
+        });
+        
+        describe(@"when using $lt operator", ^{
+            it(@"works used alone", ^{
+                NSDictionary *query = @{@"age": @{@"$lt": @12}};
+                CDTQResultSet *result = [im find:query];
+                expect(result.documentIds.count).to.equal(0);
+            });
+            
+            it(@"works used with other predicates", ^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}, 
+                                        @"age": @{@"$lt": @12}};
+                CDTQResultSet *result = [im find:query];
+                expect(result.documentIds.count).to.equal(0);
+            });
+        });
+        
+        describe(@"when using $lte operator", ^{
+            it(@"works used alone", ^{
+                NSDictionary *query = @{@"age": @{@"$lte": @12}};
+                CDTQResultSet *result = [im find:query];
+                expect(result.documentIds.count).to.equal(2);
+            });
+            
+            it(@"works used with other predicates", ^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}, 
+                                        @"age": @{@"$lte": @12}};
+                CDTQResultSet *result = [im find:query];
+                expect(result.documentIds.count).to.equal(1);
+            });
+        });
+        
     });
     
     describe(@"when using dotted notation", ^{
@@ -388,18 +456,58 @@ describe(@"cloudant query", ^{
             expect(parts).to.beNil();
         });
         
-        it(@"returns correctly for a single term", ^{
-            CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$eq": @"mike"}}];
-            expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ?");
-            expect(parts.placeholderValues).to.equal(@[@"mike"]);
+        
+        describe(@"when using $eq operator", ^{
+            
+            it(@"returns correctly for a single term", ^{
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$eq": @"mike"}}];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ?");
+                expect(parts.placeholderValues).to.equal(@[@"mike"]);
+            });
+            
+            it(@"returns correctly for many query terms", ^{
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$eq": @"mike"},
+                                                                              @"age": @{@"$eq": @12},
+                                                                              @"pet": @{@"$eq": @"cat"}}];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"age\" = ? AND \"name\" = ? AND \"pet\" = ?");
+                expect(parts.placeholderValues).to.equal(@[@12, @"mike", @"cat"]);
+            });
+            
         });
         
-        it(@"returns correctly for many query terms", ^{
-            CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$eq": @"mike"},
-                                                                          @"age": @{@"$eq": @12},
-                                                                          @"pet": @{@"$eq": @"cat"}}];
-            expect(parts.sqlWithPlaceholders).to.equal(@"\"age\" = ? AND \"name\" = ? AND \"pet\" = ?");
-            expect(parts.placeholderValues).to.equal(@[@12, @"mike", @"cat"]);
+        describe(@"when using unsupported operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$blah": @"mike"}}];
+                expect(parts).to.beNil();
+            });
+        });
+        
+        describe(@"when using $gt operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$gt": @"mike"}}];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" > ?");
+            });
+        });
+        
+        describe(@"when using $gte operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$gte": @"mike"}}];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" >= ?");
+            });
+        });
+        
+        describe(@"when using $lt operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$lt": @"mike"}}];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" < ?");
+            });
+        });
+        
+        describe(@"when using $lte operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQueryExecutor wherePartsForQuery:@{@"name": @{@"$lte": @"mike"}}];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" <= ?");
+            });
         });
         
     });

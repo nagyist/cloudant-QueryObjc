@@ -136,7 +136,14 @@ Right now the list of supported features is small:
 - Execute simple queries:
     - implicitly `$and`
     - all fields in a query must be in a single compound index.
-    - only `$eq` is supported
+
+Selectors -> Conditions -> Equalitites
+
+- `$lt`
+- `$lte`
+- `$eq`
+- `$gte`
+- `$gt`
 
 ## Unsupported features
 
@@ -170,12 +177,7 @@ Selectors -> combination
 
 Selectors -> Conditions -> Equalitites
 
-- `$lt`
-- `$lte`
-- `$eq`
 - `$ne`
-- `$gte`
-- `$gt`
 
 Selectors -> Condition -> Objects
 
