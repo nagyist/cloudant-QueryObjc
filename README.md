@@ -8,7 +8,7 @@
 Cloudant Query Objective C is an Objective C implementation of [Cloudant Query][1] for iOS and
 OS X. It works in concert with [CDTDatastore][2], it's not a standalone querying engine.
 
-Cloudant Query is based on MongoDB's query implementation, so users of MongoDB should feel
+Cloudant Query is inspired by MongoDB's query implementation, so users of MongoDB should feel
 at home using Cloudant Query in their mobile applications. Where behaviours differ, the Mobile
 version of Cloudant Query tries to stick to what Cloudant Query does in the Cloudant Service
 rather than MongoDB's behavior.
