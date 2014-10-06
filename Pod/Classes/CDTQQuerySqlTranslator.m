@@ -15,7 +15,7 @@
 
 @end
 
-@implementation CDTQAndQueryNode
+@implementation CDTQChildrenQueryNode
 
 - (instancetype)init
 {
@@ -28,16 +28,11 @@
 
 @end
 
-@implementation CDTQOrQueryNode
+@implementation CDTQAndQueryNode
 
-- (instancetype)init
-{
-    self = [super init];
-    if (self) {
-        _children = [NSMutableArray array];
-    }
-    return self;
-}
+@end
+
+@implementation CDTQOrQueryNode
 
 @end
 
@@ -60,58 +55,120 @@ static NSString *const EQ = @"$eq";
     // @{ @"$and": @[ ... predicates (possibly compound) ... ] }
     // @{ @"$or": @[ ... predicates (possibly compound) ... ] }
     
-    // For now, assume it's AND
-    NSArray *clauses = query[AND];
+    CDTQChildrenQueryNode *root;
+    NSArray *clauses;
     
-    // First handle the simple @"field": @{ @"$operator": @"value" } bits,
-    // which can be formed into a single SQL query, presuming we've a
-    // suitable index.
-    NSIndexSet *basicIdx = [clauses indexesOfObjectsPassingTest:
-                            ^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+    if (query[AND]) {
+        clauses = query[AND];
+        root = [[CDTQAndQueryNode alloc] init];
+    } else if (query[OR]) {
+        clauses = query[OR];
+        root = [[CDTQOrQueryNode alloc] init];
+    }
+    
+    //
+    // First handle the simple @"field": @{ @"$operator": @"value" } clauses. These are
+    // handled differently for AND and OR parents, so we need to have the conditional
+    // logic below.
+    //
+        
+    NSMutableArray *basicClauses = [NSMutableArray array];
+    [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
         NSDictionary *clause = (NSDictionary*)obj;
         NSString *field = clause.allKeys[0];
-        return ![field hasPrefix:@"$"];
+        if (![field hasPrefix:@"$"]) {
+            [basicClauses addObject:clauses[idx]];
+        }
     }];
     
-    // Form the clause with the basic predicates
-    NSMutableArray *basicClauses = [NSMutableArray array];
-    [basicIdx enumerateIndexesUsingBlock:^(NSUInteger i, BOOL *stop) {
-        [basicClauses addObject:clauses[i]];
+    if (query[AND]) {
+        
+        // For an AND query, we require a single compound index and we generate a
+        // single SQL statement to use that index to satisfy the clauses.
+        
+        NSString *chosenIndex = [CDTQQuerySqlTranslator chooseIndexForAndClause:basicClauses
+                                                                    fromIndexes:indexes];
+        if (!chosenIndex) {
+            return nil;
+        }
+        
+        // Execute SQL on that index with appropriate values
+        CDTQSqlParts *select = [CDTQQuerySqlTranslator selectStatementForAndClause:basicClauses
+                                                                        usingIndex:chosenIndex];
+        
+        if (!select) {
+            return nil;
+        }
+        
+        CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
+        sql.sql = select;
+        
+        [root.children addObject:sql];
+        
+    } else if (query[OR]) {
+        
+        // OR nodes require a query for each clause.
+        //
+        // We want to allow OR clauses to use separate indexes, unlike for AND, to allow
+        // users to query over multiple indexes during a single query. This prevents users
+        // having to create a single huge index just because one query in their application
+        // requires it, slowing execution of all the other queries down.
+        //
+        // We could optimise for OR parts where we have an appropriate compound index,
+        // but we don't for now.
+        
+        for (NSDictionary *clause in basicClauses) {
+            
+            NSArray *wrappedClause = @[clause];
+            
+            NSString *chosenIndex = [CDTQQuerySqlTranslator chooseIndexForAndClause:wrappedClause
+                                                                        fromIndexes:indexes];
+            if (!chosenIndex) {
+                return nil;
+            }
+            
+            // Execute SQL on that index with appropriate values
+            CDTQSqlParts *select = [CDTQQuerySqlTranslator selectStatementForAndClause:wrappedClause
+                                                                            usingIndex:chosenIndex];
+            
+            if (!select) {
+                return nil;
+            }
+            
+            CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
+            sql.sql = select;
+            
+            [root.children addObject:sql];
+            
+        }
+    }
+    
+    //
+    // AND and OR subclauses are handled identically whatever the parent is.
+    // We go through the query twice to order the OR clauses before the AND
+    // clauses, for predictability.
+    //
+    
+    // Add subclauses that are OR
+    [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
+        NSDictionary *clause = (NSDictionary*)obj;
+        NSString *field = clause.allKeys[0];
+        if ([field hasPrefix:@"$or"]) {
+            CDTQQueryNode *orNode = [CDTQQuerySqlTranslator translateQuery:clauses[idx]
+                                                              toUseIndexes:indexes];
+            [root.children addObject:orNode];
+        }
     }];
     
-    NSString *chosenIndex = [CDTQQuerySqlTranslator chooseIndexForAndClause:basicClauses
-                                                                fromIndexes:indexes];
-    if (!chosenIndex) {
-        return nil;
-    }
-    
-    // Execute SQL on that index with appropriate values
-    CDTQSqlParts *select = [CDTQQuerySqlTranslator selectStatementForAndClause:basicClauses
-                                                                    usingIndex:chosenIndex];
-    
-    if (!select) {
-        return nil;
-    }
-    
-    CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
-    sql.sql = select;
-    
-    CDTQAndQueryNode *root = [[CDTQAndQueryNode alloc] init];
-    [root.children addObject:sql];
-    
-    // Add subclauses that are themselves AND
-    NSIndexSet *andIdx = [clauses indexesOfObjectsPassingTest:
-                            ^BOOL(id obj, NSUInteger idx, BOOL *stop) {
-                                NSDictionary *clause = (NSDictionary*)obj;
-                                NSString *field = clause.allKeys[0];
-                                return [field hasPrefix:@"$and"];
-                            }];
-    
-    // Form the clause with the basic predicates
-    [andIdx enumerateIndexesUsingBlock:^(NSUInteger i, BOOL *stop) {
-        CDTQQueryNode *andNode = [CDTQQuerySqlTranslator translateQuery:clauses[i]
-                                                           toUseIndexes:indexes];
-        [root.children addObject:andNode];
+    // Add subclauses that are AND
+    [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
+        NSDictionary *clause = (NSDictionary*)obj;
+        NSString *field = clause.allKeys[0];
+        if ([field hasPrefix:@"$and"]) {
+            CDTQQueryNode *andNode = [CDTQQuerySqlTranslator translateQuery:clauses[idx]
+                                                              toUseIndexes:indexes];
+            [root.children addObject:andNode];
+        }
     }];
     
     return root;

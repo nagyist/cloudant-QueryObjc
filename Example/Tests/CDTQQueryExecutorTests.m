@@ -364,6 +364,252 @@ describe(@"cloudant query", ^{
             expect(result.documentIds.count).to.equal(1);
         });
     });
+    
+    describe(@"when using OR queries", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @12, 
+                          @"pet": @{@"species": @"cat", @"name": @"mike"}};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike23";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @23, 
+                          @"pet": @{@"species": @"cat", @"name": @{ @"first": @"mike" }}};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike34";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @34, 
+                          @"pet": @{@"species": @"cat", @"name": @"mike" } };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike72";
+            rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred34";
+            rev.body = @{ @"name": @"fred", @"age": @34, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred12";
+            rev.body = @{ @"name": @"fred", @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
+            expect([im ensureIndexed:@[@"age", @"pet.name", @"pet.species"] withName:@"pet"]).toNot.beNil();
+            expect([im ensureIndexed:@[@"age", @"pet.name.first"] withName:@"firstname"]).toNot.beNil();
+        });
+        
+        
+        it(@"supports using OR", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"},
+                                              @{@"pet": @"cat"}
+                                              ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(5);
+        });
+        
+        it(@"supports using OR with specified operator", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"},       // 4
+                                              @{@"age": @{@"$gt": @30}}  // 1
+                                              ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(5);
+        });
+        
+        it(@"supports using OR in sub trees", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"fred"},
+                                              @{@"$or": @[@{@"age": @"12"},
+                                                          @{@"pet": @"cat"}
+                                                          ]}
+                                              ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(4);
+        });
+    });
+    
+    describe(@"when using nested queries", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @12, 
+                          @"pet": @"cat"};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike23";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @23, 
+                          @"pet": @"parrot"};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike34";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @34, 
+                          @"pet": @"dog" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"john72";
+            rev.body = @{ @"name": @"john", 
+                          @"age": @34, 
+                          @"pet": @"fish" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred34";
+            rev.body = @{ @"name": @"fred", 
+                          @"age": @43, 
+                          @"pet": @"snake" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred12";
+            rev.body = @{ @"name": @"fred", 
+                          @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
+        });
+        
+        it(@"query with two levels", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"}, // 3
+                                              @{@"age": @34},      // 1
+                                              @{@"$and": @[@{@"name": @"fred"},  // 1
+                                                           @{@"pet": @"snake"}   
+                                                           ]}
+                                              ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(5);
+        });
+        
+        it(@"OR with sub OR", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"}, // 3
+                                              @{@"age": @34},      // 1
+                                              @{@"$or": @[@{@"name": @"fred"},   // 2
+                                                          @{@"pet": @"hamster"}  // 0
+                                                          ]}
+                                              ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(6);
+        });
+        
+        it(@"AND with sub AND", ^{
+            // No doc matches all these
+            NSDictionary *query = @{@"$and": @[@{@"name": @"mike"}, 
+                                               @{@"age": @34},      
+                                               @{@"$and": @[@{@"name": @"fred"},
+                                                            @{@"pet": @"snake"}
+                                                            ]}
+                                               ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(0);
+        });
+        
+        it(@"OR with sub AND", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"}, // 3
+                                              @{@"age": @34},      // 1
+                                              @{@"$and": @[@{@"name": @"fred"}, // 0
+                                                           @{@"pet": @"cat"}
+                                                           ]}
+                                              ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(4);
+        });
+        
+        it(@"AND with sub OR", ^{
+            NSDictionary *query = @{@"$and": @[@{@"name": @"mike"}, 
+                                               @{@"age": @34},      
+                                               @{@"$or": @[@{@"name": @"fred"},
+                                                            @{@"pet": @"dog"}
+                                                            ]}
+                                               ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+        });
+        
+        it(@"AND with sub AND with a sub AND", ^{
+            NSDictionary *query = @{@"$and": @[@{@"name": @"mike"}, 
+                                               @{@"age":  @{@"$gt": @10}},  
+                                               @{@"age":  @{@"$lt": @30}},      
+                                               @{@"$and": @[@{@"$and": @[@{@"pet": @"cat"}]},
+                                                           @{@"pet": @{@"$gt": @"ant"}}
+                                                           ]}
+                                               ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+        });
+        
+        it(@"AND with sub AND with a sub AND", ^{
+            NSDictionary *query = @{@"$and": @[@{@"name": @"mike"}, 
+                                               @{@"age":  @{@"$gt": @10}},  
+                                               @{@"age":  @{@"$lt": @12}},      
+                                               @{@"$and": @[@{@"$and": @[@{@"pet": @"cat"}]},
+                                                            @{@"pet": @{@"$gt": @"ant"}}
+                                                            ]}
+                                               ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(0);
+        });
+        
+        it(@"AND with sub OR and sub AND", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"}, // 3
+                                              @{@"pet": @"cat"},   // 1, but named mike
+                                              @{@"$or": @[@{@"name": @"mike"},   // 3
+                                                          @{@"pet": @"snake"}    // 1
+                                                          ]},
+                                              @{@"$and": @[@{@"name": @"mike"},  // 0
+                                                           @{@"pet": @"snake"}
+                                                           ]}
+                                              ]
+                                    };
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(4);
+        });
+    });
 });
 
 SpecEnd

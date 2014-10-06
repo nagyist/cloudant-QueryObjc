@@ -187,6 +187,219 @@ describe(@"cdtq", ^{
             expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike", @"cat"]);
         });
         
+        it(@"supports using OR", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"},
+                                              @{@"pet": @"cat"}
+                                              ]
+                                    };
+            CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
+                                                            toUseIndexes:indexes];
+            expect(node).to.beInstanceOf([CDTQOrQueryNode class]);
+            
+            //        _OR_
+            //       /    \
+            //      sql   sql
+            
+            CDTQOrQueryNode *or = (CDTQOrQueryNode*)node;
+            expect(or.children.count).to.equal(2);
+            
+            NSString *sqlLeft = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ?;";
+            
+            NSString *sqlRight = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"pet\" = ?;";
+            
+            CDTQSqlQueryNode *sqlNode;
+            
+            sqlNode = or.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlLeft);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike"]);
+            
+            sqlNode = or.children[1];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlRight);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"cat"]);
+        });
+        
+        it(@"supports using OR in sub trees", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"},
+                                              @{@"pet": @"cat"},
+                                              @{@"$or": @[@{@"name": @"mike"},
+                                                          @{@"pet": @"cat"}
+                                                          ]}
+                                              ]
+                                    };
+            CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
+                                                            toUseIndexes:indexes];
+            expect(node).to.beInstanceOf([CDTQOrQueryNode class]);
+            
+            //        OR______
+            //       /   \    \
+            //      sql  sql  OR 
+            //               /  \
+            //             sql  sql
+            
+            CDTQOrQueryNode *or = (CDTQOrQueryNode*)node;
+            expect(or.children.count).to.equal(3);
+            
+            NSString *sqlLeft = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ?;";
+            
+            NSString *sqlRight = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"pet\" = ?;";
+            
+            CDTQSqlQueryNode *sqlNode;
+            
+            sqlNode = or.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlLeft);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike"]);
+            
+            sqlNode = or.children[1];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlRight);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"cat"]);
+            
+            
+            CDTQOrQueryNode *subOr = (CDTQOrQueryNode*)or.children[2];
+            expect(subOr).to.beInstanceOf([CDTQOrQueryNode class]);
+            
+            sqlNode = subOr.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlLeft);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike"]);
+            
+            sqlNode = subOr.children[1];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlRight);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"cat"]);
+        });
+        
+        it(@"supports using AND and OR in sub trees", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"},
+                                              @{@"pet": @"cat"},
+                                              @{@"$or": @[@{@"name": @"mike"},
+                                                          @{@"pet": @"cat"}
+                                                          ]},
+                                              @{@"$and": @[@{@"name": @"mike"},
+                                                          @{@"pet": @"cat"}
+                                                          ]}
+                                              ]
+                                    };
+            CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
+                                                            toUseIndexes:indexes];
+            expect(node).to.beInstanceOf([CDTQOrQueryNode class]);
+            
+            //        OR____________
+            //       /   \    \     \
+            //      sql  sql  OR    AND
+            //               /  \     \
+            //             sql  sql   sql
+            
+            CDTQOrQueryNode *or = (CDTQOrQueryNode*)node;
+            expect(or.children.count).to.equal(4);
+            
+            NSString *sqlLeft = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ?;";
+            
+            NSString *sqlRight = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"pet\" = ?;";
+            
+            NSString *sqlAnd = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ? AND \"pet\" = ?;";
+            
+            CDTQSqlQueryNode *sqlNode;
+            
+            sqlNode = or.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlLeft);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike"]);
+            
+            sqlNode = or.children[1];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlRight);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"cat"]);
+            
+            CDTQOrQueryNode *subOr = (CDTQOrQueryNode*)or.children[2];
+            expect(subOr).to.beInstanceOf([CDTQOrQueryNode class]);
+            expect(subOr.children.count).to.equal(2);
+            
+            sqlNode = subOr.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlLeft);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike"]);
+            
+            sqlNode = subOr.children[1];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlRight);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"cat"]);
+            
+            CDTQAndQueryNode *subAnd = (CDTQAndQueryNode*)or.children[3];
+            expect(subAnd).to.beInstanceOf([CDTQAndQueryNode class]);
+            expect(subAnd.children.count).to.equal(1);
+            
+            sqlNode = subAnd.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlAnd);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike", @"cat"]);
+        });
+        
+        it(@"supports using AND and OR in sub trees", ^{
+            NSDictionary *query = @{@"$or": @[@{@"name": @"mike"},
+                                              @{@"pet": @"cat"},
+                                              @{@"$or": @[@{@"name": @"mike"},
+                                                          @{@"pet": @"cat"},
+                                                          @{@"$and": @[@{@"name": @"mike"},
+                                                                       @{@"pet": @"cat"}
+                                                                       ]}
+                                                          ]}
+                                              ]
+                                    };
+            CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
+                                                            toUseIndexes:indexes];
+            expect(node).to.beInstanceOf([CDTQOrQueryNode class]);
+            
+            //        OR______
+            //       /   \    \
+            //      sql  sql  OR______    
+            //               /  \     \
+            //             sql  sql   AND
+            //                         |
+            //                        sql
+            
+            CDTQOrQueryNode *or = (CDTQOrQueryNode*)node;
+            expect(or.children.count).to.equal(3);
+            
+            NSString *sqlLeft = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ?;";
+            
+            NSString *sqlRight = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"pet\" = ?;";
+            
+            NSString *sqlAnd = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ? AND \"pet\" = ?;";
+            
+            CDTQSqlQueryNode *sqlNode;
+            
+            sqlNode = or.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlLeft);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike"]);
+            
+            sqlNode = or.children[1];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlRight);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"cat"]);
+            
+            CDTQOrQueryNode *subOr = (CDTQOrQueryNode*)or.children[2];
+            expect(subOr).to.beInstanceOf([CDTQOrQueryNode class]);
+            expect(subOr.children.count).to.equal(3);
+            
+            sqlNode = subOr.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlLeft);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike"]);
+            
+            sqlNode = subOr.children[1];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlRight);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"cat"]);
+            
+            CDTQAndQueryNode *subAnd = (CDTQAndQueryNode*)subOr.children[2];
+            expect(subAnd).to.beInstanceOf([CDTQAndQueryNode class]);
+            expect(subAnd.children.count).to.equal(1);
+            
+            sqlNode = subAnd.children[0];
+            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sqlAnd);
+            expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike", @"cat"]);
+        });
+        
     });
     
     describe(@"when selecting an index to use", ^{

@@ -14,15 +14,17 @@
 
 @end
 
-@interface CDTQAndQueryNode : CDTQQueryNode
+@interface CDTQChildrenQueryNode : CDTQQueryNode
 
 @property (nonatomic,strong) NSMutableArray *children;
 
 @end
 
-@interface CDTQOrQueryNode : CDTQQueryNode
+@interface CDTQAndQueryNode : CDTQChildrenQueryNode
 
-@property (nonatomic,strong) NSMutableArray *children;
+@end
+
+@interface CDTQOrQueryNode : CDTQChildrenQueryNode
 
 @end
 
