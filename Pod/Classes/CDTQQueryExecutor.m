@@ -16,6 +16,7 @@
 
 #import "CDTQIndexManager.h"
 #import "CDTQResultSet.h"
+#import "CDTQQuerySqlTranslator.h"
 
 #import "FMDB.h"
 
@@ -55,126 +56,81 @@
 
 - (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes
 {
-    NSString *chosenIndex = [CDTQQueryExecutor chooseIndexForQuery:query
-                                                       fromIndexes:indexes];
-    if (!chosenIndex) {
+    CDTQAndQueryNode *root = (CDTQAndQueryNode*)[CDTQQuerySqlTranslator translateQuery:query 
+                                                                          toUseIndexes:indexes];
+    if (!root) {
         return nil;
     }
+    __block NSSet *docIds;
     
-    // Execute SQL on that index with appropriate values
-    CDTQSqlParts *select = [CDTQQueryExecutor selectStatementForQuery:query
-                                                           usingIndex:chosenIndex];
-    if (!select) {
-        return nil;
-    }
-    
-    NSMutableArray *docIds = [NSMutableArray array];
-    
-    [_database inDatabase:^(FMDatabase *db) {
-        FMResultSet *rs= [db executeQuery:select.sqlWithPlaceholders 
-                     withArgumentsInArray:select.placeholderValues];
-        while ([rs next]) {
-            [docIds addObject:[rs stringForColumn:@"docid"]];
-        }
-        [rs close];
+    [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
+        docIds = [self executeQueryTree:root inDatabase:db];
     }];
     
     // Return results
-    return [[CDTQResultSet alloc] initWithDocIds:docIds datastore:self.datastore];
+    return [[CDTQResultSet alloc] initWithDocIds:[docIds allObjects] datastore:self.datastore];
 }
 
-+ (NSArray*)neededFieldsForQuery:(NSDictionary*)query
-{
-    return [query allKeys];  // for now, support one level
-}
+#pragma mark Tree walking
 
-+ (NSString*)chooseIndexForQuery:(NSDictionary*)query fromIndexes:(NSDictionary*)indexes
+- (NSSet*)executeQueryTree:(CDTQQueryNode*)node inDatabase:(FMDatabase*)db
 {
-    NSSet *neededFields = [NSSet setWithArray:[self neededFieldsForQuery:query]];
-    
-    if (neededFields.count == 0) {
-        return nil;  // no point in querying empty set of fields
-    }
-    
-    NSString *chosenIndex = nil;
-    for (NSString *indexName in indexes) {
-        NSSet *providedFields = [NSSet setWithArray:indexes[indexName][@"fields"]];
-        if ([neededFields isSubsetOfSet:providedFields]) {
-            chosenIndex = indexName;
-            break;
-        }
-    }
-    
-    return chosenIndex;
-}
-
-+ (CDTQSqlParts*)wherePartsForQuery:(NSDictionary*)query
-{
-    NSArray *fields = [[query allKeys] sortedArrayUsingSelector:@selector(compare:)];
-    
-    if (fields.count == 0) {
-        return nil;  // no point in querying empty set of fields
-    }
-    
-    NSMutableArray *clauses = [NSMutableArray array];
-    NSMutableArray *parameters = [NSMutableArray array];
-    NSDictionary *operatorMap = @{@"$eq": @"=",
-                                  @"$gt": @">",
-                                  @"$gte": @">=",
-                                  @"$lt": @"<",
-                                  @"$lte": @"<=",
-                                  };
-    for (NSString *field in fields) {
+    if ([node isKindOfClass:[CDTQAndQueryNode class]]) {
         
-        NSDictionary *predicate = [query objectForKey:field];
+        NSMutableSet *accumulator = nil;
         
-        if (predicate.count != 1) {
-            return nil;
+        CDTQAndQueryNode *andNode = (CDTQAndQueryNode*)node;
+        for (CDTQQueryNode *node in andNode.children) {
+            NSSet *childIds = [self executeQueryTree:node inDatabase:db];
+            if (!accumulator) {
+                accumulator = [NSMutableSet setWithSet:childIds];
+            } else {
+                [accumulator intersectSet:childIds];
+            }
+            
+            // TODO optimisation is to bail here if accumlator is empty
         }
         
-        NSString *operator = predicate.allKeys[0];
-        NSString *sqlOperator = operatorMap[operator];
+        return [NSSet setWithSet:accumulator];
         
-        if (!sqlOperator) {
-            return nil;
+    } if ([node isKindOfClass:[CDTQOrQueryNode class]]) {
+        
+        NSMutableSet *accumulator = nil;
+        
+        CDTQOrQueryNode *andNode = (CDTQOrQueryNode*)node;
+        for (CDTQQueryNode *node in andNode.children) {
+            NSSet *childIds = [self executeQueryTree:node inDatabase:db];
+            if (!accumulator) {
+                accumulator = [NSMutableSet setWithSet:childIds];
+            } else {
+                [accumulator unionSet:childIds];
+            }
         }
         
-        NSString *clause = [NSString stringWithFormat:@"\"%@\" %@ ?", 
-                            field, sqlOperator];
-        [clauses addObject:clause];
+        return [NSSet setWithSet:accumulator];
         
-        [parameters addObject:[predicate objectForKey:operator]];
-    }
-    
-    return [CDTQSqlParts partsForSql:[clauses componentsJoinedByString:@" AND "]
-                          parameters:parameters];
-    
-}
+    } else if ([node isKindOfClass:[CDTQSqlQueryNode class]]) {
+        
+        CDTQSqlQueryNode *sqlNode = (CDTQSqlQueryNode*)node;
+        CDTQSqlParts *sqlParts = sqlNode.sql;
+        
+        NSMutableArray *docIds = [NSMutableArray array];
+        
+        FMResultSet *rs= [db executeQuery:sqlParts.sqlWithPlaceholders 
+                     withArgumentsInArray:sqlParts.placeholderValues];
+        while ([rs next]) {
+            [docIds addObject:[rs stringForColumn:@"docid"]];
+        }
 
-+ (CDTQSqlParts*)selectStatementForQuery:(NSDictionary*)query usingIndex:(NSString*)indexName
-{
-    if (query.count == 0) {
-        return nil;  // no query here
-    }
-    
-    if (!indexName) {
+        [rs close];
+        
+        return [NSSet setWithArray:docIds];
+        
+    } else {
         return nil;
     }
-    
-    CDTQSqlParts *where = [CDTQQueryExecutor wherePartsForQuery:query];
-    
-    if (!where) {
-        return nil;
-    }
-    
-    NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
-    
-    NSString *sql = @"SELECT docid FROM %@ WHERE %@;";
-    sql = [NSString stringWithFormat:sql, tableName, where.sqlWithPlaceholders];
-    
-    CDTQSqlParts *parts = [CDTQSqlParts partsForSql:sql
-                                         parameters:where.placeholderValues];
-    return parts;
 }
+
+
 
 @end

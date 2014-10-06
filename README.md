@@ -133,9 +133,15 @@ Right now the list of supported features is small:
 
 - Create compound indexes using dotted notation that index JSON fields
 - Delete index by name
-- Execute simple queries:
-    - implicitly `$and`
-    - all fields in a query must be in a single compound index.
+- Execute nested queries:
+    - all fields in an $and clause of a query must be in a single compound index.
+      That is, for `{"$and": @["name": "mike", "age": 20]}`, both `name` and `age`
+      must be in an index defined in a single `-ensureIndexed:withName:` call.
+      
+Selectors -> combination
+
+- `$and`
+- `$or`
 
 Selectors -> Conditions -> Equalitites
 
@@ -145,14 +151,19 @@ Selectors -> Conditions -> Equalitites
 - `$gte`
 - `$gt`
 
+Implicit operators
+
+- Implicit `$and`.
+- Implicit `$eq`.
+
 ## Unsupported features
 
 ### Query
 
 Overall restrictions:
 
-- Cannot use more than one index per query.
-- Querying using unindexed fields.
+- Cannot use more than one index per AND clause in a query.
+- Cannot querying using unindexed fields.
 - Cannot use covering indexes with projection (`fields`) to avoid loading 
   documents from the datastore.
 
@@ -168,8 +179,6 @@ Overall restrictions:
 
 Selectors -> combination
 
-- `$and`, aside from implicit use described above
-- `$or`
 - `$not`
 - `$nor`
 - `$all`
@@ -194,11 +203,6 @@ Selectors -> Condition -> Misc
 
 - `$mod`
 - `$regex`
-
-Implicit operators
-
-- Implicit `$and`, aside from the hard-coded implicit top-level `$and`.
-- Implicit `$eq`
 
 ### Indexing
 

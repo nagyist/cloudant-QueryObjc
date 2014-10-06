@@ -61,28 +61,4 @@
  */
 - (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes;
 
-/**
- Selects an index to use for a given query from the set provided.
- 
- Here we're looking for the index which supports all the fields used in the query.
- 
- @param query full query provided by user.
- @param indexes index list of the form @{indexName: @[fieldName1, fieldName2]}
- @return name of index from `indexes` to ues for `query`, or `nil` if none found.
- */
-+ (NSString*)chooseIndexForQuery:(NSDictionary*)query fromIndexes:(NSDictionary*)indexes;
-
-/**
- Returns the SQL WHERE clause for a query.
- */
-+ (CDTQSqlParts*)wherePartsForQuery:(NSDictionary*)query;
-
-/**
- Returns the SQL statement to find document IDs matching query.
- 
- @param query the query being executed.
- @param indexName the index selected for use in this query
- */
-+ (CDTQSqlParts*)selectStatementForQuery:(NSDictionary*)query usingIndex:(NSString*)indexName;
-
 @end
