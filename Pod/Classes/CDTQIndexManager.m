@@ -38,6 +38,7 @@
 #import "CDTQIndexUpdater.h"
 #import "CDTQQueryExecutor.h"
 #import "CDTQIndexCreator.h"
+#import "CDTQLogging.h"
 
 #import "TD_Database.h"
 #import "TD_Body.h"
@@ -258,6 +259,7 @@ static const int VERSION = 1;
         success = success && [db executeUpdate:sql withParameterDictionary:args];
         
         if (!success) {
+            LogError(@"Failed to delete index: %@",indexName);
             *rollback = YES;
         }
     }];
@@ -331,6 +333,7 @@ static const int VERSION = 1;
             success = success && [db executeUpdate:sql];
             success = success && [db executeUpdate:SCHEMA_INDEX];
             if (!success) {
+                LogError(@"Failed to update schema");
                 *rollback = YES;
             }
         }

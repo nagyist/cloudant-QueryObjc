@@ -25,6 +25,8 @@
 #import "TD_Database.h"
 #import "TD_Body.h"
 
+#import "CDTQLogging.h"
+
 @interface CDTQIndexUpdater ()
 
 @property (nonatomic,strong) FMDatabaseQueue *database;
@@ -174,7 +176,7 @@
                 }
                 
                 if (!success) {
-                    NSLog(@"%@", insert);
+                    LogError(@"Updating index failed, CDTSqlParts: %@", insert);
                 }
             }
             if (!success) {
