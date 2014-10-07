@@ -41,93 +41,154 @@ more than one index.
 Querying is carried out by supplying a query in the form of a dictionary which describes the
 query.
 
-Set up some documents first:
+For the following examples, assume these documents are in the datastore:
 
 ```objc
-CDTDatastore *ds;
-        
-// Create our datastore
-ds = [factory datastoreNamed:@"test" error:nil];
+@{ @"name": @"mike", 
+   @"age": @12, 
+   @"pet": @{@"species": @"cat"} };
 
-// Create some documents
-CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
-            
-rev.docId = @"mike12";
-rev.body = @{ @"name": @"mike", @"age": @12, @"pet": @{@"species": @"cat"} };
-[ds createDocumentFromRevision:rev error:nil];
+@{ @"name": @"mike", 
+   @"age": @34, 
+   @"pet": @{@"species": @"dog"} };
 
-rev.docId = @"mike34";
-rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @{@"species": @"dog"} };
-[ds createDocumentFromRevision:rev error:nil];
-
-rev.docId = @"mike72";
-rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @{@"species": @"cat"} };
-[ds createDocumentFromRevision:rev error:nil];
+@{ @"name": @"fred", 
+   @"age": @23, 
+   @"pet": @{@"species": @"cat"} };
 ```
 
-Next, create a `CDTQIndexManager` object:
+### The index manager
+
+The `CDTQIndexManager` object is used to manage and query the indexes on a single
+`CDTDatastore` object. To create one, pass a datastore to its convenience constructor:
 
 ```objc
+CDTDatastore *ds = //... see CDTDatastore documentation ...
 CDTQIndexManager *im;
 im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
 
 // Note CDTQ prefix!
 ```
 
-Call `-ensureIndexed:withName:` to create indexes. These indexes are persistent across restarts,
-but `-ensureIndexed:withName:` can be called many times as long as the same indexed fields are
-used for the same name.
+### Creating indexes
+
+In order to query documents, indexes need to be created over
+the fields to be queried against.
+
+Use `-ensureIndexed:withName:` to create indexes. These indexes are persistent
+across application restarts as they are saved to disk. They are kept up to date
+documents change; there's no need to call `-ensureIndexed:withName:` each
+time your applications starts, though there is no harm in doing so.
+
+The first argument to `-ensureIndexed:withName:` is a list of fields to
+put into this index. The second argument is a name for the index. This is used
+to delete indexes at a later stage and appears when you list the indexes
+in the database.
+
+A field can appear in many indexes. This allows the query engine to select
+the most suitable index to use for a given query (or part of a query).
+
+To index values in sub-documents, use _dotted notation_. This notation puts
+the field names in the path to a particular value into a single string,
+separated by dots. Therefore, to index the `species`
+field of the `pet` sub-document in the examples above, use `pet.species`.
+
+```objc
+// Create an index over the name and age fields.
+BOOL created = [im ensureIndexed:@[@"name", @"age", @"pet.species"] 
+                        withName:@"basic"]
+if (!created) {
+    // there was an error creating the index
+}
+```
 
 If an index needs to be changed, first delete the existing index, then call 
 `-ensureIndexed:withName:` with the new definition.
 
-```objc
-// Create an index over the name and age fields.
-if (![im ensureIndexed:@[@"name", @"age"] withName:@"basic"]) {
-    // there was an error creating the index
-}
-
-// Use dotted notation to index sub-document fields
-if (![im ensureIndexed:@[@"pet.species"] withName:@"species"]) {
-    // there was an error
-}
-```
+### Querying syntax
 
 Query documents using `NSDictionary` objects. These use the [Cloudant Query `selector`][sel]
-syntax. Further query options will be added soon. 
-
-Note the restrictions in Unsupported features section!
+syntax. Several features of Cloudant Query are not yet supported in this implementation.
+See below for more details.
 
 [sel]: https://docs.cloudant.com/api/cloudant-query.html#selector-syntax
 
+#### Equality and comparions
+
+To query for all documents where `pet.species` is `cat`:
+
 ```objc
-// Query some documents
-// The set of fields in a query MUST be in a single index right now
-NSDictionary *query = @{@"name": @{@"$eq": @"mike"}, 
-                        @"age": @{@"$eq": @12}};
+@{ @"pet.species": @"cat" };
+```
+
+To query for documents where `age` is greater than twelve:
+
+```objc
+@{ @"age": @{ @"$gt": @12 } };
+```
+
+The `$gt` part of this query specifies the greater than relation.
+
+See below for supported operators (Selections -> Conditions).
+
+#### Compound queries
+
+Compound queries allow selection of documents based on more than one critera.
+If you specify several clauses, they are implicitly joined by AND.
+
+To find all people named `fred` with a `cat` use:
+
+```objc
+@{ @"name": @"fred", @"pet.species": @"cat" };
+```
+
+##### Using OR to join clauses
+
+Use `$or` to find documents where just one of the clauses match.
+
+To find all people with a `dog` who are under thirty:
+
+```objc
+@{ @"$or": @[ @{ @"pet.species": @{ @"$eq": @"dog" } }, 
+              @{ @"age": @{ @"$lt": @30 } }
+            ]};
+```
+
+#### Using AND and OR in queries
+
+Using a combination of AND and OR allows the specification of complex queries.
+
+This selects documents where _either_ the person has a pet `dog` _or_ they are
+both over thirty _and_ named `mike`:
+
+```objc
+@{ @"$or": @[ @{ @"pet.species": @{ @"$eq": @"dog" } }, 
+              @{ @"$and": @[ @"age": @{ @"$gt": @30 },
+                             @"name": @{ @"$eq": @"mike" }
+                          ] }
+            ]};
+```
+
+### Executing queries
+
+To find documents matching a query, use the `CDTQIndexManager` objects `-find:`
+function. This returns an object that can be used in `for..in` loops to
+enumerate over the results.
+
+```objc
 CDTQResultSet *result = [im find:query];
 for (CDTDocumentRevision *rev in result) {
     // do something
 }
-
-NSDictionary *query = @{@"pet.species": @{@"$eq": @"cat"}};
-CDTQResultSet *result = [im find:query];
-
-// THIS WILL FAIL because there isn't an index for all the used fields
-NSDictionary *query = @{@"pet.species": @{@"$eq": @"cat"}, 
-                        @"age": @{@"$eq": @12}};
-CDTQResultSet *result = [im find:query];
-// `result` will return nil because query couldn't be executed.
-// If there are no results, there will still be a result set returned.
 ```
 
-At the moment only a (small) subset of Cloudant Query features are supported. See below for
-the list of supported features. Over time this will increase.
+### Errors
 
-Error reporting is also terrible right now, the only indication something went wrong is a
-`nil` return value from `-find:` or `-ensureIndexed:withName:`.
+Error reporting is terrible right now. The only indication something went wrong is a
+`nil` return value from `-find:` or `-ensureIndexed:withName:`. We're working on
+adding logging.
 
-## Supported features
+## Supported Cloudant Query features
 
 Right now the list of supported features is small:
 
@@ -156,7 +217,7 @@ Implicit operators
 - Implicit `$and`.
 - Implicit `$eq`.
 
-## Unsupported features
+## Unsupported Cloudant Query features
 
 ### Query
 
