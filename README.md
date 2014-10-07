@@ -121,13 +121,14 @@ To query for all documents where `pet.species` is `cat`:
 @{ @"pet.species": @"cat" };
 ```
 
-To query for documents where `age` is greater than twelve:
+If you don't specify a condition for the clause, equality (`$eq`) is used. To use
+other conditions, supply them explicitly in the clause.
+
+To query for documents where `age` is greater than twelve use the `$gt` condition:
 
 ```objc
 @{ @"age": @{ @"$gt": @12 } };
 ```
-
-The `$gt` part of this query specifies the greater than relation.
 
 See below for supported operators (Selections -> Conditions).
 
