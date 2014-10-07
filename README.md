@@ -163,8 +163,8 @@ both over thirty _and_ named `mike`:
 
 ```objc
 @{ @"$or": @[ @{ @"pet.species": @{ @"$eq": @"dog" } }, 
-              @{ @"$and": @[ @"age": @{ @"$gt": @30 },
-                             @"name": @{ @"$eq": @"mike" }
+              @{ @"$and": @[ @{ @"age": @{ @"$gt": @30 } },
+                             @{ @"name": @{ @"$eq": @"mike" } }
                           ] }
             ]};
 ```
