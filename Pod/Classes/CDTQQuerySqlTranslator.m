@@ -310,6 +310,7 @@ static NSString *const EQ = @"$eq";
                                   @"$gte": @">=",
                                   @"$lt": @"<",
                                   @"$lte": @"<=",
+                                  @"$ne": @"!="
                                   };
     for (NSDictionary *component in clause) {
         if (component.count != 1) {
