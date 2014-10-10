@@ -149,6 +149,42 @@ describe(@"cloudant query", ^{
             expect(result).to.beNil();
         });
         
+        it(@"limits query results", ^{
+            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+            CDTQResultSet * results = [im find:query skip:0 limit:1];
+            expect(results.documentIds.count).to.equal(1);
+        });
+        
+        it(@"limits query and offsets starting point", ^{
+            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+            CDTQResultSet * resultsOffsetted = [im find:query skip:1 limit:1];
+            CDTQResultSet * resultsNotOffSetted = [im find:query skip:0 limit:2];
+            
+            expect([resultsNotOffSetted.documentIds objectAtIndex:1]).to.equal([resultsOffsetted.documentIds objectAtIndex:0]);
+        });
+        
+        it(@"returns empty array when skip results goes over array bounds", ^{
+            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+            CDTQResultSet * results = [im find:query skip:2 limit:0];
+
+            expect([results.documentIds count]).to.equal(0);
+        });
+        
+        it(@"returns an array with results when limit is over array bounds", ^{
+            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+            CDTQResultSet * results = [im find:query skip:0 limit:4];
+            
+            expect([results.documentIds count]).to.equal(3);
+        });
+        
+        it(@"returns an array with no results when range is out of bounds",^{
+            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+            CDTQResultSet * results = [im find:query skip:4 limit:4];
+            
+            expect([results.documentIds count]).to.equal(0);
+            
+        });
+        
         describe(@"when using unsupported operator", ^{
             it(@"uses correct SQL operator", ^{
                 NSDictionary *query = @{@"age": @{@"$blah": @12}};

@@ -56,9 +56,18 @@
 
 - (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes
 {
-    CDTQAndQueryNode *root = (CDTQAndQueryNode*)[CDTQQuerySqlTranslator translateQuery:query 
-                                                                          toUseIndexes:indexes];
-    if (!root) {
+    return [self find:query usingIndexes:indexes skip:0 limit:NSUIntegerMax];
+}
+
+- (CDTQResultSet*)find:(NSDictionary *)query
+          usingIndexes:(NSDictionary *)indexes
+                  skip:(NSUInteger)skip
+                 limit:(NSUInteger)limit
+{
+    CDTQOrQueryNode *root = (CDTQOrQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
+                                                                        toUseIndexes:indexes];
+    
+    if(!root) {
         return nil;
     }
     __block NSSet *docIds;
@@ -67,8 +76,17 @@
         docIds = [self executeQueryTree:root inDatabase:db];
     }];
     
-    // Return results
-    return [[CDTQResultSet alloc] initWithDocIds:[docIds allObjects] datastore:self.datastore];
+
+    NSArray *filteredDocs = nil;
+
+    if(skip < [docIds count]){
+        NSRange range = NSMakeRange(skip, MIN(limit, [docIds count]));
+        filteredDocs = [[docIds allObjects] subarrayWithRange:range];
+    } else {
+        filteredDocs =  @[];
+    }
+
+    return [[CDTQResultSet alloc] initWithDocIds:filteredDocs datastore:self.datastore];
 }
 
 #pragma mark Tree walking
