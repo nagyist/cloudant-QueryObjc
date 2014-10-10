@@ -552,6 +552,13 @@ describe(@"cdtq", ^{
             });
         });
         
+        describe(@"when using $ne operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts * parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name":@{@"$ne": @"mike"}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" != ?");
+            });
+        });
+        
         
     });
     

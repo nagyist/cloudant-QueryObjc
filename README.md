@@ -212,6 +212,7 @@ Selectors -> Conditions -> Equalitites
 - `$eq`
 - `$gte`
 - `$gt`
+- `$ne`
 
 Implicit operators
 
@@ -245,10 +246,6 @@ Selectors -> combination
 - `$nor`
 - `$all`
 - `$elemMatch`
-
-Selectors -> Conditions -> Equalitites
-
-- `$ne`
 
 Selectors -> Condition -> Objects
 
