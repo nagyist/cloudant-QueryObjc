@@ -275,9 +275,10 @@
     __block SequenceNumber result = 0;
     
     // get current version
-    [_database inDatabase:^(FMDatabase *db) {        
-        FMResultSet *rs= [db executeQueryWithFormat:@"SELECT last_sequence FROM %@ WHERE index_name = %@", 
-                          kCDTQIndexMetadataTableName, indexName];
+    [_database inDatabase:^(FMDatabase *db) {  
+        NSString *sql = @"SELECT last_sequence FROM %@ WHERE index_name = ?";
+        sql = [NSString stringWithFormat:sql, kCDTQIndexMetadataTableName];
+        FMResultSet *rs= [db executeQuery:sql withArgumentsInArray:@[indexName]];
         while([rs next]) {
             result = [rs longForColumnIndex:0];
             break;  // All rows for a given index will have the same last_sequence, so break
