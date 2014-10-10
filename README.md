@@ -9,9 +9,7 @@ Cloudant Query Objective C is an Objective C implementation of [Cloudant Query][
 OS X. It works in concert with [CDTDatastore][2], it's not a standalone querying engine.
 
 Cloudant Query is inspired by MongoDB's query implementation, so users of MongoDB should feel
-at home using Cloudant Query in their mobile applications. Where behaviours differ, the Mobile
-version of Cloudant Query tries to stick to what Cloudant Query does in the Cloudant Service
-rather than MongoDB's behavior.
+at home using Cloudant Query in their mobile applications.
 
 The aim is that the query you use on our cloud-based database works for your mobile application.
 
@@ -93,8 +91,10 @@ put into this index. The second argument is a name for the index. This is used
 to delete indexes at a later stage and appears when you list the indexes
 in the database.
 
-A field can appear in many indexes. This allows the query engine to select
-the most suitable index to use for a given query (or part of a query).
+A field can appear in more than one index. The query engine will select an
+appropriate index to use for a given query. However, the more indexes you have,
+the more disk space they will use and the greater overhead in keeping them
+up to date.
 
 To index values in sub-documents, use _dotted notation_. This notation puts
 the field names in the path to a particular value into a single string,
@@ -190,7 +190,9 @@ enumerate over the results.
 ```objc
 CDTQResultSet *result = [im find:query];
 for (CDTDocumentRevision *rev in result) {
-    // do something
+    // The returned revision object contains all fields for
+    // the object. You cannot project certain fields in the
+    // current implementation.
 }
 ```
 
@@ -231,6 +233,10 @@ Implicit operators
 - Implicit `$eq`.
 
 ## Unsupported Cloudant Query features
+
+As this is an early version of Query on this platform, some features are
+not supported yet. We're actively working to support features -- check
+the commit log :)
 
 ### Query
 
