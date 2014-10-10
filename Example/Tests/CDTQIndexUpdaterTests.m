@@ -152,6 +152,93 @@ describe(@"cloudant query", ^{
         });
         
     });
+    
+    describe(@"when setting sequence numbers", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @12, 
+                          @"pet": @"cat"};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike23";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @23, 
+                          @"pet": @"parrot"};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike34";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @34, 
+                          @"pet": @"dog" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"john72";
+            rev.body = @{ @"name": @"john", 
+                          @"age": @34, 
+                          @"pet": @"fish" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred34";
+            rev.body = @{ @"name": @"fred", 
+                          @"age": @43, 
+                          @"pet": @"snake" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred12";
+            rev.body = @{ @"name": @"fred", 
+                          @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+        });
+        
+        it(@"sets correct sequence number", ^{
+            
+            expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
+            
+            FMDatabaseQueue *queue = (FMDatabaseQueue*)[im performSelector:@selector(database)];
+            
+            CDTQIndexUpdater *updater = [[CDTQIndexUpdater alloc] initWithDatabase:queue
+                                                                         datastore:ds];
+            expect([updater sequenceNumberForIndex:@"basic"]).to.equal(6);
+            
+            expect([updater updateAllIndexes:[im listIndexes]]).to.beTruthy();
+            
+            expect([updater sequenceNumberForIndex:@"basic"]).to.equal(6);
+            
+        });
+        
+        it(@"sets correct sequence number after update", ^{
+            expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
+            FMDatabaseQueue *queue = (FMDatabaseQueue*)[im performSelector:@selector(database)];
+            CDTQIndexUpdater *updater = [[CDTQIndexUpdater alloc] initWithDatabase:queue
+                                                                         datastore:ds];
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            rev.docId = @"newdoc";
+            rev.body = @{ @"name": @"fred", 
+                          @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            expect([updater updateAllIndexes:[im listIndexes]]).to.beTruthy();
+            
+            expect([updater sequenceNumberForIndex:@"basic"]).to.equal(7);
+            
+        });
+        
+    });
 });
 
 SpecEnd

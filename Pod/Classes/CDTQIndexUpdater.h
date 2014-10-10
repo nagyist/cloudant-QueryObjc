@@ -14,11 +14,15 @@
 
 #import <Foundation/Foundation.h>
 
+#import "TD_Database.h"
+
 @class CDTDocumentRevision;
 @class CDTDatastore;
 
 @class CDTQSqlParts;
 @class FMDatabaseQueue;
+
+
 
 /**
  Handles updating indexes for a given datastore.
@@ -80,5 +84,13 @@
 + (CDTQSqlParts*)partsToIndexRevision:(CDTDocumentRevision*)rev
                               inIndex:(NSString*)indexName
                        withFieldNames:(NSArray*)fieldNames;
+
+/**
+ Return the sequence number for the given index
+ 
+ This is the sequence number from this index's datastore that the
+ index is up to date with.
+ */
+- (SequenceNumber)sequenceNumberForIndex:(NSString*)indexName;
 
 @end
