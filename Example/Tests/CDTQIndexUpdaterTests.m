@@ -139,7 +139,7 @@ describe(@"cloudant query", ^{
             expect(parts.placeholderValues).to.equal(@[@"id123", @"mike", @"cat"]);
         });
         
-        it(@"returns nil if a document has no indexable fields", ^{
+        it(@"still indexes a blank row if no fields", ^{
             CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
             rev.docId = @"id123";
             rev.body = @{@"name": @"mike", 
@@ -148,7 +148,10 @@ describe(@"cloudant query", ^{
             CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:rev 
                                                                  inIndex:@"anIndex"
                                                           withFieldNames:@[@"car", @"van"]];
-            expect(parts).to.beNil();
+            NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
+            "( docid ) VALUES ( ? );";
+            expect(parts.sqlWithPlaceholders).to.equal(sql);
+            expect(parts.placeholderValues).to.equal(@[@"id123"]);
         });
         
     });

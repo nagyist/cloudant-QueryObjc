@@ -132,6 +132,14 @@ static const int VERSION = 1;
 
 #pragma mark List indexes
 
+/**
+ Returns:
+ 
+ { indexName: { type: json,
+                name: indexName,
+                fields: [field1, field2]
+ }
+ */
 - (NSDictionary*/* NSString -> NSArray[NSString]*/)listIndexes
 {
     return [CDTQIndexManager listIndexesInDatabase:_database];
@@ -308,11 +316,6 @@ static const int VERSION = 1;
 
 -(BOOL)updateSchema:(int)currentVersion
 {
-    NSString* SCHEMA_INDEX = @"CREATE TABLE _t_cloudant_sync_query_metadata ( "
-    @"        index_name TEXT NOT NULL, "
-    @"        index_type TEXT NOT NULL, "
-    @"        field_name TEXT NOT NULL, "
-    @"        last_sequence INTEGER NOT NULL);";
     
     __block BOOL success = YES;
     
@@ -327,19 +330,56 @@ static const int VERSION = 1;
         }
         [rs close];
         
-        if (version < currentVersion) {
-            // Update schema and update version
-            NSString *sql = [NSString stringWithFormat:@"pragma user_version = %d", currentVersion];
-            success = success && [db executeUpdate:sql];
-            success = success && [db executeUpdate:SCHEMA_INDEX];
-            if (!success) {
-                LogError(@"Failed to update schema");
-                *rollback = YES;
-            }
+        if (version < 1) {
+            success = [self migrate_0_1:db];
+        }
+        
+        // Set user_version unconditionally
+        NSString *sql = [NSString stringWithFormat:@"pragma user_version = %d", currentVersion];
+        success = success && [db executeUpdate:sql];
+        
+        if (!success) {
+            LogError(@"Failed to update schema");
+            *rollback = YES;
         }
     }];
     
     return success;
+}
+
+- (BOOL)migrate_0_1:(FMDatabase*)db
+{
+    NSString* SCHEMA_INDEX = @"CREATE TABLE _t_cloudant_sync_query_metadata ( "
+    @"        index_name TEXT NOT NULL, "
+    @"        index_type TEXT NOT NULL, "
+    @"        field_name TEXT NOT NULL, "
+    @"        last_sequence INTEGER NOT NULL);";
+    return [db executeUpdate:SCHEMA_INDEX];
+}
+
+/**
+ Reset all indexes. They will be rebuilt on query.
+ 
+ - Reset last_sequence to 0
+ - Delete all indexed data and recreate tables
+ */
+- (BOOL)resetAllIndexes:(FMDatabase*)db
+{
+    for (NSDictionary *index in [[self listIndexes] allValues]) {
+        
+        // { indexName: { type: json,
+        //                name: indexName,
+        //                fields: [field1, field2]
+        // }
+        if (![self deleteIndexNamed:index[@"name"]]) {
+            return NO;
+        }
+        if (![self ensureIndexed:index[@"fields"] withName:index[@"name"] type:index[@"type"]]) {
+            return NO;
+        }
+    }
+    
+    return YES;
 }
 
 @end

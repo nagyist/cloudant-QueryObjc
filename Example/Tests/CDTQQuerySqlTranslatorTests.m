@@ -562,6 +562,99 @@ describe(@"cdtq", ^{
         
     });
     
+    describe(@"when generating WHERE with $not", ^{
+        
+        it(@"returns nil when no query terms", ^{
+            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[]];
+            expect(parts).to.beNil();
+        });
+        
+        
+        describe(@"when using $eq operator", ^{
+            
+            it(@"returns correctly for a single term", ^{
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name": @{ @"$not": @{ @"$eq": @"mike"}}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" != ? OR \"name\" IS NULL)");
+                expect(parts.placeholderValues).to.equal(@[@"mike"]);
+            });
+            
+            it(@"returns correctly for many query terms", ^{
+                NSArray *query = @[@{@"name": @{@"$not": @{@"$eq": @"mike"}}},
+                                   @{@"age": @{@"$eq": @12}},
+                                   @{@"pet": @{@"$not": @{@"$eq": @"cat"}}}];
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:query];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" != ? OR \"name\" IS NULL) AND \"age\" = ? AND (\"pet\" != ? OR \"pet\" IS NULL)");
+                expect(parts.placeholderValues).to.equal(@[@"mike", @12, @"cat"]);
+            });
+            
+        });
+        
+        describe(@"when using unsupported operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name": @{ @"$not": @{ @"$blah": @"mike"}}}]];
+                expect(parts).to.beNil();
+            });
+        });
+        
+        describe(@"when using $gt operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name": @{ @"$not": @{ @"$gt": @"mike"}}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" <= ? OR \"name\" IS NULL)");
+            });
+        });
+        
+        describe(@"when using $gte operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name": @{ @"$not": @{ @"$gte": @"mike"}}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" < ? OR \"name\" IS NULL)");
+            });
+        });
+        
+        describe(@"when using $lt operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name": @{ @"$not": @{ @"$lt": @"mike"}}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" >= ? OR \"name\" IS NULL)");
+            });
+        });
+        
+        describe(@"when using $lte operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name": @{ @"$not": @{ @"$lte": @"mike"}}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" > ? OR \"name\" IS NULL)");
+            });
+        });
+        
+        describe(@"when using $ne operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts * parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name":@{ @"$not": @{ @"$ne": @"mike"}}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" = ? OR \"name\" IS NULL)");
+            });
+        });
+    });
+    
+    describe(@"when multiple conditions on one field", ^{
+        
+        it(@"returns correctly for a two conditions", ^{
+            NSArray *clause = @[@{@"name": @{ @"$not": @{ @"$eq": @"mike"}}},
+                                @{@"name": @{ @"$eq": @"john"}}];
+            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:clause];
+            expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" != ? OR \"name\" IS NULL) AND \"name\" = ?");
+            expect(parts.placeholderValues).to.equal(@[@"mike", @"john"]);
+        });
+        
+        it(@"returns correctly for several conditions", ^{
+            NSArray *clause = @[@{@"age": @{ @"$gt": @12}},
+                                @{@"age": @{ @"$lte": @54}},
+                                @{@"name": @{ @"$eq": @"mike"}},
+                                @{@"age": @{ @"$ne": @30}},
+                                @{@"age": @{ @"$eq": @42}},];
+            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:clause];
+            expect(parts.sqlWithPlaceholders).to.equal(@"\"age\" > ? AND \"age\" <= ? AND \"name\" = ? AND \"age\" != ? AND \"age\" = ?");
+            expect(parts.placeholderValues).to.equal(@[@12, @54, @"mike", @30, @42]);
+        });
+        
+    });
+    
     describe(@"when generating query SELECT clauses", ^{
         
         it(@"returns nil for no query terms", ^{

@@ -227,6 +227,10 @@ Selectors -> Conditions -> Equalitites
 - `$gt`
 - `$ne`
 
+Selectors -> combination
+
+- `$not`
+
 Implicit operators
 
 - Implicit `$and`.
@@ -259,7 +263,6 @@ Overall restrictions:
 
 Selectors -> combination
 
-- `$not`
 - `$nor`
 - `$all`
 - `$elemMatch`

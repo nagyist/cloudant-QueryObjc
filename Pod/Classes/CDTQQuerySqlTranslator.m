@@ -312,6 +312,15 @@ static NSString *const EQ = @"$eq";
                                   @"$lte": @"<=",
                                   @"$ne": @"!="
                                   };
+    
+    // We apply these if the clause is negated, along with the NULL clause
+    NSDictionary *notOperatorMap = @{@"$eq": @"!=",
+                                     @"$gt": @"<=",
+                                     @"$gte": @"<",
+                                     @"$lt": @">=",
+                                     @"$lte": @">",
+                                     @"$ne": @"="
+                                     };
     for (NSDictionary *component in clause) {
         if (component.count != 1) {
             return nil;
@@ -325,17 +334,39 @@ static NSString *const EQ = @"$eq";
         }
         
         NSString *operator = predicate.allKeys[0];
-        NSString *sqlOperator = operatorMap[operator];
         
-        if (!sqlOperator) {
-            return nil;
+        // $not specifies the opposite operator OR NULL documents be returned
+        if ([operator isEqualToString:@"$not"]) {
+            NSDictionary *negatedPredicate = predicate[@"$not"];
+            
+            if (negatedPredicate.count != 1) {
+                return nil;
+            }
+            
+            NSString *operator = negatedPredicate.allKeys[0];
+            NSString *sqlOperator = notOperatorMap[operator];
+            
+            if (!sqlOperator) {
+                return nil;
+            }
+            
+            NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" %@ ? OR \"%@\" IS NULL)", 
+                                   fieldName, sqlOperator, fieldName];
+            [sqlClauses addObject:sqlClause];
+            [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
+        } else {
+            NSString *sqlOperator = operatorMap[operator];
+            
+            if (!sqlOperator) {
+                return nil;
+            }
+            
+            NSString *sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", 
+                                   fieldName, sqlOperator];
+            [sqlClauses addObject:sqlClause];
+            [sqlParameters addObject:[predicate objectForKey:operator]];
         }
         
-        NSString *sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", 
-                               fieldName, sqlOperator];
-        [sqlClauses addObject:sqlClause];
-        
-        [sqlParameters addObject:[predicate objectForKey:operator]];
 
     }
     

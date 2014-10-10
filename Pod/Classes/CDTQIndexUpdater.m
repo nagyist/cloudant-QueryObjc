@@ -235,13 +235,16 @@
     
     // Field names will equal column names.
     // Therefore need to end up with an array something like:
-    // INSERT INTO index_table (docId, fieldName1, fieldName2) VALUES ("abc", "mike", "rhodes")
+    // INSERT INTO index_table (docid, fieldName1, fieldName2) VALUES ("abc", "mike", "rhodes")
     // @[ docId, val1, val2 ]
-    // INSERT INTO index_table (docId, fieldName1, fieldName2) VALUES ( ?, ?, ? )
+    // INSERT INTO index_table (docid, fieldName1, fieldName2) VALUES ( ?, ?, ? )
     
+    // Even if there are no indexable values in the document, we still insert a blank
+    // row with the doc ID (this is required for $not amongst other things), so we
+    // add the docid info as the first part of the various argument arrays.
     NSMutableArray *args = [NSMutableArray arrayWithObject:rev.docId];
-    NSMutableArray *placeholders = [NSMutableArray array];
-    NSMutableArray *includedFieldNames = [NSMutableArray array];
+    NSMutableArray *placeholders = [NSMutableArray arrayWithObject:@"?"];
+    NSMutableArray *includedFieldNames = [NSMutableArray arrayWithObject:@"docid"];
     
     for (NSString *fieldName in fieldNames) {
         NSObject *value = [CDTQValueExtractor extractValueForFieldName:fieldName
@@ -257,12 +260,9 @@
         }
     }
     
-    // Return nil if there are no fields to index
-    if (includedFieldNames.count == 0) {
-        return nil;
-    }
-    
-    NSString *sql = @"INSERT INTO %@ ( docid, %@ ) VALUES ( ?, %@ );";
+    // If there are no fields, we just index blank for the doc ID
+    NSString *sql;
+    sql = @"INSERT INTO %@ ( %@ ) VALUES ( %@ );";
     sql = [NSString stringWithFormat:sql, 
            [CDTQIndexManager tableNameForIndex:indexName],
            [includedFieldNames componentsJoinedByString:@", "],

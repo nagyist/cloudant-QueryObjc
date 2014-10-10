@@ -610,6 +610,94 @@ describe(@"cloudant query", ^{
             expect(result.documentIds.count).to.equal(4);
         });
     });
+    
+    describe(@"when using $not", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", @"age": @12, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike34";
+            rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @"dog" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike72";
+            rev.body = @{ @"name": @"mike", @"age": @67, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred34";
+            rev.body = @{ @"name": @"fred", @"age": @34, @"pet": @"parrot" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred12";
+            rev.body = @{ @"name": @"fred", @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            expect([im ensureIndexed:@[@"name", @"pet", @"age"] 
+                            withName:@"pet"]).toNot.beNil();
+        });
+        
+        it(@"can query over one string field", ^{
+            NSDictionary *query = @{@"name": @{@"$not": @{ @"$eq": @"mike"}}};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(2);
+        });
+        
+        it(@"can query over one int field", ^{
+            NSDictionary *query = @{@"age": @{@"$not": @{ @"$gt": @34}}};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(4);
+        });
+        
+        it(@"includes documents without field indexed", ^{
+            NSDictionary *query = @{@"pet": @{@"$not": @{ @"$eq": @"cat"}}};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(3);
+        });
+        
+        it(@"works with AND compound operator", ^{
+            NSDictionary *query = @{@"$and": @[ @{ @"pet": @{@"$not": @{ @"$eq": @"cat"}}},
+                                                @{ @"pet": @{@"$not": @{ @"$eq": @"dog"}}}
+                                                ]};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(2);
+        });
+        
+        it(@"works with AND compound operator, no results", ^{
+            NSDictionary *query = @{@"$and": @[ @{ @"pet": @{@"$not": @{ @"$eq": @"cat"}}},
+                                                @{ @"pet": @{@"$eq": @"cat"}}
+                                                ]};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(0);
+        });
+        
+        it(@"works with OR compond operator", ^{
+            NSDictionary *query = @{@"$or": @[ @{ @"pet": @{@"$not": @{ @"$eq": @"cat"}}},
+                                               @{ @"pet": @{@"$not": @{ @"$eq": @"dog"}}}
+                                               ]};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(5);
+        });
+        
+    });
 });
 
 SpecEnd
