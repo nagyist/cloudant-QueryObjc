@@ -57,6 +57,14 @@ For the following examples, assume these documents are in the datastore:
    @"pet": @{@"species": @"cat"} };
 ```
 
+### Headers
+
+You need to include `CDTQIndexManager.h`:
+
+```objc
+#import "CDTQIndexManager.h"
+```
+
 ### The index manager
 
 The `CDTQIndexManager` object is used to manage and query the indexes on a single
@@ -95,12 +103,15 @@ field of the `pet` sub-document in the examples above, use `pet.species`.
 
 ```objc
 // Create an index over the name and age fields.
-BOOL created = [im ensureIndexed:@[@"name", @"age", @"pet.species"] 
-                        withName:@"basic"]
-if (!created) {
+NSString *name = [im ensureIndexed:@[@"name", @"age", @"pet.species"] 
+                          withName:@"basic"]
+if (!name) {
     // there was an error creating the index
 }
 ```
+
+`-ensureIndexed:withName:` returns the name of the index if it is successful,
+otherwise it returns `nil`.
 
 If an index needs to be changed, first delete the existing index, then call 
 `-ensureIndexed:withName:` with the new definition.
