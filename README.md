@@ -255,8 +255,8 @@ Overall restrictions:
 
 - Limiting returned results.
 - Skipping results.
-- Sorting results.
-- Field projection.
+- Sorting results #7.
+- Field projection #8.
 - Using non-dotted notation to query sub-documents.
     - That is, `{"pet": { "species": {"$eq": "cat"} } }` is unsupported,
       you must use `{"pet.species": {"$eq": "cat"}}`.
