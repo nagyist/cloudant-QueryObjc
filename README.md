@@ -120,7 +120,7 @@ If an index needs to be changed, first delete the existing index, then call
 
 The document ID and revision ID are automatically indexed under `_id` and `_rev` 
 respectively. If you need to query on document ID or document revision ID,
-use these index names.
+use these field names.
 
 ### Querying syntax
 
