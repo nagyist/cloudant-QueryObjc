@@ -116,6 +116,12 @@ otherwise it returns `nil`.
 If an index needs to be changed, first delete the existing index, then call 
 `-ensureIndexed:withName:` with the new definition.
 
+#### Indexing document metadata (_id and _rev)
+
+The document ID and revision ID are automatically indexed under `_id` and `_rev` 
+respectively. If you need to query on document ID or document revision ID,
+use these index names.
+
 ### Querying syntax
 
 Query documents using `NSDictionary` objects. These use the [Cloudant Query `selector`][sel]
