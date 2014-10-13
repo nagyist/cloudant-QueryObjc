@@ -152,23 +152,23 @@ static const int VERSION = 1;
     NSMutableDictionary *indexes = [NSMutableDictionary dictionary];
     
     [db inDatabase:^(FMDatabase *db) {
-        NSString *sql = @"SELECT index_name, index_type, field_name FROM %@;";
-        sql = [NSString stringWithFormat:sql, kCDTQIndexMetadataTableName];
-        FMResultSet *rs= [db executeQuery:sql];
-        while ([rs next]) {
-            NSString *rowIndex = [rs stringForColumn:@"index_name"];
-            NSString *rowType = [rs stringForColumn:@"index_type"];
-            NSString *rowField = [rs stringForColumn:@"field_name"];
-            
-            if (indexes[rowIndex] == nil) {
-                indexes[rowIndex] = @{@"type": rowType,
-                                      @"name": rowIndex,
-                                      @"fields": [NSMutableArray array]};
-            }
-            
-            [indexes[rowIndex][@"fields"] addObject:rowField];
+    NSString *sql = @"SELECT index_name, index_type, field_name FROM %@;";
+    sql = [NSString stringWithFormat:sql, kCDTQIndexMetadataTableName];
+    FMResultSet *rs= [db executeQuery:sql];
+    while ([rs next]) {
+        NSString *rowIndex = [rs stringForColumn:@"index_name"];
+        NSString *rowType = [rs stringForColumn:@"index_type"];
+        NSString *rowField = [rs stringForColumn:@"field_name"];
+        
+        if (indexes[rowIndex] == nil) {
+            indexes[rowIndex] = @{@"type": rowType,
+                                  @"name": rowIndex,
+                                  @"fields": [NSMutableArray array]};
         }
-        [rs close];
+        
+        [indexes[rowIndex][@"fields"] addObject:rowField];
+    }
+    [rs close];
     }];
     
     // Now we need to make the return value immutable
@@ -252,24 +252,24 @@ static const int VERSION = 1;
     
     [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
         
-        NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
-        NSDictionary *args;
-        
-        // Drop the index table
-        args = @{@"table_name": tableName};
-        NSString *sql = @"DROP TABLE :table_name";
-        success = success && [db executeUpdate:sql withParameterDictionary:args];
-        
-        // Delete the metadata entries
-        args = @{@"index_name": indexName, 
-                 @"metadata": kCDTQIndexMetadataTableName};
-        sql = [NSString stringWithFormat:@"DELETE * FROM :metadata WHERE index_name = :index_name"];
-        success = success && [db executeUpdate:sql withParameterDictionary:args];
-        
-        if (!success) {
-            LogError(@"Failed to delete index: %@",indexName);
-            *rollback = YES;
-        }
+    NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
+    NSDictionary *args;
+    
+    // Drop the index table
+    args = @{@"table_name": tableName};
+    NSString *sql = @"DROP TABLE :table_name";
+    success = success && [db executeUpdate:sql withParameterDictionary:args];
+    
+    // Delete the metadata entries
+    args = @{@"index_name": indexName, 
+             @"metadata": kCDTQIndexMetadataTableName};
+    sql = [NSString stringWithFormat:@"DELETE * FROM :metadata WHERE index_name = :index_name"];
+    success = success && [db executeUpdate:sql withParameterDictionary:args];
+    
+    if (!success) {
+        LogError(@"Failed to delete index: %@",indexName);
+        *rollback = YES;
+    }
     }];
     
     return success;
@@ -355,31 +355,6 @@ static const int VERSION = 1;
     @"        field_name TEXT NOT NULL, "
     @"        last_sequence INTEGER NOT NULL);";
     return [db executeUpdate:SCHEMA_INDEX];
-}
-
-/**
- Reset all indexes. They will be rebuilt on query.
- 
- - Reset last_sequence to 0
- - Delete all indexed data and recreate tables
- */
-- (BOOL)resetAllIndexes:(FMDatabase*)db
-{
-    for (NSDictionary *index in [[self listIndexes] allValues]) {
-        
-        // { indexName: { type: json,
-        //                name: indexName,
-        //                fields: [field1, field2]
-        // }
-        if (![self deleteIndexNamed:index[@"name"]]) {
-            return NO;
-        }
-        if (![self ensureIndexed:index[@"fields"] withName:index[@"name"] type:index[@"type"]]) {
-            return NO;
-        }
-    }
-    
-    return YES;
 }
 
 @end

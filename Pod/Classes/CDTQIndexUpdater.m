@@ -209,7 +209,7 @@
     
     NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
     
-    NSString *sqlDelete = @"DELETE FROM %@ WHERE docid = ?;";
+    NSString *sqlDelete = @"DELETE FROM %@ WHERE _id = ?;";
     sqlDelete = [NSString stringWithFormat:sqlDelete, tableName];
     
     return [CDTQSqlParts partsForSql:sqlDelete
@@ -235,18 +235,22 @@
     
     // Field names will equal column names.
     // Therefore need to end up with an array something like:
-    // INSERT INTO index_table (docid, fieldName1, fieldName2) VALUES ("abc", "mike", "rhodes")
+    // INSERT INTO index_table (_id, fieldName1, fieldName2) VALUES ("abc", "mike", "rhodes")
     // @[ docId, val1, val2 ]
-    // INSERT INTO index_table (docid, fieldName1, fieldName2) VALUES ( ?, ?, ? )
+    // INSERT INTO index_table (_id, fieldName1, fieldName2) VALUES ( ?, ?, ? )
     
     // Even if there are no indexable values in the document, we still insert a blank
     // row with the doc ID (this is required for $not amongst other things), so we
-    // add the docid info as the first part of the various argument arrays.
-    NSMutableArray *args = [NSMutableArray arrayWithObject:rev.docId];
-    NSMutableArray *placeholders = [NSMutableArray arrayWithObject:@"?"];
-    NSMutableArray *includedFieldNames = [NSMutableArray arrayWithObject:@"docid"];
+    // add the _id info as the first part of the various argument arrays.
+    NSMutableArray *args = [NSMutableArray arrayWithArray:@[rev.docId, rev.revId]];
+    NSMutableArray *placeholders = [NSMutableArray arrayWithArray:@[@"?", @"?"]];
+    NSMutableArray *includedFieldNames = [NSMutableArray arrayWithArray:@[@"_id", @"_rev"]];
     
     for (NSString *fieldName in fieldNames) {
+        if ([@[@"_id", @"_rev"] containsObject:fieldNames]) {
+            continue;  // these are already included in the arrays, see above
+        }
+        
         NSObject *value = [CDTQValueExtractor extractValueForFieldName:fieldName
                                                         fromDictionary:rev.body];
         

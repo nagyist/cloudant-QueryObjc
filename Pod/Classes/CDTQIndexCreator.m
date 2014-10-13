@@ -82,6 +82,19 @@
         }
     }
     
+    // Prepend _id and _rev if it's not in the array
+    if (![fieldNames containsObject:@"_rev"]) {
+        NSMutableArray *tmp = [NSMutableArray arrayWithObject:@"_rev"];
+        [tmp addObjectsFromArray:fieldNames];
+        fieldNames = [NSArray arrayWithArray:tmp];
+    }
+    
+    if (![fieldNames containsObject:@"_id"]) {
+        NSMutableArray *tmp = [NSMutableArray arrayWithObject:@"_id"];
+        [tmp addObjectsFromArray:fieldNames];
+        fieldNames = [NSArray arrayWithArray:tmp];
+    }
+    
     // Does the index already exist; return success if it does and is same, else fail
     NSDictionary *existingIndexes = [CDTQIndexManager listIndexesInDatabase:self.database];
     if (existingIndexes[indexName] != nil) {
@@ -103,11 +116,6 @@
     }
     
     __block BOOL success = YES;
-    
-    // TODO validate field names
-    // TODO validate index name
-    // TODO make sure an index with the same name but different structure doesn't exist
-    // TODO create index table
     
     [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
         
@@ -228,7 +236,7 @@
     }
     
     NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
-    NSMutableArray *clauses = [NSMutableArray arrayWithObject:@"docid"];
+    NSMutableArray *clauses = [NSMutableArray array];
     for (NSString *fieldName in fieldNames) {
         NSString *clause = [NSString stringWithFormat:@"\"%@\" NONE", fieldName];
         [clauses addObject:clause];
@@ -254,7 +262,7 @@
     NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
     NSString *sqlIndexName = [tableName stringByAppendingString:@"_index"];
     
-    NSMutableArray *clauses = [NSMutableArray arrayWithObject:@"docid"];
+    NSMutableArray *clauses = [NSMutableArray array];
     for (NSString *fieldName in fieldNames) {
         [clauses addObject:[NSString stringWithFormat:@"\"%@\"", fieldName]];
     }

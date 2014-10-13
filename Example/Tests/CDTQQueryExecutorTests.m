@@ -611,6 +611,96 @@ describe(@"cloudant query", ^{
         });
     });
     
+    describe(@"_id is queryable", ^{        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @12, 
+                          @"pet": @"cat"};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike23";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @23, 
+                          @"pet": @"parrot"};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
+        });
+       
+        it(@"works as single clause", ^{
+            NSDictionary *query = @{@"_id": @"mike12"};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+        });
+        
+        it(@"works with other clauses", ^{
+            NSDictionary *query = @{@"_id": @"mike23", @"name": @"mike"};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+        });
+        
+    });
+    
+    describe(@"_rev is queryable", ^{        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        __block NSString *docRev;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @12, 
+                          @"pet": @"cat"};
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike23";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @23, 
+                          @"pet": @"parrot"};
+            CDTDocumentRevision *toRetrieve = [ds createDocumentFromRevision:rev error:nil];
+            docRev = toRetrieve.revId;
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
+        });
+        
+        fit(@"works as single clause", ^{
+            NSDictionary *query = @{@"_rev": docRev};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+        });
+        
+        it(@"works with other clauses", ^{
+            NSDictionary *query = @{@"_rev": docRev, @"name": @"mike"};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+        });
+        
+    });
+    
     describe(@"when using $not", ^{
         
         __block CDTDatastore *ds;

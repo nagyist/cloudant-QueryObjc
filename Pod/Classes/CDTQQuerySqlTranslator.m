@@ -393,7 +393,7 @@ static NSString *const EQ = @"$eq";
     
     NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
     
-    NSString *sql = @"SELECT docid FROM %@ WHERE %@;";
+    NSString *sql = @"SELECT _id FROM %@ WHERE %@;";
     sql = [NSString stringWithFormat:sql, tableName, where.sqlWithPlaceholders];
     
     CDTQSqlParts *parts = [CDTQSqlParts partsForSql:sql

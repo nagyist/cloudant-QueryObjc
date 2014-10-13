@@ -119,7 +119,7 @@
         FMResultSet *rs= [db executeQuery:sqlParts.sqlWithPlaceholders 
                      withArgumentsInArray:sqlParts.placeholderValues];
         while ([rs next]) {
-            [docIds addObject:[rs stringForColumn:@"docid"]];
+            [docIds addObject:[rs stringForColumn:@"_id"]];
         }
 
         [rs close];

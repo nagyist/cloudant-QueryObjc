@@ -53,7 +53,7 @@ describe(@"cloudant query", ^{
     
     describe(@"when generating DELETE index entries statements", ^{
         
-        it(@"returns nil for no docid", ^{
+        it(@"returns nil for no _id", ^{
             CDTQSqlParts *parts = [CDTQIndexUpdater partsToDeleteIndexEntriesForDocId:nil
                                                                             fromIndex:@"anIndex"];
             expect(parts).to.beNil();
@@ -68,7 +68,7 @@ describe(@"cloudant query", ^{
         it(@"returns correctly for document", ^{
             CDTQSqlParts *parts = [CDTQIndexUpdater partsToDeleteIndexEntriesForDocId:@"123"
                                                                             fromIndex:@"anIndex"];
-            NSString *sql = @"DELETE FROM _t_cloudant_sync_query_index_anIndex WHERE docid = ?;";
+            NSString *sql = @"DELETE FROM _t_cloudant_sync_query_index_anIndex WHERE _id = ?;";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"123"]);
         });
@@ -86,7 +86,7 @@ describe(@"cloudant query", ^{
                                                           withFieldNames:@[@"name"]];
             
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( docid, \"name\" ) VALUES ( ?, ? );";
+            "( _id, \"name\" ) VALUES ( ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"id123", @"mike"]);
         });
@@ -100,7 +100,7 @@ describe(@"cloudant query", ^{
                                                           withFieldNames:@[@"age", @"name"]];
             
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( docid, \"age\", \"name\" ) VALUES ( ?, ?, ? );";
+            "( _id, \"age\", \"name\" ) VALUES ( ?, ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"id123", @12, @"mike"]);
         });
@@ -118,7 +118,7 @@ describe(@"cloudant query", ^{
                                                           withFieldNames:@[@"age", @"name", @"pet", @"car"]];
             
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( docid, \"age\", \"name\", \"pet\", \"car\" ) VALUES ( ?, ?, ?, ?, ? );";
+            "( _id, \"age\", \"name\", \"pet\", \"car\" ) VALUES ( ?, ?, ?, ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"id123", @12, @"mike", @"cat", @"mini"]);
         });
@@ -134,7 +134,7 @@ describe(@"cloudant query", ^{
                                                           withFieldNames:@[@"age", @"name", @"pet", @"car"]];
             
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( docid, \"name\", \"pet\" ) VALUES ( ?, ?, ? );";
+            "( _id, \"name\", \"pet\" ) VALUES ( ?, ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"id123", @"mike", @"cat"]);
         });
@@ -149,7 +149,7 @@ describe(@"cloudant query", ^{
                                                                  inIndex:@"anIndex"
                                                           withFieldNames:@[@"car", @"van"]];
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( docid ) VALUES ( ? );";
+            "( _id ) VALUES ( ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"id123"]);
         });

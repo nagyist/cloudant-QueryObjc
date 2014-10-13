@@ -76,7 +76,7 @@ describe(@"cdtq", ^{
             expect(and.children.count).to.equal(1);
             
             CDTQSqlQueryNode *sqlNode = and.children[0];
-            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sql = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ?;";
             expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
             expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike"]);
@@ -92,7 +92,7 @@ describe(@"cdtq", ^{
             expect(and.children.count).to.equal(1);
             
             CDTQSqlQueryNode *sqlNode = and.children[0];
-            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sql = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"pet\" = ? AND \"name\" = ?;";
             expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
             expect(sqlNode.sql.placeholderValues).to.equal(@[@"cat", @"mike"]);
@@ -109,7 +109,7 @@ describe(@"cdtq", ^{
             expect(and.children.count).to.equal(1);
             
             CDTQSqlQueryNode *sqlNode = and.children[0];
-            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sql = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ? AND \"pet\" = ?;";
             expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
             expect(sqlNode.sql.placeholderValues).to.equal(@[@"mike", @"cat"]);
@@ -136,7 +136,7 @@ describe(@"cdtq", ^{
             CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
             expect(and.children.count).to.equal(2);
             
-            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sql = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ? AND \"pet\" = ?;";
             
             // As the embedded AND is the same as the top-level AND, both
@@ -172,7 +172,7 @@ describe(@"cdtq", ^{
             CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
             expect(and.children.count).to.equal(2);
             
-            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sql = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ? AND \"pet\" = ?;";
             
             // As the embedded AND is the same as the top-level AND, both
@@ -203,10 +203,10 @@ describe(@"cdtq", ^{
             CDTQOrQueryNode *or = (CDTQOrQueryNode*)node;
             expect(or.children.count).to.equal(2);
             
-            NSString *sqlLeft = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlLeft = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ?;";
             
-            NSString *sqlRight = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlRight = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"pet\" = ?;";
             
             CDTQSqlQueryNode *sqlNode;
@@ -241,10 +241,10 @@ describe(@"cdtq", ^{
             CDTQOrQueryNode *or = (CDTQOrQueryNode*)node;
             expect(or.children.count).to.equal(3);
             
-            NSString *sqlLeft = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlLeft = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ?;";
             
-            NSString *sqlRight = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlRight = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"pet\" = ?;";
             
             CDTQSqlQueryNode *sqlNode;
@@ -294,13 +294,13 @@ describe(@"cdtq", ^{
             CDTQOrQueryNode *or = (CDTQOrQueryNode*)node;
             expect(or.children.count).to.equal(4);
             
-            NSString *sqlLeft = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlLeft = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ?;";
             
-            NSString *sqlRight = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlRight = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"pet\" = ?;";
             
-            NSString *sqlAnd = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlAnd = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ? AND \"pet\" = ?;";
             
             CDTQSqlQueryNode *sqlNode;
@@ -360,13 +360,13 @@ describe(@"cdtq", ^{
             CDTQOrQueryNode *or = (CDTQOrQueryNode*)node;
             expect(or.children.count).to.equal(3);
             
-            NSString *sqlLeft = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlLeft = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ?;";
             
-            NSString *sqlRight = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlRight = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"pet\" = ?;";
             
-            NSString *sqlAnd = @"SELECT docid FROM _t_cloudant_sync_query_index_basic "
+            NSString *sqlAnd = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
             "WHERE \"name\" = ? AND \"pet\" = ?;";
             
             CDTQSqlQueryNode *sqlNode;
@@ -672,7 +672,7 @@ describe(@"cdtq", ^{
         it(@"returns correctly for single query term", ^{
             CDTQSqlParts *parts = [CDTQQuerySqlTranslator selectStatementForAndClause:@[@{@"name": @{@"$eq": @"mike"}}]
                                                                            usingIndex:@"anIndex"];
-            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_anIndex "
+            NSString *sql = @"SELECT _id FROM _t_cloudant_sync_query_index_anIndex "
             "WHERE \"name\" = ?;";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"mike"]);
@@ -684,7 +684,7 @@ describe(@"cdtq", ^{
                                    @{@"pet": @{@"$eq": @"cat"}}];
             CDTQSqlParts *parts = [CDTQQuerySqlTranslator selectStatementForAndClause:andClause
                                                                            usingIndex:@"anIndex"];
-            NSString *sql = @"SELECT docid FROM _t_cloudant_sync_query_index_anIndex "
+            NSString *sql = @"SELECT _id FROM _t_cloudant_sync_query_index_anIndex "
             "WHERE \"name\" = ? AND \"age\" = ? AND \"pet\" = ?;";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"mike", @12, @"cat"]);
