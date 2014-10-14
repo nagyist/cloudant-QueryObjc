@@ -698,6 +698,9 @@ describe(@"cloudant query", ^{
         });
         
     });
+    
+    
 });
+
 
 SpecEnd
