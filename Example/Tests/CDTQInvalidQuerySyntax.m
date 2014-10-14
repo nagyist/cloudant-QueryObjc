@@ -91,8 +91,16 @@ describe(@"When using query ", ^{
         rev.body = @{ @"@datatype": @"fred", @"age": @12 };
         [ds createDocumentFromRevision:rev error:nil];
         
+        rev.docId = @"fred12WithArray";
+        rev.body = @{ @"name": @"fred", @"age": @12, @"friends":@[@"bob",@"mike",@"tim"] };
+        [ds createDocumentFromRevision:rev error:nil];
+        
         im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
         expect(im).toNot.beNil();
+        
+        expect([im ensureIndexed:@[@"name", @"age"] withName:@"basic"]).toNot.beNil();
+        expect([im ensureIndexed:@[@"name", @"pet"] withName:@"pet"]).toNot.beNil();
+        expect([im ensureIndexed:@[@"friends"] withName:@"friends"]).toNot.beNil();
     });
     
     it(@"returns nil when arugment to $or is a string",^{
@@ -139,6 +147,11 @@ describe(@"When using query ", ^{
         expect(result).to.beNil();
     });
     
+    it(@"returns nil when comparing an array with an empty array",^{
+        NSDictionary * query = @{@"friends":@[]};
+        CDTQResultSet * result = [im find:query];
+        expect(result).to.beNil();
+    });
     
     
 });
