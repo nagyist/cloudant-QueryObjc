@@ -147,6 +147,31 @@ describe(@"When using query ", ^{
         expect(result).to.beNil();
     });
     
+    it(@"returns nil when $eq syntax is correct but contains NSData object as param",^{
+        
+        NSData * data  = [@"mike" dataUsingEncoding:NSUTF8StringEncoding];
+        
+        NSDictionary * query = @{@"$eq":@{@"name":data}};
+        CDTQResultSet *result = [im find:query];
+        expect(result).to.beNil();
+    });
+    
+    it(@"returns nil when implicait $eq syntax is correct but contains NSData object as param",^{
+        
+        NSData * data  = [@"mike" dataUsingEncoding:NSUTF8StringEncoding];
+        
+        NSDictionary * query = @{@"name":data};
+        CDTQResultSet *result = [im find:query];
+        expect(result).to.beNil();
+    });
+    
+    it(@"returns nil when $or syntax is incorrect, using one correct dict and one empty dict",^{
+        NSData * data  = [@"mike" dataUsingEncoding:NSUTF8StringEncoding];
+        NSDictionary * query = @{@"$or":@[@{@"name":@"mike"},@{@"name":data}]};
+        CDTQResultSet *result = [im find:query];
+        expect(result).to.beNil();
+    });
+    
     
 });
 
