@@ -157,7 +157,6 @@
             
             // Insert new values if the rev isn't deleted
             if (!rev.deleted) {
-                // TODO
                 // Ignoring the attachments seems reasonable right now as we don't index them.
                 CDTDocumentRevision *cdtRev = [[CDTDocumentRevision alloc] initWithDocId:rev.docID
                                                                               revisionId:rev.revID
@@ -165,18 +164,25 @@
                                                                                  deleted:rev.deleted 
                                                                              attachments:@{}  
                                                                                 sequence:rev.sequence];
-                CDTQSqlParts *insert = [CDTQIndexUpdater partsToIndexRevision:cdtRev
-                                                                      inIndex:indexName
-                                                               withFieldNames:fieldNames];
                 
-                // partsToIndexRevision:... returns nil if there are no applicable fields to index
-                if (insert) {
-                    success = success && [db executeUpdate:insert.sqlWithPlaceholders
-                                      withArgumentsInArray:insert.placeholderValues];
-                }
+                // If we are indexing a document where one field is an array, we
+                // have multiple rows to insert into the index.
+                NSArray *insertStatements = [CDTQIndexUpdater partsToIndexRevision:cdtRev
+                                                                           inIndex:indexName
+                                                                    withFieldNames:fieldNames];
                 
-                if (!success) {
-                    LogError(@"Updating index failed, CDTSqlParts: %@", insert);
+                for (CDTQSqlParts *insert in insertStatements) {
+                    
+                    // partsToIndexRevision:... returns nil if there are no applicable fields to index
+                    if (insert) {
+                        success = success && [db executeUpdate:insert.sqlWithPlaceholders
+                                          withArgumentsInArray:insert.placeholderValues];
+                    }
+                    
+                    if (!success) {
+                        LogError(@"Updating index failed, CDTSqlParts: %@", insert);
+                    }
+                    
                 }
             }
             if (!success) {
@@ -217,9 +223,15 @@
     
 }
 
-+ (CDTQSqlParts*)partsToIndexRevision:(CDTDocumentRevision*)rev
-                              inIndex:(NSString*)indexName
-                       withFieldNames:(NSArray*)fieldNames
+/**
+ Returns an array of insert statements to index a document in an index.
+ 
+ For most revisions, a single insert statement will be returned. If a field
+ is an array, however, multiple statements are required.
+ */
++ (NSArray /*CDTQSqlParts*/ *)partsToIndexRevision:(CDTDocumentRevision*)rev
+                                           inIndex:(NSString*)indexName
+                                    withFieldNames:(NSArray*)fieldNames
 {
     if (!rev) {
         return nil;
@@ -239,23 +251,99 @@
     // @[ docId, val1, val2 ]
     // INSERT INTO index_table (_id, fieldName1, fieldName2) VALUES ( ?, ?, ? )
     
-    // Even if there are no indexable values in the document, we still insert a blank
-    // row with the doc ID (this is required for $not amongst other things), so we
-    // add the _id info as the first part of the various argument arrays.
-    NSMutableArray *args = [NSMutableArray arrayWithArray:@[rev.docId, rev.revId]];
-    NSMutableArray *placeholders = [NSMutableArray arrayWithArray:@[@"?", @"?"]];
-    NSMutableArray *includedFieldNames = [NSMutableArray arrayWithArray:@[@"_id", @"_rev"]];
+    // First work out whether there are array fields. If there is a single array field,
+    // we produce an index row for each value of that array. If there is more than one
+    // array field, we need to error so as not to explode the size of the index.
+    
+    NSInteger n_arrays = 0;
+    NSString *arrayFieldName;  // only record the last, as error if more than one
+    for (NSString *fieldName in fieldNames) {
+        NSObject *value = [CDTQValueExtractor extractValueForFieldName:fieldName
+                                                        fromDictionary:rev.body];
+        if ([value isKindOfClass:[NSArray class]]) {
+            n_arrays ++;
+            arrayFieldName = fieldName;
+        }
+    }
+    
+    if (n_arrays > 1) {
+        LogError(@"Indexing %@ in index %@ includes >1 array field", rev.docId, indexName);
+        return nil;
+    }
+    
+    if (n_arrays == 0) {
+        
+        // The are no arrays in the values we are indexing. We just need to index the fields
+        // in the index. _id and _rev are special fields in that they don't appear in the
+        // body, so they need special-casing to get the values.
+        
+        CDTQSqlParts *parts = [CDTQIndexUpdater createPartsForFieldNames:fieldNames
+                                                   initialIncludedFields:@[@"_id", @"_rev"]
+                                                     initialPlaceholders:@[@"?", @"?"]
+                                                             initialArgs:@[rev.docId, rev.revId]
+                                                               indexName:indexName
+                                                                revision:rev];
+        return @[parts];
+
+    } else {
+        
+        // We know the value is an array, we found this out in the check above
+        NSArray *arrayFieldValues = (NSArray*)[CDTQValueExtractor 
+                                               extractValueForFieldName:arrayFieldName
+                                               fromDictionary:rev.body];
+        
+        // Create an insert statement for each value in the array
+        NSMutableArray *insertStatements = [NSMutableArray array];
+        
+        for (NSObject *value in arrayFieldValues) {
+            
+            // For each value in the array we create a row. We put this value at the start
+            // of the INSERT statement along with _id and _rev, followed by the other fields.
+            
+            NSArray *placeholders = @[@"?", @"?", @"?"];
+            NSArray *includedFieldNames = @[@"_id", @"_rev", arrayFieldName];
+            NSArray *args = @[rev.docId, rev.revId, value];
+            
+            CDTQSqlParts *parts = [CDTQIndexUpdater createPartsForFieldNames:fieldNames
+                                                       initialIncludedFields:includedFieldNames
+                                                         initialPlaceholders:placeholders
+                                                                 initialArgs:args
+                                                                   indexName:indexName
+                                                                    revision:rev];
+            
+            [insertStatements addObject:parts];
+        }
+        
+        return insertStatements;
+        
+    }
+}
+
++ (CDTQSqlParts*)createPartsForFieldNames:(NSArray*)fieldNames
+                    initialIncludedFields:(NSArray*)initialIncludedFields
+                      initialPlaceholders:(NSArray*)initialPlaceholders
+                              initialArgs:(NSArray*)initialArgs
+                                indexName:(NSString*)indexName
+                                 revision:(CDTDocumentRevision*)rev
+{
+    NSMutableArray *includedFieldNames = [initialIncludedFields mutableCopy];
+    NSMutableArray *placeholders = [initialPlaceholders mutableCopy];
+    NSMutableArray *args = [initialArgs mutableCopy];
     
     for (NSString *fieldName in fieldNames) {
-        if ([@[@"_id", @"_rev"] containsObject:fieldNames]) {
-            continue;  // these are already included in the arrays, see above
+        
+        // Fields in initialIncludedFields already have placeholders and
+        // values in the other two initial* arrays, so they need not be
+        // included again.
+        if ([initialIncludedFields containsObject:fieldName]) {
+            continue;
         }
         
         NSObject *value = [CDTQValueExtractor extractValueForFieldName:fieldName
                                                         fromDictionary:rev.body];
         
         if (value) {
-            [includedFieldNames addObject:[NSString stringWithFormat:@"\"%@\"", fieldName]];
+            [includedFieldNames addObject:fieldName];
             [args addObject:value];
             [placeholders addObject:@"?"];
             
@@ -264,12 +352,17 @@
         }
     }
     
+    NSMutableArray *sqlSafeFieldNames = [NSMutableArray array];
+    for (NSString *fieldName in includedFieldNames) {
+        [sqlSafeFieldNames addObject:[NSString stringWithFormat:@"\"%@\"", fieldName]];
+    }
+    
     // If there are no fields, we just index blank for the doc ID
     NSString *sql;
     sql = @"INSERT INTO %@ ( %@ ) VALUES ( %@ );";
     sql = [NSString stringWithFormat:sql, 
            [CDTQIndexManager tableNameForIndex:indexName],
-           [includedFieldNames componentsJoinedByString:@", "],
+           [sqlSafeFieldNames componentsJoinedByString:@", "],
            [placeholders componentsJoinedByString:@", "]
            ];
     

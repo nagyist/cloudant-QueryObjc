@@ -122,6 +122,11 @@ The document ID and revision ID are automatically indexed under `_id` and `_rev`
 respectively. If you need to query on document ID or document revision ID,
 use these field names.
 
+#### Indexing array fields
+
+Indexing of array fields is supported. See "Array fields" below for the indexing and
+querying semantics.
+
 ### Querying syntax
 
 Query documents using `NSDictionary` objects. These use the [Cloudant Query `selector`][sel]
@@ -202,6 +207,79 @@ for (CDTDocumentRevision *rev in result) {
 }
 ```
 
+### Array fields
+
+Indexing and querying over array fields is supported in Cloudant Query Objective C, with some
+caveats.
+
+Take this document as an example:
+
+```
+{
+  _id: mike32
+  pet: [ cat, dog, parrot ],
+  name: mike,
+  age: 32
+}
+```
+
+You can create an index over the `pet` field:
+
+```objc
+NSString *name = [im ensureIndexed:@[@"name", @"age", @"pet"] 
+                          withName:@"basic"]
+```
+
+Each value of the array is treated as a separate entry in the index. This means that
+a query such as:
+
+```
+{ pet: { $eq: cat } }
+```
+
+Will return the document `mike32`. Negation may be slightly confusing:
+
+```
+{ pet: { $not: { $eq: cat } } }
+```
+
+Will also return `mike32` because there are values in the array that are not `cat`.
+
+#### Restrictions
+
+Only one field in a given index may be an array. This is because each entry in each array
+requires an entry in the index, causing a Cartesian explosion in index size. Taking the
+above example, this document wouldn't be indexed because the `name` and `pet` fields are
+both indexed in a single index:
+
+
+```
+{
+  _id: mike32
+  pet: [ cat, dog, parrot ],
+  name: [ mike, rhodes ],
+  age: 32
+}
+```
+
+If this happens, an error will be emitted into the log but the indexing process will be
+successful.
+
+However, if there was one index with `pet` in and another with `name` in, like this:
+
+```objc
+NSString *name = [im ensureIndexed:@[@"name", @"age"] 
+                          withName:@"basic"];
+NSString *name = [im ensureIndexed:@[@"age", @"pet"] 
+                          withName:@"basic"]
+```
+
+The document _would_ be indexed in both of these indexes: each index only contains one of
+the array fields.
+
+Also see "Unsupported features", below.
+
+
 ### Errors
 
 Error reporting is terrible right now. The only indication something went wrong is a
@@ -244,6 +322,11 @@ Implicit operators
 - Implicit `$and`.
 - Implicit `$eq`.
 
+Arrays
+
+- Indexing individual values in an array.
+- Querying for individual values in an array.
+
 ## Unsupported Cloudant Query features
 
 As this is an early version of Query on this platform, some features are
@@ -266,6 +349,7 @@ Overall restrictions:
 - Using non-dotted notation to query sub-documents.
     - That is, `{"pet": { "species": {"$eq": "cat"} } }` is unsupported,
       you must use `{"pet.species": {"$eq": "cat"}}`.
+- Cannot use multiple conditions in a single clause, `{ field: { $gt: 7, $lt: 14 } }`.
 
 Selectors -> combination
 
@@ -289,10 +373,14 @@ Selectors -> Condition -> Misc
 - `$mod` (unplanned, waiting on filtering)
 - `$regex` (unplanned, waiting on filtering)
 
-### Indexing
 
-- We don't support indexing array fields (#12).
+Arrays
 
+- Dotted notation to index or query sub-documents in arrays.
+- Querying for exact array match, `{ field: [ 1, 3, 7 ] }`.
+- Querying to match a specific array element using dotted notation, `{ field.0: 1 }`.
+- Querying using `$all`.
+- Querying using `$elemMatch`.
 
 
 ## Running the example project

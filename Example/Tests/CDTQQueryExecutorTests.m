@@ -824,6 +824,62 @@ describe(@"cloudant query", ^{
         });
         
     });
+    
+    describe(@"when indexing array fields", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", 
+                          @"age": @12, 
+                          @"pet": @[ @"cat", @"dog" ] };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred34";
+            rev.body = @{ @"name": @"fred",
+                          @"age": @34,
+                          @"pet": @"parrot" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            expect([im ensureIndexed:@[@"name", @"pet", @"age"] 
+                            withName:@"pet"]).toNot.beNil();
+        });
+        
+        it(@"finds document with array", ^{
+            NSDictionary *query = @{@"pet": @{ @"$eq": @"dog"}};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+            expect(result.documentIds[0]).to.equal(@"mike12");
+        });
+        
+        it(@"finds document without array", ^{
+            NSDictionary *query = @{@"pet": @{ @"$eq": @"parrot"}};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+            expect(result.documentIds[0]).to.equal(@"fred34");
+        });
+        
+        it(@"works with $not", ^{
+            NSDictionary *query = @{@"pet": @{@"$not": @{ @"$eq": @"dog"} }};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(2);
+            expect(result.documentIds).to.equal(@[@"mike12", @"fred34"]);
+        });
+        
+    });
 });
 
 SpecEnd

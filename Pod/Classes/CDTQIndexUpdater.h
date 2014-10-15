@@ -81,9 +81,9 @@
 /**
  Generate the INSERT statement to add a document to an index.
  */
-+ (CDTQSqlParts*)partsToIndexRevision:(CDTDocumentRevision*)rev
-                              inIndex:(NSString*)indexName
-                       withFieldNames:(NSArray*)fieldNames;
++ (NSArray /*CDTQSqlParts*/ *)partsToIndexRevision:(CDTDocumentRevision*)rev
+                                           inIndex:(NSString*)indexName
+                                    withFieldNames:(NSArray*)fieldNames;
 
 /**
  Return the sequence number for the given index
