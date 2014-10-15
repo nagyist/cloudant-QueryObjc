@@ -93,6 +93,12 @@ static NSString *const EQ = @"$eq";
             *stop = YES;
             errorProcessing = YES;
             return;
+        } else if ([clause count] != 1){
+            LogError(@"Operator argument clause should only have one key value pair: %@",
+                     [query description]);
+            *stop = YES;
+            errorProcessing = YES;
+            return;
         }
         NSString *field = clause.allKeys[0];
         if (![field hasPrefix:@"$"]) {
@@ -265,7 +271,7 @@ static NSString *const EQ = @"$eq";
         
         NSObject *predicate = nil;
         NSString *fieldName = nil;
-        if ([fieldClause isKindOfClass:[NSDictionary class]]){
+        if ([fieldClause isKindOfClass:[NSDictionary class]] && [fieldClause count] != 0){
             fieldName = fieldClause.allKeys[0];
             predicate = fieldClause[fieldName];
         } else {
