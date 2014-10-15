@@ -21,6 +21,7 @@ describe(@"cloudant query", ^{
     
     __block NSString *factoryPath;
     __block CDTDatastoreManager *factory;
+    __block CDTDatastore *ds;
     
     beforeEach(^{
         // Create a new CDTDatastoreFactory at a temp path
@@ -41,6 +42,8 @@ describe(@"cloudant query", ^{
         
         NSError *error;
         factory = [[CDTDatastoreManager alloc] initWithDirectory:factoryPath error:&error];
+        
+        ds = [factory datastoreNamed:@"test" error:nil];
     });
     
     afterEach(^{
@@ -75,34 +78,36 @@ describe(@"cloudant query", ^{
         
     });
     
-    describe(@"when generating INSERT statements for adding documents", ^{
+    describe(@"when generating INSERT statements", ^{
         
         it(@"returns correctly for single field", ^{
             CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
             rev.docId = @"id123";
             rev.body = @{@"name": @"mike"};
-            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:rev 
+            CDTDocumentRevision *saved = [ds createDocumentFromRevision:rev error:nil];
+            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:saved 
                                                                  inIndex:@"anIndex"
                                                           withFieldNames:@[@"name"]];
             
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( _id, \"name\" ) VALUES ( ?, ? );";
+            "( _id, _rev, \"name\" ) VALUES ( ?, ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
-            expect(parts.placeholderValues).to.equal(@[@"id123", @"mike"]);
+            expect(parts.placeholderValues).to.equal(@[@"id123", saved.revId, @"mike"]);
         });
         
         it(@"returns correctly for two fields", ^{
             CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
             rev.docId = @"id123";
             rev.body = @{@"name": @"mike", @"age": @12};
-            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:rev 
+            CDTDocumentRevision *saved = [ds createDocumentFromRevision:rev error:nil];
+            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:saved 
                                                                  inIndex:@"anIndex"
                                                           withFieldNames:@[@"age", @"name"]];
             
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( _id, \"age\", \"name\" ) VALUES ( ?, ?, ? );";
+            "( _id, _rev, \"age\", \"name\" ) VALUES ( ?, ?, ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
-            expect(parts.placeholderValues).to.equal(@[@"id123", @12, @"mike"]);
+            expect(parts.placeholderValues).to.equal(@[@"id123", saved.revId, @12, @"mike"]);
         });
         
         it(@"returns correctly for multiple fields", ^{
@@ -113,14 +118,15 @@ describe(@"cloudant query", ^{
                          @"pet": @"cat",
                          @"car": @"mini",
                          @"ignored": @"something"};
-            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:rev 
+            CDTDocumentRevision *saved = [ds createDocumentFromRevision:rev error:nil];
+            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:saved 
                                                                  inIndex:@"anIndex"
                                                           withFieldNames:@[@"age", @"name", @"pet", @"car"]];
             
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( _id, \"age\", \"name\", \"pet\", \"car\" ) VALUES ( ?, ?, ?, ?, ? );";
+            "( _id, _rev, \"age\", \"name\", \"pet\", \"car\" ) VALUES ( ?, ?, ?, ?, ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
-            expect(parts.placeholderValues).to.equal(@[@"id123", @12, @"mike", @"cat", @"mini"]);
+            expect(parts.placeholderValues).to.equal(@[@"id123", saved.revId, @12, @"mike", @"cat", @"mini"]);
         });
         
         it(@"returns correctly for missing fields", ^{
@@ -129,14 +135,15 @@ describe(@"cloudant query", ^{
             rev.body = @{@"name": @"mike", 
                          @"pet": @"cat",
                          @"ignored": @"something"};
-            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:rev 
+            CDTDocumentRevision *saved = [ds createDocumentFromRevision:rev error:nil];
+            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:saved 
                                                                  inIndex:@"anIndex"
                                                           withFieldNames:@[@"age", @"name", @"pet", @"car"]];
             
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( _id, \"name\", \"pet\" ) VALUES ( ?, ?, ? );";
+            "( _id, _rev, \"name\", \"pet\" ) VALUES ( ?, ?, ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
-            expect(parts.placeholderValues).to.equal(@[@"id123", @"mike", @"cat"]);
+            expect(parts.placeholderValues).to.equal(@[@"id123", saved.revId, @"mike", @"cat"]);
         });
         
         it(@"still indexes a blank row if no fields", ^{
@@ -145,12 +152,16 @@ describe(@"cloudant query", ^{
             rev.body = @{@"name": @"mike", 
                          @"pet": @"cat",
                          @"ignored": @"something"};
-            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:rev 
+            CDTDocumentRevision *saved = [ds createDocumentFromRevision:rev error:nil];
+            CDTQSqlParts *parts = [CDTQIndexUpdater partsToIndexRevision:saved 
                                                                  inIndex:@"anIndex"
                                                           withFieldNames:@[@"car", @"van"]];
             NSString *sql = @"INSERT INTO _t_cloudant_sync_query_index_anIndex "
-            "( _id ) VALUES ( ? );";
+            "( _id, _rev ) VALUES ( ?, ? );";
             expect(parts.sqlWithPlaceholders).to.equal(sql);
+            expect(parts.placeholderValues).to.equal(@[@"id123", saved.revId]);
+        });
+                expect(parts.sqlWithPlaceholders).to.equal(sql);
             expect(parts.placeholderValues).to.equal(@[@"id123"]);
         });
         

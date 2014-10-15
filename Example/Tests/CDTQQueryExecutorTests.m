@@ -721,7 +721,7 @@ describe(@"cloudant query", ^{
             expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
         });
         
-        fit(@"works as single clause", ^{
+        it(@"works as single clause", ^{
             NSDictionary *query = @{@"_rev": docRev};
             CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
