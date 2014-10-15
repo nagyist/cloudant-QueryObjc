@@ -85,13 +85,24 @@ static NSString *const EQ = @"$eq";
     //
         
     NSMutableArray *basicClauses = [NSMutableArray array];
+    __block BOOL errorProcessing = NO;
     [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
         NSDictionary *clause = (NSDictionary*)obj;
+        if (![clause isKindOfClass:[NSDictionary class]]) {
+            LogError(@"Operator argument clause should be an dictionary: %@", [query description]);
+            *stop = YES;
+            errorProcessing = YES;
+            return;
+        }
         NSString *field = clause.allKeys[0];
         if (![field hasPrefix:@"$"]) {
             [basicClauses addObject:clauses[idx]];
         }
     }];
+    
+    if(errorProcessing){
+        return nil;
+    }
     
     if (query[AND]) {
         
@@ -252,8 +263,15 @@ static NSString *const EQ = @"$eq";
         //  or     @{ @"$and": @[ ... ] } -- we don't        
         //  or     @{ @"$or": @[ ... ] } -- we don't
         
-        NSString *fieldName = fieldClause.allKeys[0];
-        NSObject *predicate = fieldClause[fieldName];
+        NSObject *predicate = nil;
+        NSString *fieldName = nil;
+        if ([fieldClause isKindOfClass:[NSDictionary class]]){
+            fieldName = fieldClause.allKeys[0];
+            predicate = fieldClause[fieldName];
+        } else {
+            [accumulator addObject:fieldClause];
+            continue;
+        }
         
         // If the clause isn't a special clause (the field name starts with
         // $, e.g., $and), we need to check whether the clause already
@@ -264,7 +282,7 @@ static NSString *const EQ = @"$eq";
             }
         }
         
-        [accumulator addObject:@{fieldName: predicate}];
+        [accumulator addObject:@{fieldName: predicate}]; //can't put nil in this
     }
     
     return [NSArray arrayWithArray:accumulator];
