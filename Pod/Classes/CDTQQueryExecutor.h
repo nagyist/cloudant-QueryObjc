@@ -67,8 +67,6 @@
  The index definitions are presumed to already exist and be up to date for the
  datastore and database passed to the constructor.
  
- A covering index for the query must exist in the selection passed to the method.
- 
  @param query query to execute.
  @param indexes indexes to use (this method will select the most appropriate).
  @param skip how many results to skip before returning results to caller
@@ -78,5 +76,26 @@
           usingIndexes:(NSDictionary *)indexes
                 skip:(NSUInteger)skip
                  limit:(NSUInteger)limit;
+
+
+/*
+ Execute the query passed using the selection of index definition provided.
+ 
+ The index definitions are presumed to already exist and be up to date for the
+ datastore and database passed to the constructor.
+ 
+ @param query query to execute.
+ @param indexes indexes to use (this method will select the most appropriate).
+ @param skip how many results to skip before returning results to caller
+ @param limit number of documents the result should be limited to
+ @param fields an array of fields to keep in a  macthing documents body
+ 
+ */
+- (CDTQResultSet*)find:(NSDictionary *)query
+          usingIndexes:(NSDictionary *)indexes
+                  skip:(NSUInteger)skip
+                 limit:(NSUInteger)limit
+                fields:(NSArray *)fields;
+
 
 @end

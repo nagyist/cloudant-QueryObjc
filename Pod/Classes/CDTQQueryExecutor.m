@@ -17,6 +17,7 @@
 #import "CDTQIndexManager.h"
 #import "CDTQResultSet.h"
 #import "CDTQQuerySqlTranslator.h"
+#import "CDTQLogging.h"
 
 #import "FMDB.h"
 
@@ -59,34 +60,89 @@
     return [self find:query usingIndexes:indexes skip:0 limit:NSUIntegerMax];
 }
 
+/**
+ 
+ Checks if the fields are valid. If they the array is empty the pointer to the array
+ is changed to nil
+ 
+ */
+- (BOOL)validateFields:(NSArray *)fields
+{
+    
+    
+    for (id obj in fields) {
+        
+        if([obj isKindOfClass:[NSString class]]){
+            if ([obj containsString:@"."]) {
+                LogError(@"Fields cannot use dotted notation: %@", [fields description]);
+                return NO;
+            }
+        } else {
+            LogError(@"Fields should only be string objects: %@",[fields description]);
+            return NO;
+        }
+    };
+    
+    return YES;
+}
+
+- (void)normaliseFields:(NSArray **)fields
+{
+    if ([*fields count] == 0) {
+        LogWarn(@"fields array is empty, ignoring");
+        *fields = nil;
+    }
+}
+
+- (CDTQResultSet*)find:(NSDictionary *)query
+          usingIndexes:(NSDictionary *)indexes
+                  skip:(NSUInteger)skip
+                 limit:(NSUInteger)limit
+                fields:(NSArray *)fields
+{
+    
+    [self normaliseFields:&fields];
+    
+    if ([self validateFields:fields])
+    {
+        
+        CDTQOrQueryNode *root = (CDTQOrQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
+                                                                            toUseIndexes:indexes];
+        
+        if(!root) {
+            return nil;
+        }
+        __block NSSet *docIds;
+        
+        [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
+            docIds = [self executeQueryTree:root inDatabase:db];
+        }];
+        
+        
+        NSArray *filteredDocs = nil;
+        
+        if(skip < [docIds count]){
+            NSRange range = NSMakeRange(skip, MIN(limit, [docIds count]));
+            filteredDocs = [[docIds allObjects] subarrayWithRange:range];
+        } else {
+            filteredDocs =  @[];
+        }
+        
+        return [[CDTQResultSet alloc] initWithDocIds:filteredDocs
+                                           datastore:self.datastore
+                                    projectionFields:fields];
+    } else {
+        return nil;
+    }
+    
+}
+
 - (CDTQResultSet*)find:(NSDictionary *)query
           usingIndexes:(NSDictionary *)indexes
                   skip:(NSUInteger)skip
                  limit:(NSUInteger)limit
 {
-    CDTQOrQueryNode *root = (CDTQOrQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
-                                                                        toUseIndexes:indexes];
-    
-    if(!root) {
-        return nil;
-    }
-    __block NSSet *docIds;
-    
-    [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
-        docIds = [self executeQueryTree:root inDatabase:db];
-    }];
-    
-
-    NSArray *filteredDocs = nil;
-
-    if(skip < [docIds count]){
-        NSRange range = NSMakeRange(skip, MIN(limit, [docIds count]));
-        filteredDocs = [[docIds allObjects] subarrayWithRange:range];
-    } else {
-        filteredDocs =  @[];
-    }
-
-    return [[CDTQResultSet alloc] initWithDocIds:filteredDocs datastore:self.datastore];
+    return [self find:query usingIndexes:indexes skip:skip limit:limit fields:nil];
 }
 
 #pragma mark Tree walking

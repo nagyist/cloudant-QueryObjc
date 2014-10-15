@@ -13,19 +13,24 @@
 //  and limitations under the License.
 
 #import "CDTQResultSet.h"
-
+#import "CDTQLogging.h"
 #import <CloudantSync.h>
 
+@interface CDTQResultSet ()
+@property (nonatomic,strong,readwrite) NSArray * fields;
+@end
 
 @implementation CDTQResultSet
 
 -(id)initWithDocIds:(NSArray*)docIds
           datastore:(CDTDatastore*)datastore
+             projectionFields:(NSArray*)fields
 {
     self = [super init];
     if (self) {
         _documentIds = docIds;
         _datastore   = datastore;
+        _fields = fields;
     }
     return self;
 }
@@ -52,6 +57,10 @@
     NSArray *batchIds = [_documentIds subarrayWithRange:range];
     __unsafe_unretained NSArray *docs = [_datastore getDocumentsWithIds:batchIds];
     
+    if(self.fields){
+        docs = [CDTQResultSet projectFields:self.fields fromRevisions:docs];
+    }
+    
     int i;
     for (i=0; i < range.length; i++){
         buffer[i] = docs[i];
@@ -61,6 +70,26 @@
     
     state->itemsPtr = buffer;
     return i;
+}
+
++ (NSArray *)projectFields:(NSArray *) fields fromRevisions:(NSArray *)revisions
+{
+
+    NSMutableArray * projectedDocs = [NSMutableArray array];
+    
+    for(CDTDocumentRevision * rev in revisions){
+            //grab the dictionary filter fields and rebuild object
+            NSDictionary * body = [rev.body dictionaryWithValuesForKeys:fields];
+            CDTDocumentRevision *rev2 = [[CDTDocumentRevision alloc] initWithDocId:rev.docId
+                                                  revisionId:rev.revId
+                                                        body:body
+                                                     deleted:rev.deleted
+                                                 attachments:rev.attachments
+                                                    sequence:rev.sequence];
+            [projectedDocs addObject:rev2];
+    }
+    return projectedDocs;
+
 }
 
 @end
