@@ -78,6 +78,32 @@ static NSString *const EQ = @"$eq";
         return nil;
     }
     
+    //validate arugments to operator first
+    __block BOOL error = NO;
+    [clauses enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        if ([obj isKindOfClass:[NSDictionary class]]){
+            NSDictionary *clause = (NSDictionary*)obj;
+            if( [clause count] != 1){
+                LogError(@"Operator argument clause should only have one key value pair: %@",
+                         [query description]);
+                *stop = YES;
+                error = YES;
+                return;
+            
+            }
+        } else {
+            LogError(@"Operator argument clause should only have one key value pair: %@",
+                     [query description]);
+            *stop = YES;
+            error = YES;
+            return;
+        }
+    }];
+    
+    if(error){
+        return nil;
+    }
+    
     //
     // First handle the simple @"field": @{ @"$operator": @"value" } clauses. These are
     // handled differently for AND and OR parents, so we need to have the conditional
@@ -85,30 +111,16 @@ static NSString *const EQ = @"$eq";
     //
         
     NSMutableArray *basicClauses = [NSMutableArray array];
-    __block BOOL errorProcessing = NO;
-    [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
+
+    [clauses enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         NSDictionary *clause = (NSDictionary*)obj;
-        if (![clause isKindOfClass:[NSDictionary class]]) {
-            LogError(@"Operator argument clause should be an dictionary: %@", [query description]);
-            *stop = YES;
-            errorProcessing = YES;
-            return;
-        } else if ([clause count] != 1){
-            LogError(@"Operator argument clause should only have one key value pair: %@",
-                     [query description]);
-            *stop = YES;
-            errorProcessing = YES;
-            return;
-        }
         NSString *field = clause.allKeys[0];
         if (![field hasPrefix:@"$"]) {
             [basicClauses addObject:clauses[idx]];
         }
     }];
     
-    if(errorProcessing){
-        return nil;
-    }
+
     
     if (query[AND]) {
         
