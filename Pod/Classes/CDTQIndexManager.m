@@ -305,6 +305,18 @@ static const int VERSION = 1;
                      fromDatastore:_datastore];
 }
 
+- (CDTQResultSet*)find:(NSDictionary *)query skip:(NSUInteger)skip limit:(NSUInteger)limit
+{
+    if(![self updateAllIndexes]){
+        return nil;
+    }
+    
+    CDTQQueryExecutor * queryExecutor = [[CDTQQueryExecutor alloc] initWithDatabase:_database
+                                                                          datastore:_datastore];
+    
+    return  [queryExecutor find:query usingIndexes:[self listIndexes]  skip:skip limit:limit];
+}
+
 #pragma mark Utilities
 
 + (NSString*)tableNameForIndex:(NSString*)indexName

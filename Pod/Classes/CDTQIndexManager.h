@@ -88,6 +88,8 @@ typedef NS_ENUM(NSInteger, CDTQQueryError) {
 
 - (CDTQResultSet*)find:(NSDictionary*)query;
 
+- (CDTQResultSet*)find:(NSDictionary *)query skip:(NSUInteger)skip limit:(NSUInteger)limit;
+
 /** Internal */
 + (NSString*)tableNameForIndex:(NSString*)indexName;
 

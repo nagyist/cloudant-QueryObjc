@@ -218,6 +218,8 @@ Right now the list of supported features is small:
     - all fields in an $and clause of a query must be in a single compound index.
       That is, for `{"$and": @["name": "mike", "age": 20]}`, both `name` and `age`
       must be in an index defined in a single `-ensureIndexed:withName:` call.
+- Limiting returned results.
+- Skipping results.
       
 Selectors -> combination
 
@@ -259,8 +261,6 @@ Overall restrictions:
 
 #### Query syntax
 
-- Limiting returned results.
-- Skipping results.
 - Sorting results #7.
 - Field projection #8.
 - Using non-dotted notation to query sub-documents.
