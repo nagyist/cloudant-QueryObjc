@@ -269,29 +269,29 @@ Overall restrictions:
 
 Selectors -> combination
 
-- `$nor`
-- `$all`
-- `$elemMatch`
+- `$nor` #10
+- `$all` (unplanned)
+- `$elemMatch` (unplanned, waiting on arrays support for query)
 
 Selectors -> Condition -> Objects
 
-- `$exists`
-- `$type`
+- `$exists` #11
+- `$type` (unplanned)
 
 Selectors -> Condition -> Array
 
-- `$in`
-- `$nin`
-- `$size`
+- `$in` (waiting on arrays support)
+- `$nin` (waiting on arrays support)
+- `$size` (waiting on arrays support)
 
 Selectors -> Condition -> Misc
 
-- `$mod`
-- `$regex`
+- `$mod` (unplanned, waiting on filtering)
+- `$regex` (unplanned, waiting on filtering)
 
 ### Indexing
 
-- We don't support indexing array fields.
+- We don't support indexing array fields (#12).
 
 
 
