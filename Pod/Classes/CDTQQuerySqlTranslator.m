@@ -16,6 +16,7 @@
 
 #import "CDTQQueryExecutor.h"
 #import "CDTQIndexManager.h"
+#import "CDTQLogging.h"
 
 @implementation CDTQQueryNode
 
@@ -70,6 +71,11 @@ static NSString *const EQ = @"$eq";
     } else if (query[OR]) {
         clauses = query[OR];
         root = [[CDTQOrQueryNode alloc] init];
+    }
+    
+    if (![clauses isKindOfClass:[NSArray class]]) {
+        LogError(@"Arugment to compound operator is not an NSArray: %@", [query description]);
+        return nil;
     }
     
     //
@@ -198,9 +204,11 @@ static NSString *const EQ = @"$eq";
     //     @[ @{"field1": @{ @"$eq": @"mike"} }, ... } ]
     NSString *compoundOperator = [query allKeys][0];
     NSArray *predicates = query[compoundOperator];
-    NSArray *expandedPredicates = [CDTQQuerySqlTranslator addImplicitEq:predicates];
+    if ([predicates isKindOfClass:[NSArray class]]) {
+        predicates = [CDTQQuerySqlTranslator addImplicitEq:predicates];
+    }
     
-    return @{compoundOperator: expandedPredicates};
+    return @{compoundOperator: predicates};
 }
 
 + (NSDictionary*)addImplicitAnd:(NSDictionary*)query
