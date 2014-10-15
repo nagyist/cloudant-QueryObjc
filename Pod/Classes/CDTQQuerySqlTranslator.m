@@ -283,6 +283,7 @@ static NSString *const EQ = @"$eq";
         
         NSObject *predicate = nil;
         NSString *fieldName = nil;
+        //if this isn't a dictionary, we don't know what to do so pass it back
         if ([fieldClause isKindOfClass:[NSDictionary class]] && [fieldClause count] != 0){
             fieldName = fieldClause.allKeys[0];
             predicate = fieldClause[fieldName];
