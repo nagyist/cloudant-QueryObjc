@@ -207,6 +207,27 @@ for (CDTDocumentRevision *rev in result) {
 }
 ```
 
+#### Sorting
+
+Provide a sort document to `-find:skip:limit:sort:` to sort the results of a query. 
+
+The sort document is an array of fields to sort by. Each field is represented by a 
+dictionary specifying the name of the field to sort by and the direction to sort.
+
+The sort document must use fields from a single index.
+
+As yet, you can't leave out the sort direction. The sort direction can be `asc` (ascending)
+or `desc` (descending).
+
+```objc
+NSArray *sortDocument = @[ @{ @"name": @"asc" }, 
+                           @{ @"age": @"desc" } ];
+CDTQResultSet *result = [im find:query
+                            skip:0
+                           limit:NSUIntegerMax
+                            sort:sortDocument];
+```
+
 ### Array fields
 
 Indexing and querying over array fields is supported in Cloudant Query Objective C, with some

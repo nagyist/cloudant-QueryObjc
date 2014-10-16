@@ -151,35 +151,35 @@ describe(@"cloudant query", ^{
         
         it(@"limits query results", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * results = [im find:query skip:0 limit:1];
+            CDTQResultSet * results = [im find:query skip:0 limit:1 fields:nil sort:nil];
             expect(results.documentIds.count).to.equal(1);
         });
         
         it(@"limits query and offsets starting point", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * resultsOffsetted = [im find:query skip:1 limit:1];
-            CDTQResultSet * resultsNotOffSetted = [im find:query skip:0 limit:2];
+            CDTQResultSet * resultsOffsetted = [im find:query skip:1 limit:1 fields:nil sort:nil];
+            CDTQResultSet * resultsNotOffSetted = [im find:query skip:0 limit:2 fields:nil sort:nil];
             
             expect([resultsNotOffSetted.documentIds objectAtIndex:1]).to.equal([resultsOffsetted.documentIds objectAtIndex:0]);
         });
         
         it(@"returns empty array when skip results goes over array bounds", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * results = [im find:query skip:2 limit:0];
+            CDTQResultSet * results = [im find:query skip:2 limit:0 fields:nil sort:nil];
 
             expect([results.documentIds count]).to.equal(0);
         });
         
         it(@"returns an array with results when limit is over array bounds", ^{
             NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * results = [im find:query skip:0 limit:4];
+            CDTQResultSet * results = [im find:query skip:0 limit:4 fields:nil sort:nil];
             
             expect([results.documentIds count]).to.equal(3);
         });
         
         it(@"returns an array with no results when range is out of bounds",^{
             NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * results = [im find:query skip:4 limit:4];
+            CDTQResultSet * results = [im find:query skip:4 limit:4 fields:nil sort:nil];
             
             expect([results.documentIds count]).to.equal(0);
             
@@ -880,6 +880,7 @@ describe(@"cloudant query", ^{
         });
         
     });
+    
 });
 
 SpecEnd

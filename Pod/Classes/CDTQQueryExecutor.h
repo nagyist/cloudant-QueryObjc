@@ -24,23 +24,6 @@
  */
 @interface CDTQQueryExecutor : NSObject
 
-
-/**
- Execute the query passed using the selection of index definition provided.
- 
- The index definitions are presumed to already exist and be up to date for the
- datastore and database passed to the constructor.
- 
- A covering index for the query must exist in the selection passed to the method.
- 
- @param query query to execute.
- @param indexes indexes to use (this method will select the most appropriate).
- */
-+ (CDTQResultSet*)find:(NSDictionary*)query 
-          usingIndexes:(NSDictionary*)indexes
-            inDatabase:(FMDatabaseQueue*)database
-         fromDatastore:(CDTDatastore*)datastore;
-
 /**
  Constructs a new CDTQQueryExecutor using the indexes in `database` to find documents from
  `datastore`.
@@ -54,48 +37,28 @@
  The index definitions are presumed to already exist and be up to date for the
  datastore and database passed to the constructor.
  
- A covering index for the query must exist in the selection passed to the method.
- 
- @param query query to execute.
- @param indexes indexes to use (this method will select the most appropriate).
- */
-- (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes;
-
-/**
- Execute the query passed using the selection of index definition provided.
- 
- The index definitions are presumed to already exist and be up to date for the
- datastore and database passed to the constructor.
- 
  @param query query to execute.
  @param indexes indexes to use (this method will select the most appropriate).
  @param skip how many results to skip before returning results to caller
  @param limit number of documents the result should be limited to
+ @param fields fields to project from the result documents
+ @param sortDocument document specifying the order to return results, nil to have no sorting
  */
-- (CDTQResultSet*)find:(NSDictionary *)query
-          usingIndexes:(NSDictionary *)indexes
-                skip:(NSUInteger)skip
-                 limit:(NSUInteger)limit;
-
-
-/*
- Execute the query passed using the selection of index definition provided.
- 
- The index definitions are presumed to already exist and be up to date for the
- datastore and database passed to the constructor.
- 
- @param query query to execute.
- @param indexes indexes to use (this method will select the most appropriate).
- @param skip how many results to skip before returning results to caller
- @param limit number of documents the result should be limited to
- @param fields an array of fields to keep in a  macthing documents body
- 
- */
-- (CDTQResultSet*)find:(NSDictionary *)query
-          usingIndexes:(NSDictionary *)indexes
+- (CDTQResultSet*)find:(NSDictionary*)query
+          usingIndexes:(NSDictionary*)indexes
                   skip:(NSUInteger)skip
                  limit:(NSUInteger)limit
-                fields:(NSArray *)fields;
+                fields:(NSArray *)fields
+                  sort:(NSArray*)sortDocument;
+
+/**
+ Return SQL to get ordered list of docIds.
+ 
+ @param sortDocument Array of ordering definitions `@[ @{"fieldName": "asc"}, @{@"fieldName2", @"asc"} ]`
+ @param indexes dictionary of indexes
+ */
++ (CDTQSqlParts*)sqlToSortUsingOrder:(NSArray*)sortDocument
+                             indexes:(NSDictionary*)indexes;
 
 
 @end
