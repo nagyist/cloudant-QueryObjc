@@ -88,8 +88,9 @@
         }
         
         // skip + limit
-        if(skip < [docIds count]){
-            NSRange range = NSMakeRange(skip, MIN(limit, [docIds count]));
+        if(skip < docIds.count){
+            NSUInteger maxLength = docIds.count - skip;
+            NSRange range = NSMakeRange(skip, MIN(limit, maxLength));
             docIds = [docIds subarrayWithRange:range];
         } else {
             docIds =  @[];

@@ -149,39 +149,58 @@ describe(@"cloudant query", ^{
             expect(result).to.beNil();
         });
         
-        it(@"limits query results", ^{
-            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * results = [im find:query skip:0 limit:1 fields:nil sort:nil];
-            expect(results.documentIds.count).to.equal(1);
-        });
-        
-        it(@"limits query and offsets starting point", ^{
-            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * resultsOffsetted = [im find:query skip:1 limit:1 fields:nil sort:nil];
-            CDTQResultSet * resultsNotOffSetted = [im find:query skip:0 limit:2 fields:nil sort:nil];
+        context(@"when limiting and offsetting results", ^{
             
-            expect([resultsNotOffSetted.documentIds objectAtIndex:1]).to.equal([resultsOffsetted.documentIds objectAtIndex:0]);
-        });
-        
-        it(@"returns empty array when skip results goes over array bounds", ^{
-            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * results = [im find:query skip:2 limit:0 fields:nil sort:nil];
-
-            expect([results.documentIds count]).to.equal(0);
-        });
-        
-        it(@"returns an array with results when limit is over array bounds", ^{
-            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * results = [im find:query skip:0 limit:4 fields:nil sort:nil];
+            it(@"limits query results", ^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+                CDTQResultSet * results = [im find:query skip:0 limit:1 fields:nil sort:nil];
+                expect(results.documentIds.count).to.equal(1);
+            });
             
-            expect([results.documentIds count]).to.equal(3);
-        });
-        
-        it(@"returns an array with no results when range is out of bounds",^{
-            NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-            CDTQResultSet * results = [im find:query skip:4 limit:4 fields:nil sort:nil];
+            it(@"limits query and offsets starting point", ^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+                CDTQResultSet * offsetResults = [im find:query skip:1 limit:1 fields:nil sort:nil];
+                CDTQResultSet * results = [im find:query skip:0 limit:2 fields:nil sort:nil];
+                
+                expect(results.documentIds[1]).to.equal(offsetResults.documentIds[0]);
+            });
             
-            expect([results.documentIds count]).to.equal(0);
+            it(@"returns empty array when skip results goes over array bounds", ^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+                CDTQResultSet * results = [im find:query skip:2 limit:0 fields:nil sort:nil];
+                
+                expect([results.documentIds count]).to.equal(0);
+            });
+            
+            it(@"returns an array with results when limit is over array bounds", ^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+                CDTQResultSet * results = [im find:query skip:0 limit:4 fields:nil sort:nil];
+                
+                expect([results.documentIds count]).to.equal(3);
+            });
+            
+            it(@"returns all results with very large limit", ^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+                CDTQResultSet * results = [im find:query skip:0 limit:1000 fields:nil sort:nil];
+                
+                expect([results.documentIds count]).to.equal(3);
+            });
+            
+            it(@"returns an array with no results when range is out of bounds",^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+                CDTQResultSet * results = [im find:query skip:4 limit:4 fields:nil sort:nil];
+                
+                expect([results.documentIds count]).to.equal(0);
+                
+            });
+            
+            it(@"returns appropriate results skip and large limit used",^{
+                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
+                CDTQResultSet * results = [im find:query skip:2 limit:1000 fields:nil sort:nil];
+                
+                expect([results.documentIds count]).to.equal(1);
+                
+            });
             
         });
         
