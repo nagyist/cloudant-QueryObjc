@@ -50,89 +50,64 @@
                 fields:(NSArray *)fields
                   sort:(NSArray*)sortDocument
 {
+    //
+    // Validate inputs
+    //
+    
     if (![CDTQQueryExecutor validateSortDocument:sortDocument]) {
         return nil;  // validate logs the error if doc is invalid
     }
     
-    [self normaliseFields:&fields];
+    fields = [CDTQQueryExecutor normaliseFields:fields];
     
-    if ([self validateFields:fields])
-    {
-        
-        CDTQOrQueryNode *root = (CDTQOrQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
-                                                                            toUseIndexes:indexes];
-        
-        if(!root) {
-            return nil;
-        }
-        
-        __block NSArray *docIds;
-        
-        [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
-            NSSet *docIdSet = [self executeQueryTree:root inDatabase:db];
-            
-            // sorting
-            if (sortDocument != nil && sortDocument.count > 0) {
-                docIds = [CDTQQueryExecutor sortIds:docIdSet 
-                                          usingSort:sortDocument 
-                                            indexes:indexes 
-                                         inDatabase:db];
-            } else {
-                docIds = [docIdSet allObjects];
-            }
-        }];
-        
-        // nil if an error during sorting
-        if (docIds == nil) {
-            return nil;
-        }
-        
-        // skip + limit
-        if(skip < docIds.count){
-            NSUInteger maxLength = docIds.count - skip;
-            NSRange range = NSMakeRange(skip, MIN(limit, maxLength));
-            docIds = [docIds subarrayWithRange:range];
-        } else {
-            docIds =  @[];
-        }
-        
-        return [[CDTQResultSet alloc] initWithDocIds:docIds
-                                           datastore:self.datastore
-                                    projectionFields:fields];
-    } else {
+    if (![CDTQQueryExecutor validateFields:fields]) {
+        return nil;  // validate logs error message
+    }
+    
+    //
+    // Execute the query
+    //
+    
+    CDTQOrQueryNode *root = (CDTQOrQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
+                                                                        toUseIndexes:indexes];
+    
+    if(!root) {
         return nil;
     }
     
-}
-
-#pragma mark Projection
-
-/**
- Checks if the fields are valid.
- */
-- (BOOL)validateFields:(NSArray *)fields
-{
-    for (id obj in fields) {
-        if([obj isKindOfClass:[NSString class]]){
-            if ([obj containsString:@"."]) {
-                LogError(@"Fields cannot use dotted notation: %@", [fields description]);
-                return NO;
-            }
-        } else {
-            LogError(@"Fields should only be string objects: %@",[fields description]);
-            return NO;
-        }
-    };
+    __block NSArray *docIds;
     
-    return YES;
-}
-
-- (void)normaliseFields:(NSArray **)fields
-{
-    if ([*fields count] == 0) {
-        LogWarn(@"fields array is empty, ignoring");
-        *fields = nil;
+    [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
+        NSSet *docIdSet = [self executeQueryTree:root inDatabase:db];
+        
+        // sorting
+        if (sortDocument != nil && sortDocument.count > 0) {
+            docIds = [CDTQQueryExecutor sortIds:docIdSet 
+                                      usingSort:sortDocument 
+                                        indexes:indexes 
+                                     inDatabase:db];
+        } else {
+            docIds = [docIdSet allObjects];
+        }
+    }];
+    
+    // nil if an error during sorting
+    if (docIds == nil) {
+        return nil;
     }
+    
+    // skip + limit
+    if(skip < docIds.count){
+        NSUInteger maxLength = docIds.count - skip;
+        NSRange range = NSMakeRange(skip, MIN(limit, maxLength));
+        docIds = [docIds subarrayWithRange:range];
+    } else {
+        docIds =  @[];
+    }
+    
+    return [[CDTQResultSet alloc] initWithDocIds:docIds
+                                       datastore:self.datastore
+                                projectionFields:fields];  
 }
 
 #pragma mark Validation helpers
@@ -165,6 +140,38 @@
     }
     
     return YES;
+}
+
+/**
+ Checks if the fields are valid.
+ */
++ (BOOL)validateFields:(NSArray*)fields
+{
+    for (NSString *field in fields) {
+        
+        if(![field isKindOfClass:[NSString class]]){
+            LogError(@"Projection field should be string object: %@", [field description]);
+            return NO;
+        }
+        
+        if ([field containsString:@"."]) {
+            LogError(@"Projection field cannot use dotted notation: %@", [field description]);
+            return NO;
+        }
+        
+    };
+    
+    return YES;
+}
+
++ (NSArray*)normaliseFields:(NSArray*)fields
+{
+    if (fields.count == 0) {
+        LogWarn(@"Projection fields array is empty, disabling project for this query");
+        return nil;
+    }
+    
+    return fields;
 }
 
 #pragma mark Tree walking
