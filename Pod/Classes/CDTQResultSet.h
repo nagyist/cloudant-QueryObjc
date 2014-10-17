@@ -31,11 +31,13 @@
 }
 
 -(id)initWithDocIds:(NSArray*)docIds
-          datastore:(CDTDatastore*)datastore;
+          datastore:(CDTDatastore*)datastore
+             projectionFields:(NSArray*)fields;
 
 -(NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state 
                                  objects:(id __unsafe_unretained*)buffer
                                    count:(NSUInteger)len;
+
 
 @property (nonatomic,strong,readonly) NSArray *documentIds; // of type NSString*
 
