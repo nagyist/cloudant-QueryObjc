@@ -207,9 +207,18 @@ for (CDTDocumentRevision *rev in result) {
 }
 ```
 
+There is an extended version of the `-find:` method which supports:
+
+- Sorting results.
+- Projecting fields from documents rather than returning whole documents.
+- Skipping results.
+- Limiting the number of results returned.
+
+For any of these, use 
+
 #### Sorting
 
-Provide a sort document to `-find:skip:limit:sort:` to sort the results of a query. 
+Provide a sort document to `-find:skip:limit:fields:sort:` to sort the results of a query. 
 
 The sort document is an array of fields to sort by. Each field is represented by a 
 dictionary specifying the name of the field to sort by and the direction to sort.
@@ -225,8 +234,69 @@ NSArray *sortDocument = @[ @{ @"name": @"asc" },
 CDTQResultSet *result = [im find:query
                             skip:0
                            limit:NSUIntegerMax
+                          fields:nil
                             sort:sortDocument];
 ```
+
+Pass `nil` as the `sort` argument to disable sorting.
+
+#### Projecting fields
+
+Projecting fields is useful when you have a large document and only need to use a
+subset of the fields for a given view.
+
+To project certain fields from the documents included in the results, pass an
+array of field names to the `fields` argument. These field names must:
+
+- Be top level fields in the document.
+- Cannot use dotted notation to access sub-documents.
+
+For example, in the following document the `name`, `age` and `pet` fields could
+be projected, but the `species` field inside `pet` cannot:
+
+```json
+{
+    "name": "mike",
+    "age": 12,
+    "pet": { "species": "cat" }
+}
+```
+
+To project the `name` and `age` fields of the above document:
+
+```objc
+NSArray *fields = @[ @"name", @"age" ];
+CDTQResultSet *result = [im find:query
+                            skip:0
+                           limit:NSUIntegerMax
+                          fields:fields
+                            sort:nil];
+```
+
+Pass `nil` as the `fields` argument to disable projection.
+
+#### Skip and limit
+
+Skip and limit allow retrieving subsets of the results. Amongst other things, this is
+useful in pagination.
+
+* `skip` skips over a number of results from the result set.
+* `limit` defines the maximum number of results to return for the query.
+
+To display the twenty-first to thirtieth results:
+
+```objc
+CDTQResultSet *result = [im find:query
+                            skip:20
+                           limit:10
+                          fields:fields
+                            sort:nil];
+```
+
+To disable:
+
+- `skip`, pass `0` as the `skip` argument.
+- `limit`, pass `NSUIntegerMax` as the `limit` argument.
 
 ### Array fields
 
