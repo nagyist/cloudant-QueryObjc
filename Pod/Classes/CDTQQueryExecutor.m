@@ -41,108 +41,137 @@
     return self;
 }
 
-#pragma mark Convenience methods
-
-+ (CDTQResultSet*)find:(NSDictionary*)query 
-          usingIndexes:(NSDictionary*)indexes
-            inDatabase:(FMDatabaseQueue*)database
-         fromDatastore:(CDTDatastore*)datastore
-{
-    CDTQQueryExecutor *executor = [[CDTQQueryExecutor alloc] initWithDatabase:database
-                                                                    datastore:datastore];
-    return [executor find:query usingIndexes:indexes];
-}
-
 #pragma mark Instance methods
-
-- (CDTQResultSet*)find:(NSDictionary*)query usingIndexes:(NSDictionary*)indexes
-{
-    return [self find:query usingIndexes:indexes skip:0 limit:NSUIntegerMax];
-}
-
-/**
- 
- Checks if the fields are valid. If they the array is empty the pointer to the array
- is changed to nil
- 
- */
-- (BOOL)validateFields:(NSArray *)fields
-{
-    
-    
-    for (id obj in fields) {
-        
-        if([obj isKindOfClass:[NSString class]]){
-            if ([obj containsString:@"."]) {
-                LogError(@"Fields cannot use dotted notation: %@", [fields description]);
-                return NO;
-            }
-        } else {
-            LogError(@"Fields should only be string objects: %@",[fields description]);
-            return NO;
-        }
-    };
-    
-    return YES;
-}
-
-- (void)normaliseFields:(NSArray **)fields
-{
-    if ([*fields count] == 0) {
-        LogWarn(@"fields array is empty, ignoring");
-        *fields = nil;
-    }
-}
 
 - (CDTQResultSet*)find:(NSDictionary *)query
           usingIndexes:(NSDictionary *)indexes
                   skip:(NSUInteger)skip
                  limit:(NSUInteger)limit
                 fields:(NSArray *)fields
+                  sort:(NSArray*)sortDocument
 {
+    //
+    // Validate inputs
+    //
     
-    [self normaliseFields:&fields];
+    if (![CDTQQueryExecutor validateSortDocument:sortDocument]) {
+        return nil;  // validate logs the error if doc is invalid
+    }
     
-    if ([self validateFields:fields])
-    {
-        
-        CDTQOrQueryNode *root = (CDTQOrQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
-                                                                            toUseIndexes:indexes];
-        
-        if(!root) {
-            return nil;
-        }
-        __block NSSet *docIds;
-        
-        [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
-            docIds = [self executeQueryTree:root inDatabase:db];
-        }];
-        
-        
-        NSArray *filteredDocs = nil;
-        
-        if(skip < [docIds count]){
-            NSRange range = NSMakeRange(skip, MIN(limit, [docIds count]));
-            filteredDocs = [[docIds allObjects] subarrayWithRange:range];
-        } else {
-            filteredDocs =  @[];
-        }
-        
-        return [[CDTQResultSet alloc] initWithDocIds:filteredDocs
-                                           datastore:self.datastore
-                                    projectionFields:fields];
-    } else {
+    fields = [CDTQQueryExecutor normaliseFields:fields];
+    
+    if (![CDTQQueryExecutor validateFields:fields]) {
+        return nil;  // validate logs error message
+    }
+    
+    //
+    // Execute the query
+    //
+    
+    CDTQOrQueryNode *root = (CDTQOrQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
+                                                                        toUseIndexes:indexes];
+    
+    if(!root) {
         return nil;
     }
     
+    __block NSArray *docIds;
+    
+    [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
+        NSSet *docIdSet = [self executeQueryTree:root inDatabase:db];
+        
+        // sorting
+        if (sortDocument != nil && sortDocument.count > 0) {
+            docIds = [CDTQQueryExecutor sortIds:docIdSet 
+                                      usingSort:sortDocument 
+                                        indexes:indexes 
+                                     inDatabase:db];
+        } else {
+            docIds = [docIdSet allObjects];
+        }
+    }];
+    
+    // nil if an error during sorting
+    if (docIds == nil) {
+        return nil;
+    }
+    
+    // skip + limit
+    if(skip < docIds.count){
+        NSUInteger maxLength = docIds.count - skip;
+        NSRange range = NSMakeRange(skip, MIN(limit, maxLength));
+        docIds = [docIds subarrayWithRange:range];
+    } else {
+        docIds =  @[];
+    }
+    
+    return [[CDTQResultSet alloc] initWithDocIds:docIds
+                                       datastore:self.datastore
+                                projectionFields:fields];  
 }
 
-- (CDTQResultSet*)find:(NSDictionary *)query
-          usingIndexes:(NSDictionary *)indexes
-                  skip:(NSUInteger)skip
-                 limit:(NSUInteger)limit
+#pragma mark Validation helpers
+
++ (BOOL)validateSortDocument:(NSArray/*NSDictionary*/*)sortDocument
 {
-    return [self find:query usingIndexes:indexes skip:skip limit:limit fields:nil];
+    if (sortDocument == nil || sortDocument.count == 0) {
+        return YES;  // empty or nil sort docs just mean "don't sort", so are valid
+    }
+    
+    for (NSDictionary* clause in sortDocument) {
+        
+        if (clause.count > 1) {
+            LogError(@"Each order clause can only be a single field, %@", clause);
+            return NO;
+        }
+        
+        NSString *fieldName = [clause allKeys][0];
+        NSString *direction = clause[fieldName];
+        
+        if (![fieldName isKindOfClass:[NSString class]]) {
+            LogError(@"Field names in sort clause must be strings, %@", fieldName);
+            return NO;
+        }
+        
+        if (![@[ @"ASC", @"DESC" ] containsObject:[direction uppercaseString]]) {
+            LogError(@"Order direction %@ not valid, use `asc` or `desc`", direction);
+            return NO;
+        }
+    }
+    
+    return YES;
+}
+
+/**
+ Checks if the fields are valid.
+ */
++ (BOOL)validateFields:(NSArray*)fields
+{
+    for (NSString *field in fields) {
+        
+        if(![field isKindOfClass:[NSString class]]){
+            LogError(@"Projection field should be string object: %@", [field description]);
+            return NO;
+        }
+        
+        if ([field containsString:@"."]) {
+            LogError(@"Projection field cannot use dotted notation: %@", [field description]);
+            return NO;
+        }
+        
+    };
+    
+    return YES;
+}
+
++ (NSArray*)normaliseFields:(NSArray*)fields
+{
+    if (fields.count == 0) {
+        LogWarn(@"Projection fields array is empty, disabling project for this query");
+        return nil;
+    }
+    
+    return fields;
 }
 
 #pragma mark Tree walking
@@ -205,6 +234,119 @@
     }
 }
 
+#pragma mark Sorting
 
+/**
+ Return ordered list of document IDs using provided indexes.
+ 
+ Method assumes `sortDocument` is valid.
+ 
+ @param docIdSet Set of current results which are sorted
+ @param sortDocument Array of ordering definitions 
+                     `@[ @{"fieldName": "asc"}, @{@"fieldName2", @"desc"} ]`
+ @param indexes dictionary of indexes
+ @param db database containing `indexes` to use when sorting documents
+ */
+ 
++ (NSArray*)sortIds:(NSSet/*NSString*/*)docIdSet 
+          usingSort:(NSArray/*NSDictionary*/*)sortDocument 
+            indexes:(NSDictionary*)indexes
+         inDatabase:(FMDatabase*)db
+{
+    CDTQSqlParts *orderBy = [CDTQQueryExecutor sqlToSortUsingOrder:sortDocument
+                                                           indexes:indexes];
+    NSArray *sortedIds;
+    
+    if (orderBy != nil) {
+        NSMutableArray *sortedDocIds = [NSMutableArray array];
+        
+        // The query will iterate through a sorted list of docIds.
+        // This means that if we create a new array and add entries
+        // to that array as we iterate through the result set which
+        // are part of the query's results, we'll end up with an
+        // ordered set of results.
+        FMResultSet *rs= [db executeQuery:orderBy.sqlWithPlaceholders 
+                     withArgumentsInArray:orderBy.placeholderValues];
+        while ([rs next]) {
+            NSString *candidateId = [rs stringForColumnIndex:0];
+            if ([docIdSet containsObject:candidateId]) {
+                [sortedDocIds addObject:candidateId];
+            }
+        }
+        [rs close];
+        sortedIds = [NSArray arrayWithArray:sortedDocIds];
+    } else {
+        sortedIds = nil;  // error doing the ordering
+    }
+    
+    return sortedIds;
+}
+
+/**
+ Return SQL to get ordered list of docIds.
+ 
+ Method assumes `sortDocument` is valid.
+ 
+ @param sortDocument Array of ordering definitions 
+                     `@[ @{"fieldName": "asc"}, @{@"fieldName2", @"desc"} ]`
+ @param indexes dictionary of indexes
+ */
++ (CDTQSqlParts*)sqlToSortUsingOrder:(NSArray/*NSDictionary*/*)sortDocument
+                             indexes:(NSDictionary*)indexes
+{
+    NSString *chosenIndex = [CDTQQueryExecutor chooseIndexForSort:sortDocument
+                                                      fromIndexes:indexes];
+    if (chosenIndex == nil) {
+        LogError(@"No single index can satisfy order %@", sortDocument);
+        return nil;
+    }
+    
+    
+    NSString *indexTable = [CDTQIndexManager tableNameForIndex:chosenIndex];
+    
+    // SELECT _id FROM idx ORDER BY fieldName ASC, fieldName2 DESC;
+    
+    NSMutableArray *orderClauses = [NSMutableArray array];
+    for (NSDictionary* orderClause in sortDocument) {
+        
+        NSString *fieldName = [orderClause allKeys][0];
+        NSString *direction = orderClause[fieldName];
+        
+        NSString *orderClause = [NSString stringWithFormat:@"\"%@\" %@", 
+                                 fieldName, [direction uppercaseString]];
+        [orderClauses addObject:orderClause];
+    }
+    
+    NSString *sql = [NSString stringWithFormat:@"SELECT DISTINCT _id FROM %@ ORDER BY %@;", 
+                     indexTable, 
+                     [orderClauses componentsJoinedByString:@", "]];
+    return [CDTQSqlParts partsForSql:sql parameters:@[]];
+}
+
++ (NSString*)chooseIndexForSort:(NSArray/*NSDictionary*/*)sortDocument
+                    fromIndexes:(NSDictionary*)indexes
+{
+    NSMutableSet *neededFields = [NSMutableSet set];
+    [sortDocument enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        // This is validated and normalised already to be a dictionary with one key.
+        NSDictionary *orderSpecifier = (NSDictionary*)obj;
+        [neededFields addObject:[orderSpecifier allKeys][0]];
+    }];
+    
+    if (neededFields.count == 0) {
+        return nil;  // no point in querying empty set of fields
+    }
+    
+    NSString *chosenIndex = nil;
+    for (NSString *indexName in indexes) {
+        NSSet *providedFields = [NSSet setWithArray:indexes[indexName][@"fields"]];
+        if ([neededFields isSubsetOfSet:providedFields]) {
+            chosenIndex = indexName;
+            break;
+        }
+    }
+    
+    return chosenIndex;
+}
 
 @end

@@ -81,7 +81,7 @@ describe(@"When filtering fields on find ", ^{
     
     it(@"returns only field specified in fields param in the document body", ^{
         NSDictionary *query = @{@"name":@"mike"};
-        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@"name"]];
+        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@"name"] sort:nil];
         expect(result).toNot.beNil();
         
         for (CDTDocumentRevision * revision in result) {
@@ -92,7 +92,7 @@ describe(@"When filtering fields on find ", ^{
     
     it(@"returns all fields when fields array is empty",^{
         NSDictionary *query = @{@"name":@"mike"};
-        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[]];
+        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[] sort:nil];
         expect(result).toNot.beNil();
         
         for (CDTDocumentRevision * revision in result) {
@@ -105,7 +105,7 @@ describe(@"When filtering fields on find ", ^{
     
     it(@"returns all fields when fields array is nil",^{
         NSDictionary *query = @{@"name":@"mike"};
-        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[]];
+        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[] sort:nil];
         expect(result).toNot.beNil();
         
         for (CDTDocumentRevision * revision in result) {
@@ -118,19 +118,19 @@ describe(@"When filtering fields on find ", ^{
     
     it(@"returns nil when fields array contains a type other than NSString",^{
         NSDictionary *query = @{@"name":@"mike"};
-        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@{}]];
+        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@{}] sort:nil];
         expect(result).to.beNil();
     });
     
     it(@"returns nil when using dotted notation", ^{
         NSDictionary *query = @{@"name":@"mike"};
-        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@"name.blah"]];
+        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@"name.blah"] sort:nil];
         expect(result).to.beNil();
     });
     
     it(@"returns only pet and name fields in a document revision, when they are specfied in fields",^{
         NSDictionary *query = @{@"name":@"mike"};
-        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@"name",@"pet"]];
+        CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@"name",@"pet"] sort:nil];
         expect(result).toNot.beNil();
         
         for (CDTDocumentRevision * revision in result) {

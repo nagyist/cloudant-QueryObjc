@@ -12,6 +12,7 @@
 		2756496B19DB16C4007BAA32 /* CDTQQueryExecutorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496A19DB16C4007BAA32 /* CDTQQueryExecutorTests.m */; };
 		2756497019DC2CDB007BAA32 /* CDTQValueExtractorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496F19DC2CDB007BAA32 /* CDTQValueExtractorTests.m */; };
 		2756497219DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756497119DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m */; };
+		27B3721C19F0325800CE47B1 /* CDTQQuerySortTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27B3721B19F0325800CE47B1 /* CDTQQuerySortTests.m */; };
 		532AA87119ED450D28CEC7B4 /* libPods-CloudantQueryObjc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D728A7B1A7B0124B6C08CC18 /* libPods-CloudantQueryObjc.a */; };
 		6003F58E195388D20070C39A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58D195388D20070C39A /* Foundation.framework */; };
 		6003F590195388D20070C39A /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58F195388D20070C39A /* CoreGraphics.framework */; };
@@ -48,6 +49,7 @@
 		2756496A19DB16C4007BAA32 /* CDTQQueryExecutorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQueryExecutorTests.m; sourceTree = "<group>"; };
 		2756496F19DC2CDB007BAA32 /* CDTQValueExtractorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQValueExtractorTests.m; sourceTree = "<group>"; };
 		2756497119DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQuerySqlTranslatorTests.m; sourceTree = "<group>"; };
+		27B3721B19F0325800CE47B1 /* CDTQQuerySortTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQuerySortTests.m; sourceTree = "<group>"; };
 		6003F58A195388D20070C39A /* CloudantQueryObjc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CloudantQueryObjc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6003F58D195388D20070C39A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		6003F58F195388D20070C39A /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -178,6 +180,7 @@
 				98ABE17819EFC95F00EBFC50 /* CDTQFilterFieldsTest.m */,
 				2756496F19DC2CDB007BAA32 /* CDTQValueExtractorTests.m */,
 				2756497119DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m */,
+				27B3721B19F0325800CE47B1 /* CDTQQuerySortTests.m */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -395,6 +398,7 @@
 				2756496519DB1596007BAA32 /* CDTQIndexCreatorTests.m in Sources */,
 				2756496B19DB16C4007BAA32 /* CDTQQueryExecutorTests.m in Sources */,
 				2756497019DC2CDB007BAA32 /* CDTQValueExtractorTests.m in Sources */,
+				27B3721C19F0325800CE47B1 /* CDTQQuerySortTests.m in Sources */,
 				2756497219DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

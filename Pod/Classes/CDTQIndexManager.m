@@ -293,37 +293,19 @@ static const int VERSION = 1;
 
 - (CDTQResultSet*)find:(NSDictionary*)query
 {
-    if (![self updateAllIndexes]) {
-        return nil;
-    }
-    
-    NSDictionary *indexes = [self listIndexes];
-    
-    return [CDTQQueryExecutor find:query
-                      usingIndexes:indexes
-                        inDatabase:_database
-                     fromDatastore:_datastore];
-}
-
-- (CDTQResultSet*)find:(NSDictionary *)query skip:(NSUInteger)skip limit:(NSUInteger)limit
-{
-    if(![self updateAllIndexes]){
-        return nil;
-    }
-    
-    CDTQQueryExecutor * queryExecutor = [[CDTQQueryExecutor alloc] initWithDatabase:_database
-                                                                          datastore:_datastore];
-    
-    return  [queryExecutor find:query usingIndexes:[self listIndexes]  skip:skip limit:limit];
+    return [self find:query
+                 skip:0
+                limit:NSUIntegerMax 
+               fields:nil
+                 sort:nil];
 }
 
 - (CDTQResultSet*)find:(NSDictionary *)query
                   skip:(NSUInteger)skip
                  limit:(NSUInteger)limit
                 fields:(NSArray *)fields
+                  sort:(NSArray*)sortDocument
 {
- 
-    
     if(! [self updateAllIndexes]){
         return nil;
     }
@@ -334,7 +316,8 @@ static const int VERSION = 1;
                   usingIndexes:[self listIndexes]
                           skip:skip
                          limit:limit
-                        fields:fields];
+                        fields:fields
+                          sort:sortDocument];
     
 }
 
