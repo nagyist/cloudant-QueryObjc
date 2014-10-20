@@ -66,11 +66,13 @@
                   withName:(NSString*)indexName
                       type:(NSString*)indexType
 {
-    if (fieldNames.count == 0) { 
+    if (!fieldNames || fieldNames.count == 0) {
+        LogError(@"No fieldnames were passed to ensureIndexed");
         return nil;
     }
     
     if (!indexName) {
+        LogError(@"No index name was passed to ensureIndexed");
         return nil;
     }
     
@@ -169,6 +171,7 @@
     NSArray *parts = [fieldName componentsSeparatedByString:@"."];
     for (NSString *part in parts) {
         if ([part hasPrefix:@"$"]) {
+            LogError(@"Field names cannot start with a $ in field %@", fieldName);
             return NO;
         }
     }

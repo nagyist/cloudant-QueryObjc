@@ -196,6 +196,7 @@ static const int VERSION = 1;
  */
 - (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames
 {
+    LogError(@"-ensureIndexed: not implemented");
     return nil;
 }
 

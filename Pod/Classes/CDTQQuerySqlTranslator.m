@@ -95,6 +95,8 @@ static NSString *const EQ = @"$eq";
         NSString *chosenIndex = [CDTQQuerySqlTranslator chooseIndexForAndClause:basicClauses
                                                                     fromIndexes:indexes];
         if (!chosenIndex) {
+            LogError(@"No single index contains all of %@; please add an index on these fields.", 
+                     basicClauses);
             return nil;
         }
         
@@ -103,6 +105,7 @@ static NSString *const EQ = @"$eq";
                                                                         usingIndex:chosenIndex];
         
         if (!select) {
+            LogError(@"Error generating SELECT clause for %@", basicClauses);
             return nil;
         }
         
@@ -130,6 +133,8 @@ static NSString *const EQ = @"$eq";
             NSString *chosenIndex = [CDTQQuerySqlTranslator chooseIndexForAndClause:wrappedClause
                                                                         fromIndexes:indexes];
             if (!chosenIndex) {
+                LogError(@"No single index contains all of %@; please add an index on these fields.", 
+                         basicClauses);
                 return nil;
             }
             
@@ -138,6 +143,7 @@ static NSString *const EQ = @"$eq";
                                                                             usingIndex:chosenIndex];
             
             if (!select) {
+                LogError(@"Error generating SELECT clause for %@", basicClauses);
                 return nil;
             }
             
@@ -280,6 +286,7 @@ static NSString *const EQ = @"$eq";
     NSSet *neededFields = [NSSet setWithArray:[self fieldsForAndClause:clause]];
     
     if (neededFields.count == 0) {
+        LogError(@"Invalid clauses in $and clause %@", clause);
         return nil;  // no point in querying empty set of fields
     }
     
@@ -323,6 +330,7 @@ static NSString *const EQ = @"$eq";
                                      };
     for (NSDictionary *component in clause) {
         if (component.count != 1) {
+            LogError(@"Expected single predicate per clause dictionary, got %@", component);
             return nil;
         }
         
@@ -330,6 +338,7 @@ static NSString *const EQ = @"$eq";
         NSDictionary *predicate = component[fieldName];
         
         if (predicate.count != 1) {
+            LogError(@"Expected single operator per predicate dictionary, got %@", component);
             return nil;
         }
         
@@ -340,6 +349,7 @@ static NSString *const EQ = @"$eq";
             NSDictionary *negatedPredicate = predicate[@"$not"];
             
             if (negatedPredicate.count != 1) {
+                LogError(@"Expected single operator per predicate dictionary, got %@", component);
                 return nil;
             }
             
@@ -347,6 +357,7 @@ static NSString *const EQ = @"$eq";
             NSString *sqlOperator = notOperatorMap[operator];
             
             if (!sqlOperator) {
+                LogError(@"Unsupported comparison operator %@", operator);
                 return nil;
             }
             
@@ -358,6 +369,7 @@ static NSString *const EQ = @"$eq";
             NSString *sqlOperator = operatorMap[operator];
             
             if (!sqlOperator) {
+                LogError(@"Unsupported comparison operator %@", operator);
                 return nil;
             }
             

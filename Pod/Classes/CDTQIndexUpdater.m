@@ -134,6 +134,7 @@
             *error = [NSError errorWithDomain:CDTQIndexManagerErrorDomain
                                          code:CDTIndexErrorSqlError
                                      userInfo:userInfo];
+            LogError(@"Problem updating index %@", indexName);
         }
     }
     
@@ -180,7 +181,7 @@
                     }
                     
                     if (!success) {
-                        LogError(@"Updating index failed, CDTSqlParts: %@", insert);
+                        LogError(@"Updating index %@ failed, CDTSqlParts: %@", indexName, insert);
                     }
                     
                 }
@@ -267,7 +268,8 @@
     }
     
     if (n_arrays > 1) {
-        LogError(@"Indexing %@ in index %@ includes >1 array field", rev.docId, indexName);
+        LogError(@"Indexing %@ in index %@ includes >1 array field; only array field per index allowed", 
+                 rev.docId, indexName);
         return nil;
     }
     

@@ -13,10 +13,11 @@
 //  and limitations under the License.
 
 #import "CDTQValueExtractor.h"
+#import "CDTQLogging.h"
 
 @implementation CDTQValueExtractor
 
-+ (NSObject*)extractValueForFieldName:(NSString*)fieldName
++ (NSObject*)extractValueForFieldName:(NSString*)possiblyDottedField
                        fromDictionary:(NSDictionary*)body
 {
     // The algorithm here is to split the fields into a "path" and a "lastSegment".
@@ -26,7 +27,7 @@
     // that each level of the `path` results in a document rather than a value,
     // because if it's a value, we can't continue the selection process.
     
-    NSArray *fields = [fieldName componentsSeparatedByString:@"."];
+    NSArray *fields = [possiblyDottedField componentsSeparatedByString:@"."];
     
     NSRange pathLen;
     pathLen.location = 0;
@@ -38,6 +39,7 @@
     for (NSString *field in path) {
         currentLevel = currentLevel[field];
         if (currentLevel == nil || ![currentLevel isKindOfClass:[NSDictionary class]]) {
+            LogVerbose(@"Could not extract field %@ from document %@", possiblyDottedField, body);
             return nil;  // we ran out of stuff before we reached the full path length
         }
     }
