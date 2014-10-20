@@ -16,6 +16,7 @@
 
 #import "CDTQQueryExecutor.h"
 #import "CDTQIndexManager.h"
+#import "CDTQLogging.h"
 
 @implementation CDTQQueryNode
 

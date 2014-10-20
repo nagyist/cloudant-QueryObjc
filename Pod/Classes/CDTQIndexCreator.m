@@ -16,6 +16,7 @@
 
 #import "CDTQIndexManager.h"
 #import "CDTQIndexUpdater.h"
+#import "CDTQLogging.h"
 
 #import "CloudantSync.h"
 #import "FMDB.h"
