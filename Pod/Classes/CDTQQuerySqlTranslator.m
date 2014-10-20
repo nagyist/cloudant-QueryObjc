@@ -71,8 +71,39 @@ static NSString *const EQ = @"$eq";
     } else if (query[OR]) {
         clauses = query[OR];
         root = [[CDTQOrQueryNode alloc] init];
+    } 
+
+    if (![clauses isKindOfClass:[NSArray class]]) {
+        LogError(@"Arugment to compound operator is not an NSArray: %@", [query description]);
+        return nil;
     }
+
+    //validate arugments to operator first
+    __block BOOL error = NO;
+    [clauses enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        if ([obj isKindOfClass:[NSDictionary class]]){
+            NSDictionary *clause = (NSDictionary*)obj;
+            if( [clause count] != 1){
+                LogError(@"Operator argument clause should only have one key value pair: %@",
+                         [query description]);
+                *stop = YES;
+                error = YES;
+                return;
+            
+            }
+        } else {
+            LogError(@"Operator argument must be a dictionary %@",
+                     [query description]);
+            *stop = YES;
+            error = YES;
+            return;
+        }
+    }];
     
+    if(error){
+        return nil;
+    }
+
     //
     // First handle the simple @"field": @{ @"$operator": @"value" } clauses. These are
     // handled differently for AND and OR parents, so we need to have the conditional
@@ -80,13 +111,16 @@ static NSString *const EQ = @"$eq";
     //
         
     NSMutableArray *basicClauses = [NSMutableArray array];
-    [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
+
+    [clauses enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         NSDictionary *clause = (NSDictionary*)obj;
         NSString *field = clause.allKeys[0];
         if (![field hasPrefix:@"$"]) {
             [basicClauses addObject:clauses[idx]];
         }
     }];
+    
+
     
     if (query[AND]) {
         
@@ -205,9 +239,11 @@ static NSString *const EQ = @"$eq";
     //     @[ @{"field1": @{ @"$eq": @"mike"} }, ... } ]
     NSString *compoundOperator = [query allKeys][0];
     NSArray *predicates = query[compoundOperator];
-    NSArray *expandedPredicates = [CDTQQuerySqlTranslator addImplicitEq:predicates];
+    if ([predicates isKindOfClass:[NSArray class]]) {
+        predicates = [CDTQQuerySqlTranslator addImplicitEq:predicates];
+    }
     
-    return @{compoundOperator: expandedPredicates};
+    return @{compoundOperator: predicates};
 }
 
 + (NSDictionary*)addImplicitAnd:(NSDictionary*)query
@@ -250,9 +286,16 @@ static NSString *const EQ = @"$eq";
         //  or     @{ @"field1": @{ @"$operator": @"value" } -- we don't
         //  or     @{ @"$and": @[ ... ] } -- we don't        
         //  or     @{ @"$or": @[ ... ] } -- we don't
-        
-        NSString *fieldName = fieldClause.allKeys[0];
-        NSObject *predicate = fieldClause[fieldName];
+        NSObject *predicate = nil;
+        NSString *fieldName = nil;
+        //if this isn't a dictionary, we don't know what to do so pass it back
+        if ([fieldClause isKindOfClass:[NSDictionary class]] && [fieldClause count] != 0){
+            fieldName = fieldClause.allKeys[0];
+            predicate = fieldClause[fieldName];
+        } else {
+            [accumulator addObject:fieldClause];
+            continue;
+        }
         
         // If the clause isn't a special clause (the field name starts with
         // $, e.g., $and), we need to check whether the clause already
@@ -263,7 +306,7 @@ static NSString *const EQ = @"$eq";
             }
         }
         
-        [accumulator addObject:@{fieldName: predicate}];
+        [accumulator addObject:@{fieldName: predicate}]; //can't put nil in this
     }
     
     return [NSArray arrayWithArray:accumulator];
@@ -365,7 +408,15 @@ static NSString *const EQ = @"$eq";
             NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" %@ ? OR \"%@\" IS NULL)", 
                                    fieldName, sqlOperator, fieldName];
             [sqlClauses addObject:sqlClause];
-            [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
+            NSObject * predicateValue = [negatedPredicate objectForKey:operator];
+            
+            if([self validatePredicateValue:predicateValue]){
+                [sqlParameters addObject:predicateValue];
+            } else {
+                return nil;
+            }
+            
+            
         } else {
             NSString *sqlOperator = operatorMap[operator];
             
@@ -377,7 +428,13 @@ static NSString *const EQ = @"$eq";
             NSString *sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", 
                                    fieldName, sqlOperator];
             [sqlClauses addObject:sqlClause];
-            [sqlParameters addObject:[predicate objectForKey:operator]];
+            NSObject * predicateValue = [predicate objectForKey:operator];
+            if([self validatePredicateValue:predicateValue]){
+                            [sqlParameters addObject: predicateValue];
+            } else {
+                return nil;
+            }
+
         }
         
 
@@ -386,6 +443,13 @@ static NSString *const EQ = @"$eq";
     return [CDTQSqlParts partsForSql:[sqlClauses componentsJoinedByString:@" AND "]
                           parameters:sqlParameters];
     
+}
+
++ (BOOL) validatePredicateValue:(NSObject *)predicateValue
+{
+    return (([predicateValue isKindOfClass:[NSString class]] ||
+              [predicateValue isKindOfClass:[NSNumber class]])
+            );
 }
 
 + (CDTQSqlParts*)selectStatementForAndClause:(NSArray*)clause usingIndex:(NSString*)indexName

@@ -225,6 +225,30 @@ describe(@"cloudant query", ^{
                 CDTQResultSet *result = [im find:query];
                 expect(result.documentIds.count).to.equal(2);
             });
+            
+            
+            it(@"can compare string values",^{
+                NSDictionary * query = @{@"name":@{@"$gt":@"fred"}};
+                CDTQResultSet *result = [im find:query];
+                expect(result).toNot.beNil();
+                
+                for (CDTDocumentRevision * rev in  result) {
+                    expect([rev.body count]).to.beInTheRangeOf(@2,@3);
+                    expect(rev.body[@"name"]).to.equal(@"mike");
+                }
+            });
+            
+            it(@"can compare string values as part of an $and query",^{
+                NSDictionary * query = @{@"name":@{@"$gt":@"fred"},@"age":@34};
+                CDTQResultSet *result = [im find:query];
+                expect(result).toNot.beNil();
+                
+                for (CDTDocumentRevision * rev in  result) {
+                    expect([rev.body count]).to.beInTheRangeOf(@2,@3);
+                    expect(rev.body[@"name"]).to.equal(@"mike");
+                    expect(rev.body[@"age"]).to.equal(34);
+                }
+            });
         });
         
         describe(@"when using $gte operator", ^{
@@ -255,6 +279,30 @@ describe(@"cloudant query", ^{
                 CDTQResultSet *result = [im find:query];
                 expect(result.documentIds.count).to.equal(0);
             });
+            
+            it(@"can compare string values",^{
+                NSDictionary * query = @{@"name":@{@"$lt":@"mike"}};
+                CDTQResultSet *result = [im find:query];
+                expect(result).toNot.beNil();
+                
+                for (CDTDocumentRevision * rev in  result) {
+                    expect([rev.body count]).to.beInTheRangeOf(@2,@3);
+                    expect(rev.body[@"name"]).to.equal(@"fred");
+                }
+            });
+            
+            it(@"can compare string values as part of an $and query",^{
+                NSDictionary * query = @{@"name":@{@"$lt":@"mike"},@"age":@12};
+                CDTQResultSet *result = [im find:query];
+                expect(result).toNot.beNil();
+                
+                for (CDTDocumentRevision * rev in  result) {
+                    expect([rev.body count]).to.beInTheRangeOf(@2,@3);
+                    expect(rev.body[@"name"]).to.equal(@"fred");
+                    expect(rev.body[@"age"]).to.equal(12);
+                }
+            });
+            
         });
         
         describe(@"when using $lte operator", ^{
@@ -500,6 +548,13 @@ describe(@"cloudant query", ^{
             CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
             expect(result.documentIds.count).to.equal(4);
+        });
+        
+        it(@"supports using OR with a single operand",^{
+            NSDictionary * query = @{@"$or":@[@{@"name":@"mike"}]};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect([result.documentIds count]).to.equal(4);
         });
     });
     
