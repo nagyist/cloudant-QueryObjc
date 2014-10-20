@@ -17,19 +17,24 @@
 //
 //   index_name  |  index_type  |  field_name  |  last_sequence
 //   -----------------------------------------------------------
+//     name      |  json        |   _id        |     0
+//     name      |  json        |   _rev       |     0
 //     name      |  json        |   firstName  |     0
 //     name      |  json        |   lastName   |     0
 //     age       |  json        |   age        |     0
 //
 // The index itself is a single table, with a colum for docId and each of the indexed fields:
 //
-//     doc_id    |  firstName   |  lastName
-//   -------------------------------------------
-//     miker     |  Mike        |  Rhodes
-//     johna     |  John        |  Appleseed
-//     joeb      |  Joe         |  Bloggs
+//      _id      |   _rev      |  firstName   |  lastName
+//   --------------------------------------------------------
+//     miker     |  1-blah     |  Mike        |  Rhodes
+//     johna     |  3-blob     |  John        |  Appleseed
+//     joeb      |  2-blip     |  Joe         |  Bloggs
 // 
 // There is a single SQLite index created on all columns of this table.
+// 
+// N.b.: _id and _rev are automatically added to all indexes to allow them to be used to
+// project CDTDocumentRevisions without the need to load a document from the datastore.
 //
 
 #import "CDTQIndexManager.h"
