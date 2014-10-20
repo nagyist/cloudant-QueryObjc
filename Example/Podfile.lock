@@ -1,9 +1,9 @@
 PODS:
-  - CDTDatastore (0.9.0):
+  - CDTDatastore (0.10.0):
     - CDTDatastore/no-arc
     - CocoaLumberjack
     - FMDB (= 2.3)
-  - CDTDatastore/no-arc (0.9.0):
+  - CDTDatastore/no-arc (0.10.0):
     - CocoaLumberjack
     - FMDB (= 2.3)
   - CloudantQueryObjc (0.1.0):
@@ -39,7 +39,7 @@ EXTERNAL SOURCES:
     :tag: v0.3.0.beta1
 
 SPEC CHECKSUMS:
-  CDTDatastore: e5f8f260ba52f81fd0850f99195ec531d413092e
+  CDTDatastore: a343f8e9ed36f8d581c09254ac8acbe00eaf6b3e
   CloudantQueryObjc: e9ec16ab45a5a1fc1121290867da2709b35d2e06
   CocoaLumberjack: 956d3fb98fed498a13d56499f262c975ef431c98
   Expecta: 03aabd0a89d8dea843baecb19a7fd7466a69a31d
