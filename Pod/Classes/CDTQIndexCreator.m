@@ -85,6 +85,13 @@
         }
     }
     
+    // Check there are no duplicate field names in the array
+    NSSet *uniqueNames = [NSSet setWithArray:fieldNames];
+    if (uniqueNames.count != fieldNames.count) {
+        LogError(@"Cannot create index with duplicated field names %@", fieldNames);
+        return nil;
+    }
+    
     // Prepend _id and _rev if it's not in the array
     if (![fieldNames containsObject:@"_rev"]) {
         NSMutableArray *tmp = [NSMutableArray arrayWithObject:@"_rev"];

@@ -72,6 +72,14 @@ describe(@"cloudant query", ^{
             expect(indexes.allKeys.count).to.equal(0);
         });
         
+        it(@"doesn't create an index if duplicate fields", ^{
+            NSString *name = [im ensureIndexed:@[@"age", @"pet", @"age"] withName:@"basic"];
+            expect(name).to.equal(nil);
+            
+            NSDictionary *indexes = [im listIndexes];
+            expect(indexes.allKeys.count).to.equal(0);
+        });
+        
         it(@"doesn't create an index on nil fields", ^{
             NSString *name = [im ensureIndexed:nil withName:@"basic"];
             expect(name).to.equal(nil);
