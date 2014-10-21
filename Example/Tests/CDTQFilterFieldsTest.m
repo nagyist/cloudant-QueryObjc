@@ -27,7 +27,7 @@ describe(@"When filtering fields on find ", ^{
     __block CDTDatastore *ds;
     __block CDTQIndexManager *im;
     
-    beforeAll(^{
+    beforeEach(^{
         // Create a new CDTDatastoreFactory at a temp path
         
         NSString *tempDirectoryTemplate =
@@ -77,6 +77,13 @@ describe(@"When filtering fields on find ", ^{
         
         expect([im ensureIndexed:@[@"name", @"age"] withName:@"basic"]).toNot.beNil();
         expect([im ensureIndexed:@[@"name", @"pet"] withName:@"pet"]).toNot.beNil();
+    });
+    
+    afterEach(^{
+        // Delete the databases we used
+        factory = nil;
+        NSError *error;
+        [[NSFileManager defaultManager] removeItemAtPath:factoryPath error:&error];
     });
     
     it(@"returns only field specified in fields param in the document body", ^{
@@ -138,6 +145,64 @@ describe(@"When filtering fields on find ", ^{
             expect([revision.body objectForKey:@"name"]).toNot.beNil();
             expect([revision.body objectForKey:@"pet"]).toNot.beNil();
         }
+    });
+    
+    context(@"mutableCopy of projected doc", ^{
+       
+        it(@"returns full doc", ^{
+            NSDictionary *query = @{@"name":@"mike", @"age": @12};
+            CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@"name"] sort:nil];
+            expect(result.documentIds.count).to.equal(1);
+            
+            for (CDTDocumentRevision *revision in result) {
+                expect(revision.body.count).to.equal(1);
+                expect(revision.body[@"name"]).to.equal(@"mike");
+                
+                CDTMutableDocumentRevision *mutable = [revision mutableCopy];
+                expect(mutable.body.count).to.equal(3);
+                expect(mutable.body[@"name"]).to.equal(@"mike");
+                expect(mutable.body[@"age"]).to.equal(@12);
+                expect(mutable.body[@"pet"]).to.equal(@"cat");
+            }
+        });
+        
+        it(@"returns nil when doc updated", ^{
+            NSDictionary *query = @{@"name":@"mike", @"age": @12};
+            CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@"name"] sort:nil];
+            expect(result.documentIds.count).to.equal(1);
+            
+            for (CDTDocumentRevision *revision in result) {
+                expect(revision.body.count).to.equal(1);
+                expect(revision.body[@"name"]).to.equal(@"mike");
+                
+                CDTDocumentRevision *original = [ds getDocumentWithId:revision.docId
+                                                                error:nil];
+                CDTMutableDocumentRevision *update = [original mutableCopy];
+                update.body[@"name"] = @"charles";
+                expect([ds updateDocumentFromRevision:update error:nil]).toNot.beNil();
+                
+                CDTMutableDocumentRevision *mutable = [revision mutableCopy];
+                expect(mutable).to.beNil();
+            }
+        });
+        
+        it(@"returns nil when doc deleted", ^{
+            NSDictionary *query = @{@"name":@"mike", @"age": @12};
+            CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[@"name"] sort:nil];
+            expect(result.documentIds.count).to.equal(1);
+            
+            for (CDTDocumentRevision *revision in result) {
+                expect(revision.body.count).to.equal(1);
+                expect(revision.body[@"name"]).to.equal(@"mike");
+                
+                expect([ds deleteDocumentFromRevision:revision
+                                                error:nil]).toNot.beNil();
+                
+                CDTMutableDocumentRevision *mutable = [revision mutableCopy];
+                expect(mutable).to.beNil();
+            }
+        });
+        
     });
     
     

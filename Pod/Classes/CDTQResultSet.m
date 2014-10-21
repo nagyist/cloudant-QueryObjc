@@ -14,6 +14,8 @@
 
 #import "CDTQResultSet.h"
 #import "CDTQLogging.h"
+#import "CDTQProjectedDocumentRevision.h"
+
 #import <CloudantSync.h>
 
 @interface CDTQResultSet ()
@@ -58,7 +60,7 @@
     __unsafe_unretained NSArray *docs = [_datastore getDocumentsWithIds:batchIds];
     
     if(self.fields){
-        docs = [CDTQResultSet projectFields:self.fields fromRevisions:docs];
+        docs = [CDTQResultSet projectFields:self.fields fromRevisions:docs datastore:_datastore];
     }
     
     int i;
@@ -72,21 +74,25 @@
     return i;
 }
 
-+ (NSArray *)projectFields:(NSArray *) fields fromRevisions:(NSArray *)revisions
++ (NSArray *)projectFields:(NSArray*)fields 
+             fromRevisions:(NSArray*)revisions
+                 datastore:(CDTDatastore*)datastore
 {
 
     NSMutableArray * projectedDocs = [NSMutableArray array];
     
     for(CDTDocumentRevision * rev in revisions){
-            //grab the dictionary filter fields and rebuild object
-            NSDictionary * body = [rev.body dictionaryWithValuesForKeys:fields];
-            CDTDocumentRevision *rev2 = [[CDTDocumentRevision alloc] initWithDocId:rev.docId
-                                                  revisionId:rev.revId
-                                                        body:body
-                                                     deleted:rev.deleted
-                                                 attachments:rev.attachments
-                                                    sequence:rev.sequence];
-            [projectedDocs addObject:rev2];
+        //grab the dictionary filter fields and rebuild object
+        NSDictionary * body = [rev.body dictionaryWithValuesForKeys:fields];
+        CDTQProjectedDocumentRevision *rev2 = [[CDTQProjectedDocumentRevision alloc]
+                                               initWithDocId:rev.docId
+                                               revisionId:rev.revId
+                                               body:body
+                                               deleted:rev.deleted
+                                               attachments:rev.attachments
+                                               sequence:rev.sequence
+                                               datastore:datastore];
+        [projectedDocs addObject:rev2];
     }
     return projectedDocs;
 
