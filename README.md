@@ -26,7 +26,9 @@ in the debugger. There is also little error checking, so things might explode wi
 CloudantQueryObjc is available through [CocoaPods](http://cocoapods.org). To install 
 it, add the following line to your Podfile:
 
-    pod "CloudantQueryObjc"
+```ruby
+pod "CloudantQueryObjc", :git => 'https://github.com/cloudant/CloudantQueryObjc.git'
+```
 
 ## Usage
 
