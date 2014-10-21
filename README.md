@@ -474,6 +474,37 @@ Arrays
 - Querying using `$elemMatch`.
 
 
+## Performance
+
+### Indexing
+
+These were run on an iPhone 5 on commit c9bd52102fab8a8906b5fd8fe89f1f0f87568ef6, 2014-10-21.
+
+The documents were simple, of the form:
+
+```json
+{ 
+    "name": "mike", 
+    "age": 34, 
+    "docNumber": 0, 
+    "pet": "cat" 
+}
+```
+
+The one-index was over the `name` field, the three-index over `name`, `age` and `pet`.
+
+| Number of documents  | Number of fields  | Indexing time (seconds) |
+| ------------:|---------------:| -----:|
+| 1,000      | 1 | 0.8s |
+| 1,000      | 3 | 0.8s |
+| 10,000      | 1 | 6.9s |
+| 10,000      | 3 | 7.6s |
+| 50,000      | 1 | 56.2s |
+| 50,000      | 3 | 60.7s |
+| 100,000      | 1 | 169.2s |
+| 100,000      | 3 | 179.9s |
+
+
 ## Running the example project
 
 To run the example project, clone the repo, and run `pod install` from the Example directory first.
