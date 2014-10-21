@@ -258,24 +258,22 @@ static const int VERSION = 1;
     
     [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
         
-    NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
-    NSDictionary *args;
-    
-    // Drop the index table
-    args = @{@"table_name": tableName};
-    NSString *sql = @"DROP TABLE :table_name";
-    success = success && [db executeUpdate:sql withParameterDictionary:args];
-    
-    // Delete the metadata entries
-    args = @{@"index_name": indexName, 
-             @"metadata": kCDTQIndexMetadataTableName};
-    sql = [NSString stringWithFormat:@"DELETE * FROM :metadata WHERE index_name = :index_name"];
-    success = success && [db executeUpdate:sql withParameterDictionary:args];
-    
-    if (!success) {
-        LogError(@"Failed to delete index: %@",indexName);
-        *rollback = YES;
-    }
+        NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
+        NSString *sql;
+        
+        // Drop the index table
+        sql = [NSString stringWithFormat:@"DROP TABLE \"%@\";", tableName];
+        success = success && [db executeUpdate:sql withArgumentsInArray:@[]];
+        
+        // Delete the metadata entries
+        sql = [NSString stringWithFormat:@"DELETE FROM %@ WHERE index_name = ?", 
+               kCDTQIndexMetadataTableName];
+        success = success && [db executeUpdate:sql withArgumentsInArray:@[indexName]];
+        
+        if (!success) {
+            LogError(@"Failed to delete index: %@",indexName);
+            *rollback = YES;
+        }
     }];
     
     return success;
