@@ -21,6 +21,9 @@
 
 #import "FMDB.h"
 
+
+const NSUInteger kSmallResultSetSizeThreshold = 500;
+
 @interface CDTQQueryExecutor ()
 
 @property (nonatomic,strong) FMDatabaseQueue *database;
@@ -253,8 +256,10 @@
             indexes:(NSDictionary*)indexes
          inDatabase:(FMDatabase*)db
 {
-    CDTQSqlParts *orderBy = [CDTQQueryExecutor sqlToSortUsingOrder:sortDocument
-                                                           indexes:indexes];
+    BOOL smallResultSet = (docIdSet.count < kSmallResultSetSizeThreshold);
+    CDTQSqlParts *orderBy = [CDTQQueryExecutor sqlToSortIds:docIdSet
+                                                 usingOrder:sortDocument
+                                                    indexes:indexes];
     NSArray *sortedIds;
     
     if (orderBy != nil) {
@@ -267,10 +272,19 @@
         // ordered set of results.
         FMResultSet *rs= [db executeQuery:orderBy.sqlWithPlaceholders 
                      withArgumentsInArray:orderBy.placeholderValues];
-        while ([rs next]) {
-            NSString *candidateId = [rs stringForColumnIndex:0];
-            if ([docIdSet containsObject:candidateId]) {
+        
+        // The while loop is duplicated to avoid checking the smallResultSet variable every loop
+        if (smallResultSet) {
+            while ([rs next]) {
+                NSString *candidateId = [rs stringForColumnIndex:0];
                 [sortedDocIds addObject:candidateId];
+            }
+        } else {
+            while ([rs next]) {
+                NSString *candidateId = [rs stringForColumnIndex:0];
+                if ([docIdSet containsObject:candidateId]) {
+                    [sortedDocIds addObject:candidateId];
+                }
             }
         }
         [rs close];
@@ -288,11 +302,12 @@
  Method assumes `sortDocument` is valid.
  
  @param sortDocument Array of ordering definitions 
-                     `@[ @{"fieldName": "asc"}, @{@"fieldName2", @"desc"} ]`
+    `@[ @{"fieldName": "asc"}, @{@"fieldName2", @"desc"} ]`
  @param indexes dictionary of indexes
  */
-+ (CDTQSqlParts*)sqlToSortUsingOrder:(NSArray/*NSDictionary*/*)sortDocument
-                             indexes:(NSDictionary*)indexes
++ (CDTQSqlParts*)sqlToSortIds:(NSSet/*NSString*/*)docIdSet 
+                   usingOrder:(NSArray/*NSDictionary*/*)sortDocument
+                      indexes:(NSDictionary*)indexes
 {
     NSString *chosenIndex = [CDTQQueryExecutor chooseIndexForSort:sortDocument
                                                       fromIndexes:indexes];
@@ -304,6 +319,9 @@
     
     NSString *indexTable = [CDTQIndexManager tableNameForIndex:chosenIndex];
     
+    // for small result sets:
+    // SELECT _id FROM idx WHERE _id IN (?, ?) ORDER BY fieldName ASC, fieldName2 DESC;
+    // for large result sets:
     // SELECT _id FROM idx ORDER BY fieldName ASC, fieldName2 DESC;
     
     NSMutableArray *orderClauses = [NSMutableArray array];
@@ -317,10 +335,26 @@
         [orderClauses addObject:orderClause];
     }
     
-    NSString *sql = [NSString stringWithFormat:@"SELECT DISTINCT _id FROM %@ ORDER BY %@;", 
+    // If we have few results, it's more efficient to reduce the search space
+    // for SQLite. 500 placeholders should be a safe value.
+    NSMutableArray *parameters = [NSMutableArray array];
+    
+    NSString *whereClause = @"";
+    if (docIdSet.count < kSmallResultSetSizeThreshold) {
+        NSMutableArray *placeholders = [NSMutableArray array];
+        for (NSString *docId in docIdSet) {
+            [placeholders addObject:@"?"];
+            [parameters addObject:docId];
+        }
+        whereClause = [NSString stringWithFormat:@"WHERE _id IN (%@)",
+                       [placeholders componentsJoinedByString:@", "]];
+    }
+    
+    NSString *sql = [NSString stringWithFormat:@"SELECT DISTINCT _id FROM %@ %@ ORDER BY %@;", 
                      indexTable, 
+                     whereClause,
                      [orderClauses componentsJoinedByString:@", "]];
-    return [CDTQSqlParts partsForSql:sql parameters:@[]];
+    return [CDTQSqlParts partsForSql:sql parameters:parameters];
 }
 
 + (NSString*)chooseIndexForSort:(NSArray/*NSDictionary*/*)sortDocument

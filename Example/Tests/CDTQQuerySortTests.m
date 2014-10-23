@@ -137,97 +137,188 @@ describe(@"cloudant query", ^{
                                                   @"fields": @[@"x", @"y", @"z"]},
                                           };
         
-        context(@"for single field", ^{
+        __block NSSet *smallDocIdSet = [NSSet setWithArray:@[@"mike", @"john"]];
+        __block NSMutableSet *largeDocIdSet;
+        
+        beforeAll(^{
+            largeDocIdSet = [NSMutableSet set];
+            for (int i = 0; i < 501; i++) { // 500 max id set for placeholders
+                [largeDocIdSet addObject:[NSString stringWithFormat:@"doc-%d", i]];
+            }
+        });
+        
+        context(@"two doc IDs", ^{
             
-            it (@"asc", ^{
-                NSArray *order = @[ @{ @"name": @"asc" } ];
-                CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortUsingOrder:order
-                                                                     indexes:indexes];
+            context(@"for single field", ^{
                 
-                NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_a ORDER BY \"name\" ASC;";
-                expect(parts.sqlWithPlaceholders).to.equal(sql);
-                expect(parts.placeholderValues).to.equal(@[]);
+                it (@"asc", ^{
+                    NSArray *order = @[ @{ @"name": @"asc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_a WHERE _id IN (?, ?) ORDER BY \"name\" ASC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal([smallDocIdSet allObjects]);
+                });
+                
+                it (@"desc", ^{
+                    NSArray *order = @[ @{ @"y": @"desc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b WHERE _id IN (?, ?) ORDER BY \"y\" DESC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal([smallDocIdSet allObjects]);
+                });
+                
             });
             
-            it (@"desc", ^{
-                NSArray *order = @[ @{ @"y": @"desc" } ];
-                CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortUsingOrder:order
-                                                                     indexes:indexes];
+            context(@"for multiple fields", ^{
                 
-                NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b ORDER BY \"y\" DESC;";
-                expect(parts.sqlWithPlaceholders).to.equal(sql);
-                expect(parts.placeholderValues).to.equal(@[]);
+                it (@"asc", ^{
+                    NSArray *order = @[ @{ @"y": @"asc" }, @{ @"x": @"asc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b WHERE _id IN (?, ?) ORDER BY \"y\" ASC, \"x\" ASC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal([smallDocIdSet allObjects]);
+                });
+                
+                it (@"desc", ^{
+                    NSArray *order = @[ @{ @"y": @"desc" }, @{ @"x": @"desc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b WHERE _id IN (?, ?) ORDER BY \"y\" DESC, \"x\" DESC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal([smallDocIdSet allObjects]);
+                });
+                
+                it (@"mixed", ^{
+                    NSArray *order = @[ @{ @"y": @"desc" }, @{ @"x": @"asc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b WHERE _id IN (?, ?) ORDER BY \"y\" DESC, \"x\" ASC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal([smallDocIdSet allObjects]);
+                });
+                
             });
             
         });
         
-        context(@"for multiple fields", ^{
+        context(@"501 doc IDs", ^{
             
-            
-            it (@"asc", ^{
-                NSArray *order = @[ @{ @"y": @"asc" }, @{ @"x": @"asc" } ];
-                CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortUsingOrder:order
-                                                                     indexes:indexes];
+            context(@"for single field", ^{
                 
-                NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b ORDER BY \"y\" ASC, \"x\" ASC;";
-                expect(parts.sqlWithPlaceholders).to.equal(sql);
-                expect(parts.placeholderValues).to.equal(@[]);
+                it (@"asc", ^{
+                    NSArray *order = @[ @{ @"name": @"asc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:largeDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_a  ORDER BY \"name\" ASC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal(@[]);
+                });
+                
+                it (@"desc", ^{
+                    NSArray *order = @[ @{ @"y": @"desc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:largeDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b  ORDER BY \"y\" DESC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal(@[]);
+                });
+                
             });
             
-            it (@"desc", ^{
-                NSArray *order = @[ @{ @"y": @"desc" }, @{ @"x": @"desc" } ];
-                CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortUsingOrder:order
-                                                                     indexes:indexes];
+            context(@"for multiple fields", ^{
                 
-                NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b ORDER BY \"y\" DESC, \"x\" DESC;";
-                expect(parts.sqlWithPlaceholders).to.equal(sql);
-                expect(parts.placeholderValues).to.equal(@[]);
-            });
-            
-            it (@"mixed", ^{
-                NSArray *order = @[ @{ @"y": @"desc" }, @{ @"x": @"asc" } ];
-                CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortUsingOrder:order
-                                                                     indexes:indexes];
+                it (@"asc", ^{
+                    NSArray *order = @[ @{ @"y": @"asc" }, @{ @"x": @"asc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:largeDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b  ORDER BY \"y\" ASC, \"x\" ASC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal(@[]);
+                });
                 
-                NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b ORDER BY \"y\" DESC, \"x\" ASC;";
-                expect(parts.sqlWithPlaceholders).to.equal(sql);
-                expect(parts.placeholderValues).to.equal(@[]);
+                it (@"desc", ^{
+                    NSArray *order = @[ @{ @"y": @"desc" }, @{ @"x": @"desc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:largeDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b  ORDER BY \"y\" DESC, \"x\" DESC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal(@[]);
+                });
+                
+                it (@"mixed", ^{
+                    NSArray *order = @[ @{ @"y": @"desc" }, @{ @"x": @"asc" } ];
+                    CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:largeDocIdSet
+                                                               usingOrder:order
+                                                                  indexes:indexes];
+                    
+                    NSString *sql = @"SELECT DISTINCT _id FROM _t_cloudant_sync_query_index_b  ORDER BY \"y\" DESC, \"x\" ASC;";
+                    expect(parts.sqlWithPlaceholders).to.equal(sql);
+                    expect(parts.placeholderValues).to.equal(@[]);
+                });
+                
             });
             
         });
         
         it(@"fails when unindexed field", ^{
             NSArray *order = @[ @{ @"apples": @"asc" } ];
-            CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortUsingOrder:order
-                                                                 indexes:indexes];
+            CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                                       usingOrder:order
+                                                          indexes:indexes];
             expect(parts).to.beNil();
         });
         
         it(@"fails when fields not in single index", ^{
             NSArray *order = @[ @{ @"x": @"asc" }, @{ @"age": @"asc" } ];
-            CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortUsingOrder:order
-                                                                 indexes:indexes];
+            CDTQSqlParts *parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                                       usingOrder:order
+                                                          indexes:indexes];
             expect(parts).to.beNil();
         });
         
         it(@"returns nil when no order", ^{
             CDTQSqlParts *parts;
-            parts = [CDTQQueryExecutor sqlToSortUsingOrder:@[]
-                                                   indexes:indexes];
+            parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                         usingOrder:@[]
+                                            indexes:indexes];
             expect(parts).to.beNil();
-            parts = [CDTQQueryExecutor sqlToSortUsingOrder:nil
-                                                   indexes:indexes];
+            parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                         usingOrder:nil
+                                            indexes:indexes];
             expect(parts).to.beNil();
         });
         
         it(@"returns nil when no indexes", ^{
             CDTQSqlParts *parts;
             NSArray *order = @[ @{ @"y": @"desc" } ];
-            parts = [CDTQQueryExecutor sqlToSortUsingOrder:order
-                                                   indexes:@{}];
+            parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                         usingOrder:order
+                                            indexes:@{}];
             expect(parts).to.beNil();
-            parts = [CDTQQueryExecutor sqlToSortUsingOrder:order
-                                                   indexes:nil];
+            parts = [CDTQQueryExecutor sqlToSortIds:smallDocIdSet
+                                         usingOrder:order
+                                            indexes:nil];
             expect(parts).to.beNil();
         });
         

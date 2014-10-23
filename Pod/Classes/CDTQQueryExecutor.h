@@ -57,8 +57,9 @@
  @param sortDocument Array of ordering definitions `@[ @{"fieldName": "asc"}, @{@"fieldName2", @"asc"} ]`
  @param indexes dictionary of indexes
  */
-+ (CDTQSqlParts*)sqlToSortUsingOrder:(NSArray*)sortDocument
-                             indexes:(NSDictionary*)indexes;
++ (CDTQSqlParts*)sqlToSortIds:(NSSet/*NSString*/*)docIdSet 
+                   usingOrder:(NSArray/*NSDictionary*/*)sortDocument
+                      indexes:(NSDictionary*)indexes;
 
 
 @end
