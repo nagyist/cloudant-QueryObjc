@@ -12,9 +12,6 @@
 		2756496B19DB16C4007BAA32 /* CDTQQueryExecutorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496A19DB16C4007BAA32 /* CDTQQueryExecutorTests.m */; };
 		2756497019DC2CDB007BAA32 /* CDTQValueExtractorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496F19DC2CDB007BAA32 /* CDTQValueExtractorTests.m */; };
 		2756497219DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756497119DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m */; };
-		27B3721C19F0325800CE47B1 /* CDTQQuerySortTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27B3721B19F0325800CE47B1 /* CDTQQuerySortTests.m */; };
-		27BEA7C919F56DEA009658A4 /* CDTQPerformanceTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BEA7C819F56DEA009658A4 /* CDTQPerformanceTests.m */; };
-		27E1D61D19F68B5000E27AB8 /* CDTQIndexManagerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27E1D61C19F68B5000E27AB8 /* CDTQIndexManagerTests.m */; };
 		532AA87119ED450D28CEC7B4 /* libPods-CloudantQueryObjc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D728A7B1A7B0124B6C08CC18 /* libPods-CloudantQueryObjc.a */; };
 		6003F58E195388D20070C39A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58D195388D20070C39A /* Foundation.framework */; };
 		6003F590195388D20070C39A /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58F195388D20070C39A /* CoreGraphics.framework */; };
@@ -31,7 +28,11 @@
 		6003F5B2195388D20070C39A /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F591195388D20070C39A /* UIKit.framework */; };
 		6003F5BA195388D20070C39A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 6003F5B8195388D20070C39A /* InfoPlist.strings */; };
 		6003F5BC195388D20070C39A /* Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 6003F5BB195388D20070C39A /* Tests.m */; };
-		98ABE17919EFC95F00EBFC50 /* CDTQFilterFieldsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 98ABE17819EFC95F00EBFC50 /* CDTQFilterFieldsTest.m */; };
+		98816E6119F8FC71003D98B8 /* CDTQIndexManagerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 98816E5E19F8FC71003D98B8 /* CDTQIndexManagerTests.m */; };
+		98816E6219F8FC71003D98B8 /* CDTQPerformanceTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 98816E5F19F8FC71003D98B8 /* CDTQPerformanceTests.m */; };
+		98816E6319F8FC71003D98B8 /* CDTQQuerySortTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 98816E6019F8FC71003D98B8 /* CDTQQuerySortTests.m */; };
+		98ABE17719ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m in Sources */ = {isa = PBXBuildFile; fileRef = 98ABE17619ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m */; };
+		98C18F0419F5055F00B350E7 /* CDTQFilterFieldsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 98C18F0319F5055F00B350E7 /* CDTQFilterFieldsTest.m */; };
 		F055C16D9F7BF733E655981D /* libPods-Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FF673B5E498B99CA0743E9C9 /* libPods-Tests.a */; };
 /* End PBXBuildFile section */
 
@@ -51,9 +52,6 @@
 		2756496A19DB16C4007BAA32 /* CDTQQueryExecutorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQueryExecutorTests.m; sourceTree = "<group>"; };
 		2756496F19DC2CDB007BAA32 /* CDTQValueExtractorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQValueExtractorTests.m; sourceTree = "<group>"; };
 		2756497119DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQuerySqlTranslatorTests.m; sourceTree = "<group>"; };
-		27B3721B19F0325800CE47B1 /* CDTQQuerySortTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQuerySortTests.m; sourceTree = "<group>"; };
-		27BEA7C819F56DEA009658A4 /* CDTQPerformanceTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQPerformanceTests.m; sourceTree = "<group>"; };
-		27E1D61C19F68B5000E27AB8 /* CDTQIndexManagerTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQIndexManagerTests.m; sourceTree = "<group>"; };
 		6003F58A195388D20070C39A /* CloudantQueryObjc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CloudantQueryObjc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6003F58D195388D20070C39A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		6003F58F195388D20070C39A /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -77,7 +75,11 @@
 		606FC2411953D9B200FFA9A0 /* Tests-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Tests-Prefix.pch"; sourceTree = "<group>"; };
 		7D2FF5055D8CEB931C7BDD68 /* Pods-CloudantQueryObjc.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CloudantQueryObjc.release.xcconfig"; path = "Pods/Target Support Files/Pods-CloudantQueryObjc/Pods-CloudantQueryObjc.release.xcconfig"; sourceTree = "<group>"; };
 		8E1E056393FB8EF38FDB0032 /* CloudantQueryObjc.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = CloudantQueryObjc.podspec; path = ../CloudantQueryObjc.podspec; sourceTree = "<group>"; };
-		98ABE17819EFC95F00EBFC50 /* CDTQFilterFieldsTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQFilterFieldsTest.m; sourceTree = "<group>"; };
+		98816E5E19F8FC71003D98B8 /* CDTQIndexManagerTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQIndexManagerTests.m; sourceTree = "<group>"; };
+		98816E5F19F8FC71003D98B8 /* CDTQPerformanceTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQPerformanceTests.m; sourceTree = "<group>"; };
+		98816E6019F8FC71003D98B8 /* CDTQQuerySortTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQuerySortTests.m; sourceTree = "<group>"; };
+		98ABE17619ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQInvalidQuerySyntax.m; sourceTree = "<group>"; };
+		98C18F0319F5055F00B350E7 /* CDTQFilterFieldsTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQFilterFieldsTest.m; sourceTree = "<group>"; };
 		BBC23D0739813A44E6C7E622 /* Pods-Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		BCEBEBED17811A0373FCB306 /* Pods-Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.release.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.release.xcconfig"; sourceTree = "<group>"; };
 		C537BC82D35B03D44040A882 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = README.md; path = ../README.md; sourceTree = "<group>"; };
@@ -176,17 +178,18 @@
 		6003F5B5195388D20070C39A /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				98816E5E19F8FC71003D98B8 /* CDTQIndexManagerTests.m */,
+				98816E5F19F8FC71003D98B8 /* CDTQPerformanceTests.m */,
+				98816E6019F8FC71003D98B8 /* CDTQQuerySortTests.m */,
+				98C18F0319F5055F00B350E7 /* CDTQFilterFieldsTest.m */,
 				6003F5BB195388D20070C39A /* Tests.m */,
-				6003F5B6195388D20070C39A /* Supporting Files */,
 				2756496419DB1596007BAA32 /* CDTQIndexCreatorTests.m */,
-				27E1D61C19F68B5000E27AB8 /* CDTQIndexManagerTests.m */,
+				6003F5B6195388D20070C39A /* Supporting Files */,
 				2756496719DB1605007BAA32 /* CDTQIndexUpdaterTests.m */,
-				98ABE17819EFC95F00EBFC50 /* CDTQFilterFieldsTest.m */,
-				27BEA7C819F56DEA009658A4 /* CDTQPerformanceTests.m */,
 				2756496A19DB16C4007BAA32 /* CDTQQueryExecutorTests.m */,
-				27B3721B19F0325800CE47B1 /* CDTQQuerySortTests.m */,
-				2756497119DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m */,
 				2756496F19DC2CDB007BAA32 /* CDTQValueExtractorTests.m */,
+				2756497119DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m */,
+				98ABE17619ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -398,15 +401,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				98816E6119F8FC71003D98B8 /* CDTQIndexManagerTests.m in Sources */,
 				2756496819DB1605007BAA32 /* CDTQIndexUpdaterTests.m in Sources */,
-				98ABE17919EFC95F00EBFC50 /* CDTQFilterFieldsTest.m in Sources */,
 				6003F5BC195388D20070C39A /* Tests.m in Sources */,
+				98C18F0419F5055F00B350E7 /* CDTQFilterFieldsTest.m in Sources */,
 				2756496519DB1596007BAA32 /* CDTQIndexCreatorTests.m in Sources */,
 				2756496B19DB16C4007BAA32 /* CDTQQueryExecutorTests.m in Sources */,
+				98816E6219F8FC71003D98B8 /* CDTQPerformanceTests.m in Sources */,
 				2756497019DC2CDB007BAA32 /* CDTQValueExtractorTests.m in Sources */,
-				27E1D61D19F68B5000E27AB8 /* CDTQIndexManagerTests.m in Sources */,
-				27B3721C19F0325800CE47B1 /* CDTQQuerySortTests.m in Sources */,
-				27BEA7C919F56DEA009658A4 /* CDTQPerformanceTests.m in Sources */,
+				98ABE17719ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m in Sources */,
+				98816E6319F8FC71003D98B8 /* CDTQQuerySortTests.m in Sources */,
 				2756497219DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
