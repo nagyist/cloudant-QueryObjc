@@ -955,6 +955,63 @@ describe(@"cloudant query", ^{
         
     });
     
+    describe(@"", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", @"age": @12, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike34";
+            rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @"dog" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike72";
+            rev.body = @{ @"name": @"mike", @"age": @67, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred34";
+            rev.body = @{ @"name": @"fred", @"age": @34, @"pet": @"parrot" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred12";
+            rev.body = @{ @"name": @"fred", @"age": @12 };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            expect([im ensureIndexed:@[@"name", @"pet", @"age"]
+                            withName:@"pet"]).toNot.beNil();
+        });
+        
+        it(@"returns records where the field does not exist",^{
+            NSDictionary * query = @{@"pet":@{@"$exists":@NO}};
+            CDTQResultSet * result = [im find:query];
+            expect(result).toNot.beNil();
+            expect([result.documentIds count]).to.equal(1);
+        });
+        
+        it(@"returns records where the field does exist",^{
+            NSDictionary * query = @{@"pet":@{@"$exists":@YES}};
+            CDTQResultSet * result = [im find:query];
+            expect(result).toNot.beNil();
+            expect([result.documentIds count]).to.equal(4);
+            
+            
+        });
+        
+    });
+    
+    
 });
 
 SpecEnd

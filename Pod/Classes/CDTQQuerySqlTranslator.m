@@ -361,7 +361,7 @@ static NSString *const EQ = @"$eq";
                                   @"$gte": @">=",
                                   @"$lt": @"<",
                                   @"$lte": @"<=",
-                                  @"$ne": @"!="
+                                  @"$ne": @"!=",
                                   };
     
     // We apply these if the clause is negated, along with the NULL clause
@@ -415,8 +415,23 @@ static NSString *const EQ = @"$eq";
             } else {
                 return nil;
             }
+
+            [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
+        } else if ([operator isEqualToString:@"$exists"]){
             
-            
+            if( [predicate[operator] boolValue]){
+                //so this field needs to exist
+                NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NOT NULL)",
+                                       fieldName];
+                [sqlClauses addObject:sqlClause];
+                [sqlParameters addObject:[predicate objectForKey:operator]];
+            } else {
+                //must not exist
+                NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NULL)",
+                                       fieldName];
+                [sqlClauses addObject:sqlClause];
+                [sqlParameters addObject:[predicate objectForKey:operator]];
+            }
         } else {
             NSString *sqlOperator = operatorMap[operator];
             
