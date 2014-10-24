@@ -419,18 +419,25 @@ static NSString *const EQ = @"$eq";
             [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
         } else if ([operator isEqualToString:@"$exists"]){
             
-            if( [predicate[operator] boolValue]){
-                //so this field needs to exist
-                NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NOT NULL)",
-                                       fieldName];
-                [sqlClauses addObject:sqlClause];
-                [sqlParameters addObject:[predicate objectForKey:operator]];
+            if([predicate[operator] isKindOfClass:[NSNumber class]]){
+                
+                if( [predicate[operator] boolValue]){
+                    //so this field needs to exist
+                    NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NOT NULL)",
+                                           fieldName];
+                    [sqlClauses addObject:sqlClause];
+                    [sqlParameters addObject:[predicate objectForKey:operator]];
+                } else {
+                    //must not exist
+                    NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NULL)",
+                                           fieldName];
+                    [sqlClauses addObject:sqlClause];
+                    [sqlParameters addObject:[predicate objectForKey:operator]];
+                }
+                
             } else {
-                //must not exist
-                NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NULL)",
-                                       fieldName];
-                [sqlClauses addObject:sqlClause];
-                [sqlParameters addObject:[predicate objectForKey:operator]];
+                LogError(@"$exists operator expects YES or NO. Query: %@",clause);
+                return nil;
             }
         } else {
             NSString *sqlOperator = operatorMap[operator];
