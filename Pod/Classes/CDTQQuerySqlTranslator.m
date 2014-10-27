@@ -361,7 +361,7 @@ static NSString *const EQ = @"$eq";
                                   @"$gte": @">=",
                                   @"$lt": @"<",
                                   @"$lte": @"<=",
-                                  @"$ne": @"!=",
+                                  @"$ne": @"!="
                                   };
     
     // We apply these if the clause is negated, along with the NULL clause
