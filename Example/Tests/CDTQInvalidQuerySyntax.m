@@ -129,7 +129,7 @@ describe(@"cloudant query using invalid syntax", ^{
             expect(result).to.beNil();
         });
         
-        fit(@"returns nil when $exists has argument other than boolean",^{
+        it(@"returns nil when $exists has argument other than boolean",^{
             NSDictionary * query = @{@"name":@{@"$exists":@{}}};
             CDTQResultSet * result = [im find:query];
             expect(result).to.beNil();
