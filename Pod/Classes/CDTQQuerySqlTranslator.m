@@ -415,8 +415,6 @@ static NSString *const EQ = @"$eq";
             } else {
                 return nil;
             }
-
-            [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
         } else if ([operator isEqualToString:@"$exists"]){
             
             if([predicate[operator] isKindOfClass:[NSNumber class]]){
