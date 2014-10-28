@@ -99,18 +99,23 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
         return nil;
     }
     
-    // skip + limit
-    if(skip < docIds.count){
-        NSUInteger maxLength = docIds.count - skip;
-        NSRange range = NSMakeRange(skip, MIN(limit, maxLength));
-        docIds = [docIds subarrayWithRange:range];
-    } else {
-        docIds =  @[];
-    }
+    docIds = [CDTQQueryExecutor applySkip:skip andLimit:limit toResultSet:docIds];
     
     return [[CDTQResultSet alloc] initWithDocIds:docIds
                                        datastore:self.datastore
-                                projectionFields:fields];  
+                                projectionFields:fields];
+}
++ (NSArray *) applySkip:(NSUInteger)skip andLimit:(NSUInteger)limit toResultSet:(NSArray*)docIds
+{
+    NSArray *limitedResults = nil;
+    if(skip < docIds.count){
+        NSUInteger maxLength = docIds.count - skip;
+        NSRange range = NSMakeRange(skip, MIN(limit, maxLength));
+        limitedResults = [docIds subarrayWithRange:range];
+    } else {
+        limitedResults =  @[];
+    }
+    return limitedResults;
 }
 
 #pragma mark Validation helpers

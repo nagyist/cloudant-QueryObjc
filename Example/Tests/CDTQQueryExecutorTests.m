@@ -171,37 +171,7 @@ describe(@"cloudant query", ^{
                 
                 expect([results.documentIds count]).to.equal(0);
             });
-            
-            it(@"returns an array with results when limit is over array bounds", ^{
-                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-                CDTQResultSet * results = [im find:query skip:0 limit:4 fields:nil sort:nil];
-                
-                expect([results.documentIds count]).to.equal(3);
-            });
-            
-            it(@"returns all results with very large limit", ^{
-                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-                CDTQResultSet * results = [im find:query skip:0 limit:1000 fields:nil sort:nil];
-                
-                expect([results.documentIds count]).to.equal(3);
-            });
-            
-            it(@"returns an array with no results when range is out of bounds",^{
-                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-                CDTQResultSet * results = [im find:query skip:4 limit:4 fields:nil sort:nil];
-                
-                expect([results.documentIds count]).to.equal(0);
-                
-            });
-            
-            it(@"returns appropriate results skip and large limit used",^{
-                NSDictionary *query = @{@"name": @{@"$eq": @"mike"}};
-                CDTQResultSet * results = [im find:query skip:2 limit:1000 fields:nil sort:nil];
-                
-                expect([results.documentIds count]).to.equal(1);
-                
-            });
-            
+
         });
         
         describe(@"when using unsupported operator", ^{
@@ -956,5 +926,39 @@ describe(@"cloudant query", ^{
     });
     
 });
+
+    describe(@"when skipping and limiting results", ^{
+    
+        it(@"returns an array with results when limit is over array bounds", ^{
+            NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
+            NSArray *trimmed = [CDTQQueryExecutor applySkip:0 andLimit:4 toResultSet:docIds];
+            NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 3)];
+            expect(trimmed).to.equal(expected);
+        });
+    
+        it(@"returns all results with very large limit", ^{
+            NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
+            NSArray *trimmed = [CDTQQueryExecutor applySkip:0 andLimit:1000 toResultSet:docIds];
+            NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 3)];
+            expect(trimmed).to.equal(expected);
+        });
+    
+        it(@"returns an array with no results when range is out of bounds",^{
+            NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
+            NSArray *trimmed = [CDTQQueryExecutor applySkip:4 andLimit:4 toResultSet:docIds];
+            NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 0)];
+            expect(trimmed).to.equal(expected);
+        
+        });
+    
+        it(@"returns appropriate results skip and large limit used",^{
+            NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
+            NSArray *trimmed = [CDTQQueryExecutor applySkip:4 andLimit:4 toResultSet:docIds];
+            NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 0)];
+            expect(trimmed).to.equal(expected);
+        });
+    
+    });
+
 
 SpecEnd
