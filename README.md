@@ -507,6 +507,45 @@ The one-index was over the `name` field, the three-index over `name`, `age` and 
 | 100,000      | 3 | 179.9s |
 
 
+## Grammar
+
+To help, I've tried to write a grammar for the Query language.
+
+```java
+query := 
+    "{" "}"
+    "{" many-expressions "}"
+    
+many-expressions := expression ("," expression)*
+
+expression := 
+    logical-expression
+    operator-expression
+
+logical-expression := 
+    "{" ("$and" | "$nor" | "$or") ":" "[" many-expressions "]" "}"
+    "{" "$not" ":" "{" operator-expression "}" "}"
+
+operator-expression := 
+    "{" operator ":" simple-value "}"
+    "{" "$regex" ":" regular-expression "}"
+    "{" "$mod" ":" "[" divisor, remainder "]" "}"
+    "{" "$elemMatch" ":" "[" many-expressions "]" "}"
+    "{" "$size" ":" positive-integer "}"
+    "{" "$all" ":" array-value "}"
+    "{" "$in" ":" array-value "}"
+    "{" "$nin" ":" array-value "}"
+    "{" "$exists" ":" boolean "}"
+    "{" "$type" ":" type "}"
+
+operator := "$gt" | "$gte" | "$lt" | "$lte" | "$eq" | "$neq"
+
+array-value := "[" simple-value ("," simple-value)+ "]"
+
+simple-value := string | integer
+```
+
+
 ## Running the example project
 
 To run the example project, clone the repo, and run `pod install` from the Example directory first.
