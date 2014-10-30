@@ -530,7 +530,7 @@ operator-expression :=
     "{" operator ":" simple-value "}"
     "{" "$regex" ":" regular-expression "}"
     "{" "$mod" ":" "[" divisor, remainder "]" "}"
-    "{" "$elemMatch" ":" "[" many-expressions "]" "}"
+    "{" "$elemMatch" ":" "{" many-expressions "}" "}"
     "{" "$size" ":" positive-integer "}"
     "{" "$all" ":" array-value "}"
     "{" "$in" ":" array-value "}"
