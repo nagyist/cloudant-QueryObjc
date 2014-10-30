@@ -523,20 +523,20 @@ expression :=
     operator-expression
 
 logical-expression := 
-    "{" ("$and" | "$nor" | "$or") ":" "[" many-expressions "]" "}"
+    "{" ("$and" | "$nor" | "$or") ":" "[" many-expressions "]" "}"  // nor not implemented
     "{" "$not" ":" "{" operator-expression "}" "}"
 
 operator-expression := 
     "{" operator ":" simple-value "}"
-    "{" "$regex" ":" regular-expression "}"
-    "{" "$mod" ":" "[" divisor, remainder "]" "}"
-    "{" "$elemMatch" ":" "{" many-expressions "}" "}"
-    "{" "$size" ":" positive-integer "}"
-    "{" "$all" ":" array-value "}"
-    "{" "$in" ":" array-value "}"
-    "{" "$nin" ":" array-value "}"
-    "{" "$exists" ":" boolean "}"
-    "{" "$type" ":" type "}"
+    "{" "$regex" ":" regular-expression "}"  // not implemented
+    "{" "$mod" ":" "[" divisor, remainder "]" "}"  // not implemented
+    "{" "$elemMatch" ":" "{" many-expressions "}" "}"  // not implemented
+    "{" "$size" ":" positive-integer "}"  // not implemented
+    "{" "$all" ":" array-value "}"  // not implemented
+    "{" "$in" ":" array-value "}"  // not implemented
+    "{" "$nin" ":" array-value "}"  // not implemented
+    "{" "$exists" ":" boolean "}"  // not implemented
+    "{" "$type" ":" type "}"  // not implemented
 
 operator := "$gt" | "$gte" | "$lt" | "$lte" | "$eq" | "$neq"
 
