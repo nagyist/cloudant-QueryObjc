@@ -101,9 +101,12 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     
     docIds = [CDTQQueryExecutor applySkip:skip andLimit:limit toResultSet:docIds];
     
-    return [[CDTQResultSet alloc] initWithDocIds:docIds
-                                       datastore:self.datastore
-                                projectionFields:fields];
+    CDTDatastore *ds = self.datastore;
+    return [CDTQResultSet resultSetWithBlock:^(CDTQResultSetBuilder *b){
+        b.docIds = docIds;
+        b.datastore = ds;
+        b.fields = fields;
+    }]; 
 }
 + (NSArray *) applySkip:(NSUInteger)skip andLimit:(NSUInteger)limit toResultSet:(NSArray*)docIds
 {

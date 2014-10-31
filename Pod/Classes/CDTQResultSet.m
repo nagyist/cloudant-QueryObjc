@@ -19,22 +19,38 @@
 #import <CloudantSync.h>
 
 @interface CDTQResultSet ()
-@property (nonatomic,strong,readwrite) NSArray * fields;
+@property (nonatomic,strong,readwrite) NSArray *fields;
+@end
+
+@implementation CDTQResultSetBuilder
+
+- (CDTQResultSet*)build;
+{
+    return [[CDTQResultSet alloc] initWithBuilder:self];
+}
+
 @end
 
 @implementation CDTQResultSet
 
--(id)initWithDocIds:(NSArray*)docIds
-          datastore:(CDTDatastore*)datastore
-             projectionFields:(NSArray*)fields
+-(instancetype)initWithBuilder:(CDTQResultSetBuilder*)builder
 {
     self = [super init];
     if (self) {
-        _documentIds = docIds;
-        _datastore   = datastore;
-        _fields = fields;
+        _documentIds = builder.docIds;
+        _datastore   = builder.datastore;
+        _fields = builder.fields;
     }
     return self;
+}
+
++ (instancetype)resultSetWithBlock:(CDTQResultSetBuilderBlock)block 
+{
+    NSParameterAssert(block);
+    
+    CDTQResultSetBuilder *builder = [[CDTQResultSetBuilder alloc] init];
+    block(builder);
+    return [builder build];
 }
 
 -(NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state

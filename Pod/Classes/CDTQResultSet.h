@@ -15,6 +15,20 @@
 #import <Foundation/Foundation.h>
 
 @class CDTDatastore;
+@class CDTQResultSetBuilder;
+
+typedef void(^CDTQResultSetBuilderBlock)(CDTQResultSetBuilder *configuration);
+
+/**
+ A simple object to aid construction of a CDTQResultSet.
+ */
+@interface CDTQResultSetBuilder : NSObject
+
+@property (nonatomic,strong) NSArray *docIds;
+@property (nonatomic,strong) CDTDatastore *datastore;
+@property (nonatomic,strong) NSArray *fields;
+
+@end
 
 /**
  Enumerator over documents resulting from query.
@@ -30,9 +44,9 @@
     CDTDatastore *_datastore;
 }
 
--(id)initWithDocIds:(NSArray*)docIds
-          datastore:(CDTDatastore*)datastore
-             projectionFields:(NSArray*)fields;
++ (instancetype)resultSetWithBlock:(CDTQResultSetBuilderBlock)block;
+
+-(instancetype)initWithBuilder:(CDTQResultSetBuilder*)builder;
 
 -(NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state 
                                  objects:(id __unsafe_unretained*)buffer
