@@ -144,10 +144,11 @@ describe(@"cloudant query", ^{
         });
         
         it(@"query without index", ^{
-            NSDictionary *query = @{@"pet": @{@"$eq": @"mike"}, 
+            NSDictionary *query = @{@"pet": @{@"$eq": @"cat"}, 
                                     @"age": @{@"$eq": @12}};
             CDTQResultSet *result = [im find:query];
-            expect(result).to.beNil();
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
         });
         
         context(@"when limiting and offsetting results", ^{
@@ -511,7 +512,7 @@ describe(@"cloudant query", ^{
         
         it(@"supports using OR in sub trees", ^{
             NSDictionary *query = @{@"$or": @[@{@"name": @"fred"},
-                                              @{@"$or": @[@{@"age": @"12"},
+                                              @{@"$or": @[@{@"age": @12},
                                                           @{@"pet": @"cat"}
                                                           ]}
                                               ]

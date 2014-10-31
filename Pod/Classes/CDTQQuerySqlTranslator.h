@@ -110,7 +110,9 @@
  */
 @interface CDTQQuerySqlTranslator : NSObject
 
-+ (CDTQQueryNode*)translateQuery:(NSDictionary*)query toUseIndexes:(NSDictionary*)indexes;
++ (CDTQQueryNode*)translateQuery:(NSDictionary*)query 
+                    toUseIndexes:(NSDictionary*)indexes
+               indexesCoverQuery:(BOOL*)indexesCoverQuery;
 
 /**
  Expand implicit operators in a query.

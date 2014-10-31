@@ -18,6 +18,13 @@
 #import "CDTQIndexManager.h"
 #import "CDTQLogging.h"
 
+@interface CDTQTranslatorState : NSObject
+
+@property (nonatomic) BOOL atLeastOneIndexUsed;     // if NO, need to generate a return all query
+@property (nonatomic) BOOL atLeastOneIndexMissing;  // i.e., we need to use posthoc matcher
+
+@end
+
 @implementation CDTQQueryNode
 
 @end
@@ -47,6 +54,10 @@
 
 @end
 
+@implementation CDTQTranslatorState
+
+@end
+
 @implementation CDTQQuerySqlTranslator
 
 static NSString *const AND = @"$and";
@@ -54,7 +65,49 @@ static NSString *const OR = @"$or";
 static NSString *const EQ = @"$eq";
 static NSString * const EXISTS = @"$exists";
 
-+ (CDTQQueryNode*)translateQuery:(NSDictionary*)query toUseIndexes:(NSDictionary*)indexes
++ (CDTQQueryNode*)translateQuery:(NSDictionary*)query 
+                    toUseIndexes:(NSDictionary*)indexes
+               indexesCoverQuery:(BOOL*)indexesCoverQuery
+{
+    CDTQTranslatorState *state = [[CDTQTranslatorState alloc] init];
+    
+    CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
+                                                    toUseIndexes:indexes
+                                                           state:state];
+    
+    // If we haven't used a single index, we need to return a query
+    // which returns every document, so the posthoc matcher can
+    // run over every document to manually carry out the query.
+    if (!state.atLeastOneIndexUsed) {
+        NSSet *neededFields = [NSSet setWithObject:@"_id"];
+        NSString *allDocsIndex = [CDTQQuerySqlTranslator chooseIndexForFields:neededFields
+                                                                  fromIndexes:indexes];
+        
+        NSString *tableName = [CDTQIndexManager tableNameForIndex:allDocsIndex];
+        
+        NSString *sql = @"SELECT _id FROM %@;";
+        sql = [NSString stringWithFormat:sql, tableName];
+        CDTQSqlParts *parts = [CDTQSqlParts partsForSql:sql
+                                             parameters:@[]];
+        
+        CDTQSqlQueryNode *sqlNode = [[CDTQSqlQueryNode alloc] init];
+        sqlNode.sql = parts;
+        
+        CDTQAndQueryNode *root = [[CDTQAndQueryNode alloc] init];
+        [root.children addObject:sqlNode];
+        
+        *indexesCoverQuery = NO;
+        return root;
+    } else {
+        *indexesCoverQuery = !state.atLeastOneIndexMissing;
+        return node;
+    }
+}
+
+
++ (CDTQQueryNode*)translateQuery:(NSDictionary*)query 
+                    toUseIndexes:(NSDictionary*)indexes
+                           state:(CDTQTranslatorState*)state
 {
     query = [CDTQQuerySqlTranslator normaliseQuery:query];
     
@@ -121,8 +174,6 @@ static NSString * const EXISTS = @"$exists";
         }
     }];
     
-
-    
     if (query[AND]) {
         
         // For an AND query, we require a single compound index and we generate a
@@ -131,24 +182,28 @@ static NSString * const EXISTS = @"$exists";
         NSString *chosenIndex = [CDTQQuerySqlTranslator chooseIndexForAndClause:basicClauses
                                                                     fromIndexes:indexes];
         if (!chosenIndex) {
-            LogError(@"No single index contains all of %@; please add an index on these fields.", 
-                     basicClauses);
-            return nil;
+            state.atLeastOneIndexMissing = YES;
+            
+            LogWarn(@"No single index contains all of %@; add index for these fields to "
+                    @"query efficiently.", basicClauses);
+        } else {
+            
+            state.atLeastOneIndexUsed = YES;
+            
+            // Execute SQL on that index with appropriate values
+            CDTQSqlParts *select = [CDTQQuerySqlTranslator selectStatementForAndClause:basicClauses
+                                                                            usingIndex:chosenIndex];
+            
+            if (!select) {
+                LogError(@"Error generating SELECT clause for %@", basicClauses);
+                return nil;
+            }
+            
+            CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
+            sql.sql = select;
+            
+            [root.children addObject:sql];
         }
-        
-        // Execute SQL on that index with appropriate values
-        CDTQSqlParts *select = [CDTQQuerySqlTranslator selectStatementForAndClause:basicClauses
-                                                                        usingIndex:chosenIndex];
-        
-        if (!select) {
-            LogError(@"Error generating SELECT clause for %@", basicClauses);
-            return nil;
-        }
-        
-        CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
-        sql.sql = select;
-        
-        [root.children addObject:sql];
         
     } else if (query[OR]) {
         
@@ -169,24 +224,28 @@ static NSString * const EXISTS = @"$exists";
             NSString *chosenIndex = [CDTQQuerySqlTranslator chooseIndexForAndClause:wrappedClause
                                                                         fromIndexes:indexes];
             if (!chosenIndex) {
-                LogError(@"No single index contains all of %@; please add an index on these fields.", 
-                         basicClauses);
-                return nil;
+                state.atLeastOneIndexMissing = YES;
+                
+                LogWarn(@"No single index contains all of %@; add index for these fields to "
+                        @"query efficiently.", basicClauses);
+            } else {
+                
+                state.atLeastOneIndexUsed = YES;
+                
+                // Execute SQL on that index with appropriate values
+                CDTQSqlParts *select = [CDTQQuerySqlTranslator selectStatementForAndClause:wrappedClause
+                                                                                usingIndex:chosenIndex];
+                
+                if (!select) {
+                    LogError(@"Error generating SELECT clause for %@", basicClauses);
+                    return nil;
+                }
+                
+                CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
+                sql.sql = select;
+                
+                [root.children addObject:sql];
             }
-            
-            // Execute SQL on that index with appropriate values
-            CDTQSqlParts *select = [CDTQQuerySqlTranslator selectStatementForAndClause:wrappedClause
-                                                                            usingIndex:chosenIndex];
-            
-            if (!select) {
-                LogError(@"Error generating SELECT clause for %@", basicClauses);
-                return nil;
-            }
-            
-            CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
-            sql.sql = select;
-            
-            [root.children addObject:sql];
             
         }
     }
@@ -203,7 +262,8 @@ static NSString * const EXISTS = @"$exists";
         NSString *field = clause.allKeys[0];
         if ([field hasPrefix:@"$or"]) {
             CDTQQueryNode *orNode = [CDTQQuerySqlTranslator translateQuery:clauses[idx]
-                                                              toUseIndexes:indexes];
+                                                              toUseIndexes:indexes
+                                                                     state:state];
             [root.children addObject:orNode];
         }
     }];
@@ -214,7 +274,8 @@ static NSString * const EXISTS = @"$exists";
         NSString *field = clause.allKeys[0];
         if ([field hasPrefix:@"$and"]) {
             CDTQQueryNode *andNode = [CDTQQuerySqlTranslator translateQuery:clauses[idx]
-                                                              toUseIndexes:indexes];
+                                                              toUseIndexes:indexes
+                                                                      state:state];
             [root.children addObject:andNode];
         }
     }];
@@ -335,6 +396,13 @@ static NSString * const EXISTS = @"$exists";
         return nil;  // no point in querying empty set of fields
     }
     
+    return [CDTQQuerySqlTranslator chooseIndexForFields:neededFields fromIndexes:indexes];
+    
+}
+                                      
+                                      
++ (NSString*)chooseIndexForFields:(NSSet*)neededFields fromIndexes:(NSDictionary*)indexes
+{
     NSString *chosenIndex = nil;
     for (NSString *indexName in indexes) {
         NSSet *providedFields = [NSSet setWithArray:indexes[indexName][@"fields"]];

@@ -69,9 +69,12 @@ describe(@"cdtq", ^{
         });
        
         it(@"can cope with single level ANDed query", ^{
+            BOOL indexesCoverQuery;
             CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:@{@"name": @"mike"}
-                                                            toUseIndexes:indexes];
+                                                            toUseIndexes:indexes
+                                                       indexesCoverQuery:&indexesCoverQuery];
             expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            expect(indexesCoverQuery).to.beTruthy();
             
             CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
             expect(and.children.count).to.equal(1);
@@ -84,10 +87,13 @@ describe(@"cdtq", ^{
         });
         
         it(@"can cope with single level ANDed query", ^{
+            BOOL indexesCoverQuery;
             CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:@{@"name": @"mike",
                                                                            @"pet": @"cat"}
-                                                            toUseIndexes:indexes];
+                                                            toUseIndexes:indexes
+                                                       indexesCoverQuery:&indexesCoverQuery];
             expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            expect(indexesCoverQuery).to.beTruthy();
             
             CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
             expect(and.children.count).to.equal(1);
@@ -100,11 +106,14 @@ describe(@"cdtq", ^{
         });
         
         it(@"can cope with longhand single level ANDed query", ^{
+            BOOL indexesCoverQuery;
             NSDictionary *query = @{@"$and": @[@{@"name": @"mike"},
                                                @{@"pet": @"cat"}]};
             CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
-                                                            toUseIndexes:indexes];
+                                                            toUseIndexes:indexes
+                                                       indexesCoverQuery:&indexesCoverQuery];
             expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            expect(indexesCoverQuery).to.beTruthy();
             
             CDTQAndQueryNode *and = (CDTQAndQueryNode*)node;
             expect(and.children.count).to.equal(1);
@@ -124,9 +133,12 @@ describe(@"cdtq", ^{
                                                             ]}
                                                ]
                                     };
+            BOOL indexesCoverQuery;
             CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
-                                                            toUseIndexes:indexes];
+                                                            toUseIndexes:indexes
+                                                       indexesCoverQuery:&indexesCoverQuery];
             expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            expect(indexesCoverQuery).to.beTruthy();
             
             //        AND
             //       /   \
@@ -153,6 +165,7 @@ describe(@"cdtq", ^{
         });
         
         it(@"orders AND nodes last in trees", ^{
+            BOOL indexesCoverQuery;
             NSDictionary *query = @{@"$and": @[@{@"$and": @[@{@"name": @"mike"},
                                                             @{@"pet": @"cat"}
                                                             ]},
@@ -161,8 +174,10 @@ describe(@"cdtq", ^{
                                                ]
                                     };
             CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
-                                                            toUseIndexes:indexes];
+                                                            toUseIndexes:indexes
+                                                       indexesCoverQuery:&indexesCoverQuery];
             expect(node).to.beInstanceOf([CDTQAndQueryNode class]);
+            expect(indexesCoverQuery).to.beTruthy();
             
             //        AND
             //       /   \
@@ -193,9 +208,12 @@ describe(@"cdtq", ^{
                                               @{@"pet": @"cat"}
                                               ]
                                     };
+            BOOL indexesCoverQuery;
             CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
-                                                            toUseIndexes:indexes];
+                                                            toUseIndexes:indexes
+                                                       indexesCoverQuery:&indexesCoverQuery];
             expect(node).to.beInstanceOf([CDTQOrQueryNode class]);
+            expect(indexesCoverQuery).to.beTruthy();
             
             //        _OR_
             //       /    \
@@ -229,9 +247,12 @@ describe(@"cdtq", ^{
                                                           ]}
                                               ]
                                     };
+            BOOL indexesCoverQuery;
             CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
-                                                            toUseIndexes:indexes];
+                                                            toUseIndexes:indexes
+                                                       indexesCoverQuery:&indexesCoverQuery];
             expect(node).to.beInstanceOf([CDTQOrQueryNode class]);
+            expect(indexesCoverQuery).to.beTruthy();
             
             //        OR______
             //       /   \    \
@@ -282,9 +303,12 @@ describe(@"cdtq", ^{
                                                           ]}
                                               ]
                                     };
+            BOOL indexesCoverQuery;
             CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
-                                                            toUseIndexes:indexes];
+                                                            toUseIndexes:indexes
+                                                       indexesCoverQuery:&indexesCoverQuery];
             expect(node).to.beInstanceOf([CDTQOrQueryNode class]);
+            expect(indexesCoverQuery).to.beTruthy();
             
             //        OR____________
             //       /   \    \     \
@@ -346,9 +370,12 @@ describe(@"cdtq", ^{
                                                           ]}
                                               ]
                                     };
+            BOOL indexesCoverQuery;
             CDTQQueryNode *node = [CDTQQuerySqlTranslator translateQuery:query
-                                                            toUseIndexes:indexes];
+                                                            toUseIndexes:indexes
+                                                       indexesCoverQuery:&indexesCoverQuery];
             expect(node).to.beInstanceOf([CDTQOrQueryNode class]);
+            expect(indexesCoverQuery).to.beTruthy();
             
             //        OR______
             //       /   \    \
