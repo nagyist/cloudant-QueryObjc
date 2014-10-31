@@ -12,6 +12,37 @@
 
 SpecBegin(CDTQValueExtractor)
 
+describe(@"from revision", ^{ 
+    
+    __block CDTDocumentRevision *rev;
+    
+    beforeAll(^{
+        rev = [[CDTDocumentRevision alloc] initWithDocId:@"dsfsdfdfs"
+                                              revisionId:@"qweqeqwewqe"
+                                                    body:@{@"name": @"mike"} 
+                                             attachments:nil];
+    });
+    
+    it(@"gets _id", ^{
+        NSObject *value = [CDTQValueExtractor extractValueForFieldName:@"_id"
+                                                          fromRevision:rev];
+        expect(value).to.equal(@"dsfsdfdfs");
+    });
+    
+    it(@"gets _rev", ^{
+        NSObject *value = [CDTQValueExtractor extractValueForFieldName:@"_rev"
+                                                          fromRevision:rev];
+        expect(value).to.equal(@"qweqeqwewqe");
+    });
+    
+    it(@"gets name", ^{
+        NSObject *value = [CDTQValueExtractor extractValueForFieldName:@"name"
+                                                          fromRevision:rev];
+        expect(value).to.equal(@"mike");
+    });
+    
+});
+
 
 describe(@"when extracting single fields", ^{
     
