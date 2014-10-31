@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		27029AF11A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27029AF01A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m */; };
 		2756496519DB1596007BAA32 /* CDTQIndexCreatorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496419DB1596007BAA32 /* CDTQIndexCreatorTests.m */; };
 		2756496819DB1605007BAA32 /* CDTQIndexUpdaterTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496719DB1605007BAA32 /* CDTQIndexUpdaterTests.m */; };
 		2756496B19DB16C4007BAA32 /* CDTQQueryExecutorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496A19DB16C4007BAA32 /* CDTQQueryExecutorTests.m */; };
@@ -47,6 +48,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		27029AF01A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQUnindexedMatcherTests.m; sourceTree = "<group>"; };
 		2756496419DB1596007BAA32 /* CDTQIndexCreatorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQIndexCreatorTests.m; sourceTree = "<group>"; };
 		2756496719DB1605007BAA32 /* CDTQIndexUpdaterTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQIndexUpdaterTests.m; sourceTree = "<group>"; };
 		2756496A19DB16C4007BAA32 /* CDTQQueryExecutorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQueryExecutorTests.m; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				2756496F19DC2CDB007BAA32 /* CDTQValueExtractorTests.m */,
 				2756497119DEB6A1007BAA32 /* CDTQQuerySqlTranslatorTests.m */,
 				98ABE17619ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m */,
+				27029AF01A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -402,6 +405,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				98816E6119F8FC71003D98B8 /* CDTQIndexManagerTests.m in Sources */,
+				27029AF11A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m in Sources */,
 				2756496819DB1605007BAA32 /* CDTQIndexUpdaterTests.m in Sources */,
 				6003F5BC195388D20070C39A /* Tests.m in Sources */,
 				98C18F0419F5055F00B350E7 /* CDTQFilterFieldsTest.m in Sources */,
