@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		27029AF11A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27029AF01A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m */; };
+		273220B21A053D590039DF69 /* CDTQMatcherIndexManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 273220B11A053D590039DF69 /* CDTQMatcherIndexManager.m */; };
+		273220B51A053DD10039DF69 /* CDTQMatcherQueryExecutor.m in Sources */ = {isa = PBXBuildFile; fileRef = 273220B41A053DD10039DF69 /* CDTQMatcherQueryExecutor.m */; };
+		273220B81A054F510039DF69 /* CDTQSQLOnlyQueryExecutor.m in Sources */ = {isa = PBXBuildFile; fileRef = 273220B71A054F510039DF69 /* CDTQSQLOnlyQueryExecutor.m */; };
+		273220BB1A054FAE0039DF69 /* CDTQSQLOnlyIndexManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 273220BA1A054FAE0039DF69 /* CDTQSQLOnlyIndexManager.m */; };
 		2756496519DB1596007BAA32 /* CDTQIndexCreatorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496419DB1596007BAA32 /* CDTQIndexCreatorTests.m */; };
 		2756496819DB1605007BAA32 /* CDTQIndexUpdaterTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496719DB1605007BAA32 /* CDTQIndexUpdaterTests.m */; };
 		2756496B19DB16C4007BAA32 /* CDTQQueryExecutorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2756496A19DB16C4007BAA32 /* CDTQQueryExecutorTests.m */; };
@@ -49,6 +53,14 @@
 
 /* Begin PBXFileReference section */
 		27029AF01A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQUnindexedMatcherTests.m; sourceTree = "<group>"; };
+		273220B01A053D590039DF69 /* CDTQMatcherIndexManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CDTQMatcherIndexManager.h; path = Mocks/CDTQMatcherIndexManager.h; sourceTree = "<group>"; };
+		273220B11A053D590039DF69 /* CDTQMatcherIndexManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CDTQMatcherIndexManager.m; path = Mocks/CDTQMatcherIndexManager.m; sourceTree = "<group>"; };
+		273220B31A053DD10039DF69 /* CDTQMatcherQueryExecutor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CDTQMatcherQueryExecutor.h; path = Mocks/CDTQMatcherQueryExecutor.h; sourceTree = "<group>"; };
+		273220B41A053DD10039DF69 /* CDTQMatcherQueryExecutor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CDTQMatcherQueryExecutor.m; path = Mocks/CDTQMatcherQueryExecutor.m; sourceTree = "<group>"; };
+		273220B61A054F510039DF69 /* CDTQSQLOnlyQueryExecutor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CDTQSQLOnlyQueryExecutor.h; path = Mocks/CDTQSQLOnlyQueryExecutor.h; sourceTree = "<group>"; };
+		273220B71A054F510039DF69 /* CDTQSQLOnlyQueryExecutor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CDTQSQLOnlyQueryExecutor.m; path = Mocks/CDTQSQLOnlyQueryExecutor.m; sourceTree = "<group>"; };
+		273220B91A054FAE0039DF69 /* CDTQSQLOnlyIndexManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CDTQSQLOnlyIndexManager.h; path = Mocks/CDTQSQLOnlyIndexManager.h; sourceTree = "<group>"; };
+		273220BA1A054FAE0039DF69 /* CDTQSQLOnlyIndexManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CDTQSQLOnlyIndexManager.m; path = Mocks/CDTQSQLOnlyIndexManager.m; sourceTree = "<group>"; };
 		2756496419DB1596007BAA32 /* CDTQIndexCreatorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQIndexCreatorTests.m; sourceTree = "<group>"; };
 		2756496719DB1605007BAA32 /* CDTQIndexUpdaterTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQIndexUpdaterTests.m; sourceTree = "<group>"; };
 		2756496A19DB16C4007BAA32 /* CDTQQueryExecutorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQueryExecutorTests.m; sourceTree = "<group>"; };
@@ -117,6 +129,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		273220AF1A053D350039DF69 /* Mocks */ = {
+			isa = PBXGroup;
+			children = (
+				273220B01A053D590039DF69 /* CDTQMatcherIndexManager.h */,
+				273220B11A053D590039DF69 /* CDTQMatcherIndexManager.m */,
+				273220B31A053DD10039DF69 /* CDTQMatcherQueryExecutor.h */,
+				273220B41A053DD10039DF69 /* CDTQMatcherQueryExecutor.m */,
+				273220B91A054FAE0039DF69 /* CDTQSQLOnlyIndexManager.h */,
+				273220BA1A054FAE0039DF69 /* CDTQSQLOnlyIndexManager.m */,
+				273220B61A054F510039DF69 /* CDTQSQLOnlyQueryExecutor.h */,
+				273220B71A054F510039DF69 /* CDTQSQLOnlyQueryExecutor.m */,
+			);
+			name = Mocks;
+			sourceTree = "<group>";
+		};
 		6003F581195388D10070C39A = {
 			isa = PBXGroup;
 			children = (
@@ -180,6 +207,7 @@
 		6003F5B5195388D20070C39A /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				273220AF1A053D350039DF69 /* Mocks */,
 				98816E5E19F8FC71003D98B8 /* CDTQIndexManagerTests.m */,
 				98816E5F19F8FC71003D98B8 /* CDTQPerformanceTests.m */,
 				98816E6019F8FC71003D98B8 /* CDTQQuerySortTests.m */,
@@ -406,12 +434,16 @@
 			files = (
 				98816E6119F8FC71003D98B8 /* CDTQIndexManagerTests.m in Sources */,
 				27029AF11A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m in Sources */,
+				273220B51A053DD10039DF69 /* CDTQMatcherQueryExecutor.m in Sources */,
 				2756496819DB1605007BAA32 /* CDTQIndexUpdaterTests.m in Sources */,
 				6003F5BC195388D20070C39A /* Tests.m in Sources */,
+				273220BB1A054FAE0039DF69 /* CDTQSQLOnlyIndexManager.m in Sources */,
 				98C18F0419F5055F00B350E7 /* CDTQFilterFieldsTest.m in Sources */,
 				2756496519DB1596007BAA32 /* CDTQIndexCreatorTests.m in Sources */,
+				273220B21A053D590039DF69 /* CDTQMatcherIndexManager.m in Sources */,
 				2756496B19DB16C4007BAA32 /* CDTQQueryExecutorTests.m in Sources */,
 				98816E6219F8FC71003D98B8 /* CDTQPerformanceTests.m in Sources */,
+				273220B81A054F510039DF69 /* CDTQSQLOnlyQueryExecutor.m in Sources */,
 				2756497019DC2CDB007BAA32 /* CDTQValueExtractorTests.m in Sources */,
 				98ABE17719ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m in Sources */,
 				98816E6319F8FC71003D98B8 /* CDTQQuerySortTests.m in Sources */,

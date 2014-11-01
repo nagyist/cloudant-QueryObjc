@@ -74,10 +74,11 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     // Execute the query
     //
     
-    BOOL indexesCoverQuery; // YES if we need to run posthoc matcher
-    CDTQChildrenQueryNode *root = (CDTQChildrenQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
-                                                                                    toUseIndexes:indexes
-                                                                               indexesCoverQuery:&indexesCoverQuery];
+    // YES if we need to run posthoc matcher
+    BOOL indexesCoverQuery;
+    
+    CDTQChildrenQueryNode *root;
+    root = [self translateQuery:query indexes:indexes indexesCoverQuery:&indexesCoverQuery];
     
     if(!root) {
         return nil;
@@ -105,6 +106,36 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     }
     
     // Apply post-hoc filtering
+    docIds = [self postHocMatcherIfRequired:!indexesCoverQuery
+                               forResultSet:docIds
+                              usingSelector:query];
+    
+    docIds = [CDTQQueryExecutor applySkip:skip andLimit:limit toResultSet:docIds];
+    
+    CDTDatastore *ds = self.datastore;
+    return [CDTQResultSet resultSetWithBlock:^(CDTQResultSetBuilder *b){
+        b.docIds = docIds;
+        b.datastore = ds;
+        b.fields = fields;
+    }]; 
+}
+
+// Method exists so we can override it in testing (to force indexesCoverQuery to false)
+- (CDTQChildrenQueryNode *)translateQuery:(NSDictionary *)query 
+                                  indexes:(NSDictionary *)indexes 
+                        indexesCoverQuery:(BOOL *)indexesCoverQuery
+{
+    CDTQChildrenQueryNode *root = (CDTQChildrenQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
+                                                                                    toUseIndexes:indexes
+                                                                               indexesCoverQuery:indexesCoverQuery];
+    return root;
+}
+
+- (NSArray*)postHocMatcherIfRequired:(BOOL)required 
+                        forResultSet:(NSArray*)docIds
+                       usingSelector:(NSDictionary*)selector
+{
+    
     //
     // This is very inefficient as we load the document here to check it against
     // the matcher, then again while returning results to the client. However,
@@ -119,12 +150,12 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     // cause problems in production.
     //
     // Filtering is batched to avoid memory issues.
-    if (!indexesCoverQuery) {
+    if (required) {
         LogWarn(@"Query could not be executed using indexes alone; falling back to filtering "
                 @"documents themselves. This will be VERY SLOW as each candidate document is "
                 @"loaded from the datastore and matched against the query selector.");
         
-        CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:query];
+        CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
         NSMutableArray *matchedDocIds = [NSMutableArray array];
         
         NSUInteger batchSize = 50;
@@ -147,14 +178,7 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
         docIds = [NSArray arrayWithArray:matchedDocIds];
     }
     
-    docIds = [CDTQQueryExecutor applySkip:skip andLimit:limit toResultSet:docIds];
-    
-    CDTDatastore *ds = self.datastore;
-    return [CDTQResultSet resultSetWithBlock:^(CDTQResultSetBuilder *b){
-        b.docIds = docIds;
-        b.datastore = ds;
-        b.fields = fields;
-    }]; 
+    return docIds;
 }
 
 + (NSArray *) applySkip:(NSUInteger)skip andLimit:(NSUInteger)limit toResultSet:(NSArray*)docIds

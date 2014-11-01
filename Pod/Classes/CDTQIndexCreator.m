@@ -106,7 +106,7 @@
     }
     
     // Does the index already exist; return success if it does and is same, else fail
-    NSDictionary *existingIndexes = [CDTQIndexManager listIndexesInDatabase:self.database];
+    NSDictionary *existingIndexes = [CDTQIndexManager listIndexesInDatabaseQueue:self.database];
     if (existingIndexes[indexName] != nil) {
         NSDictionary *index = existingIndexes[indexName];
         NSString *existingType = index[@"type"];

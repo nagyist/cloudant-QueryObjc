@@ -143,6 +143,11 @@
 + (NSString*)chooseIndexForAndClause:(NSArray*)clause fromIndexes:(NSDictionary*)indexes;
 
 /**
+ Selects an index to use for a set of fields.
+ */
++ (NSString*)chooseIndexForFields:(NSSet*)neededFields fromIndexes:(NSDictionary*)indexes;
+
+/**
  Returns the SQL WHERE clause for a query.
  */
 + (CDTQSqlParts*)wherePartsForAndClause:(NSArray*)clause;

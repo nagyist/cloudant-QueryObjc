@@ -179,7 +179,7 @@ static NSString *const NOT = @"$not";
                                                            fromRevision:rev];
         
         
-        BOOL passed;
+        BOOL passed = NO;
         
         // For array actual values, the operator expression is matched
         // if any of the array values match it. We need to be careful
@@ -193,7 +193,7 @@ static NSString *const NOT = @"$not";
         //   "not (there's an item that matches white_cat)"
         // The latter is satisfied using the $nin operator.
         if ([actual isKindOfClass:[NSArray class]]) {
-            BOOL currentItemPassed;
+            BOOL currentItemPassed = NO;
             for (NSObject *item in (NSArray*)actual) {
                 // OR as any value in the array can match
                 currentItemPassed = [self actualValue:item
@@ -221,7 +221,7 @@ static NSString *const NOT = @"$not";
     matchesOperator:(NSString*)operator
    andExpectedValue:(NSObject*)expected
 {
-    BOOL passed;
+    BOOL passed = NO;
     
     if ([operator isEqualToString:@"$eq"]) {
         passed = [self eqL:actual R:expected];
