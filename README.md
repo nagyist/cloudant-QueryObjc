@@ -509,41 +509,57 @@ The one-index was over the `name` field, the three-index over `name`, `age` and 
 
 ## Grammar
 
-To help, I've tried to write a grammar for the Query language.
+To help, I've tried to write a grammar/schema for the Query language.
 
-```java
-query := 
-    "{" "}"
-    "{" many-expressions "}"
-    
-many-expressions := expression ("," expression)*
+Here:
 
-expression := 
-    logical-expression
-    operator-expression
+* Bold is used for the JSON formatting (or to indicate use of NSDictionary, NSArray etc. in objc).
+* Italic is variables in the grammar-like thing.
+* Quotes enclose literal string values.
 
-logical-expression := 
-    "{" ("$and" | "$nor" | "$or") ":" "[" many-expressions "]" "}"  // nor not implemented
-    "{" "$not" ":" "{" operator-expression "}" "}"
+<pre>
+<em>query</em> := 
+    <strong>{ }</strong>
+    <strong>{</strong> <em>many-expressions</em> <strong>}</strong>
 
-operator-expression := 
-    "{" operator ":" simple-value "}"
-    "{" "$regex" ":" regular-expression "}"  // not implemented
-    "{" "$mod" ":" "[" divisor, remainder "]" "}"  // not implemented
-    "{" "$elemMatch" ":" "{" many-expressions "}" "}"  // not implemented
-    "{" "$size" ":" positive-integer "}"  // not implemented
-    "{" "$all" ":" array-value "}"  // not implemented
-    "{" "$in" ":" array-value "}"  // not implemented
-    "{" "$nin" ":" array-value "}"  // not implemented
-    "{" "$exists" ":" boolean "}"  // not implemented
-    "{" "$type" ":" type "}"  // not implemented
+<em>many-expressions</em> := <em>expression</em> (&quot;,&quot; <em>expression</em>)*
 
-operator := "$gt" | "$gte" | "$lt" | "$lte" | "$eq" | "$neq"
+<em>expression</em> := 
+   <em> logical-expression
+    operator-expression</em>
 
-array-value := "[" simple-value ("," simple-value)+ "]"
+<em>logical-expression</em> := 
+    <strong>{</strong> (&quot;$and&quot; | &quot;$nor&quot; | &quot;$or&quot;) <strong>:</strong> <strong>[</strong> <em>many-expressions</em> <strong>] }</strong>  // nor not implemented
+    <strong>{</strong> &quot;$not&quot; <strong>:</strong> <strong>{</strong> <em>operator-expression</em> <strong>} }</strong>
 
-simple-value := string | integer
-```
+<em>operator-expression</em> := 
+    <strong>{</strong> <em>operator</em> <strong>:</strong> <em>simple-value</em> <strong>}</strong>
+    <strong>{</strong> &quot;$regex&quot; <strong>:</strong> <em>NSRegularExpression</em> <strong>}</strong>  // not implemented
+    <strong>{</strong> &quot;$mod&quot; <strong>:</strong> <strong>[</strong> <em>divisor, remainder</em> <strong>] }</strong>  // not implemented
+    <strong>{</strong> &quot;$elemMatch&quot; <strong>: {</strong> <em>many-expressions</em> <strong>} }</strong>  // not implemented
+    <strong>{</strong> &quot;$size&quot; <strong>:</strong> <em>positive-integer</em> <strong>}</strong>  // not implemented
+    <strong>{</strong> &quot;$all&quot; <strong>:</strong> <em>array-value</em> <strong>}</strong>  // not implemented
+    <strong>{</strong> &quot;$in&quot; <strong>:</strong> <em>array-value</em> <strong>}</strong>  // not implemented
+    <strong>{</strong> &quot;$nin&quot; <strong>:</strong> <em>array-value</em> <strong>}</strong>  // not implemented
+    <strong>{</strong> &quot;$exists&quot; <strong>:</strong> <em>boolean</em> <strong>}</strong>  // not implemented
+    <strong>{</strong> &quot;$type&quot; <strong>:</strong> <em>type</em> <strong>}</strong>  // not implemented
+
+<em>operator</em> := &quot;$gt&quot; | &quot;$gte&quot; | &quot;$lt&quot; | &quot;$lte&quot; | &quot;$eq&quot; | &quot;$neq&quot;
+
+// Obviously NSArray, but easier to express like this
+<em>array-value</em> := <strong>[</strong> simple-value (&quot;,&quot; simple-value)+ <strong>]</strong>
+
+// Objective-C mappings of basic types
+
+<em>simple-value</em> := <em>NSString</em> | <em>NSNumber</em>
+
+<em>positive-integer<em> := <em>NSNumber</em>
+
+<em>boolean<em> := <em>NSNumber (boxed BOOL)</em>
+
+<em>type<em> := <em>Class</em>
+</pre>
+
 
 
 ## Running the example project
