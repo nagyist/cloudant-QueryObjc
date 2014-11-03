@@ -13,7 +13,8 @@
 #import <CDTQResultSet.h>
 #import <CDTQQueryExecutor.h>
 #import <CDTQQuerySqlTranslator.h>
-
+#import <Specta.h>
+#import <Expecta.h>
 
 SpecBegin(CDTQQuerySqlTranslator)
 
@@ -559,7 +560,24 @@ describe(@"cdtq", ^{
             });
         });
         
-        
+        describe(@"when using the $exists oprtator", ^{
+            it(@"uses correct SQL operator for $exits : true",^{
+                CDTQSqlParts * parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name":@{@"$exists":@YES}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" IS NOT NULL)");
+            });
+            it(@"uses correct SQL operator for $exits : false:",^{
+                CDTQSqlParts * parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name":@{@"$exists":@NO}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" IS NULL)");
+            });
+            it(@"uses correct SQL operator for $not { $exits : false}",^{
+                CDTQSqlParts * parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name":@{@"$not":@{@"$exists":@NO}}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" IS NOT NULL)");
+            });
+            it(@"uses correct SQL operator for $not {$exits : true}",^{
+                CDTQSqlParts * parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[@{@"name":@{@"$not":@{@"$exists":@YES}}}]];
+                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" IS NULL)");
+            });
+        });
     });
     
     describe(@"when generating WHERE with $not", ^{

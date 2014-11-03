@@ -52,6 +52,7 @@
 static NSString *const AND = @"$and";
 static NSString *const OR = @"$or";
 static NSString *const EQ = @"$eq";
+static NSString * const EXISTS = @"$exists";
 
 + (CDTQQueryNode*)translateQuery:(NSDictionary*)query toUseIndexes:(NSDictionary*)indexes
 {
@@ -398,41 +399,78 @@ static NSString *const EQ = @"$eq";
             }
             
             NSString *operator = negatedPredicate.allKeys[0];
-            NSString *sqlOperator = notOperatorMap[operator];
+            NSObject *predicateValue = nil;
             
-            if (!sqlOperator) {
-                LogError(@"Unsupported comparison operator %@", operator);
-                return nil;
-            }
-            
-            NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" %@ ? OR \"%@\" IS NULL)", 
-                                   fieldName, sqlOperator, fieldName];
-            [sqlClauses addObject:sqlClause];
-            NSObject * predicateValue = [negatedPredicate objectForKey:operator];
-            
-            if([self validatePredicateValue:predicateValue]){
-                [sqlParameters addObject:predicateValue];
+            if([operator isEqualToString:EXISTS]){
+                //what we do here depends on the value of the exists are
+                predicateValue = [negatedPredicate objectForKey:operator];
+                
+                if([predicateValue isKindOfClass:[NSNumber class]]){
+                    
+                    BOOL exists = ![(NSNumber *)predicateValue boolValue];
+                    //since this clause is negated we need to negate the bool value
+                    [sqlClauses addObject:[self convertExistsToSqlClauseForFieldName:fieldName
+                                                                              exists:exists]];
+                    [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
+                        
+                } else {
+                    LogError(@"$exists operator expects YES or NO. Query: %@",clause);
+                    return nil;
+                }
+                
             } else {
-                return nil;
+                
+                NSString *sqlOperator = notOperatorMap[operator];
+                
+                if (!sqlOperator) {
+                    LogError(@"Unsupported comparison operator %@", operator);
+                    return nil;
+                }
+                
+                NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" %@ ? OR \"%@\" IS NULL)",
+                                       fieldName, sqlOperator, fieldName];
+                predicateValue = [negatedPredicate objectForKey:operator];
+                
+                if([self validatePredicateValue:predicateValue]){
+                    [sqlParameters addObject:predicateValue];
+                    [sqlClauses addObject:sqlClause];
+                } else {
+                    return nil;
+                }
             }
-            
-            
+
         } else {
-            NSString *sqlOperator = operatorMap[operator];
             
-            if (!sqlOperator) {
-                LogError(@"Unsupported comparison operator %@", operator);
-                return nil;
-            }
-            
-            NSString *sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", 
-                                   fieldName, sqlOperator];
-            [sqlClauses addObject:sqlClause];
-            NSObject * predicateValue = [predicate objectForKey:operator];
-            if([self validatePredicateValue:predicateValue]){
-                            [sqlParameters addObject: predicateValue];
+            if ([operator isEqualToString:EXISTS]){
+                
+                if([predicate[operator] isKindOfClass:[NSNumber class]]){
+                    BOOL  exists = [(NSNumber *)predicate[operator] boolValue];
+                    [sqlClauses addObject:[self convertExistsToSqlClauseForFieldName:fieldName
+                                                                              exists:exists]];
+                    [sqlParameters addObject:[predicate objectForKey:operator]];
+                    
+                } else {
+                    LogError(@"$exists operator expects YES or NO. Query: %@",clause);
+                    return nil;
+                }
             } else {
-                return nil;
+                
+                NSString *sqlOperator = operatorMap[operator];
+                
+                if (!sqlOperator) {
+                    LogError(@"Unsupported comparison operator %@", operator);
+                    return nil;
+                }
+                
+                NSString *sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?",
+                                       fieldName, sqlOperator];
+                [sqlClauses addObject:sqlClause];
+                NSObject * predicateValue = [predicate objectForKey:operator];
+                if([self validatePredicateValue:predicateValue]){
+                    [sqlParameters addObject: predicateValue];
+                } else {
+                    return nil;
+                }
             }
 
         }
@@ -443,6 +481,19 @@ static NSString *const EQ = @"$eq";
     return [CDTQSqlParts partsForSql:[sqlClauses componentsJoinedByString:@" AND "]
                           parameters:sqlParameters];
     
+}
+
++ (NSString *) convertExistsToSqlClauseForFieldName:(NSString*)fieldName exists:(BOOL)exists
+{
+    NSString * sqlClause;
+    if(exists){
+        //so this field needs to exist
+        sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NOT NULL)", fieldName];
+    } else {
+        //must not exist
+        sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NULL)", fieldName];
+    }
+    return sqlClause;
 }
 
 + (BOOL) validatePredicateValue:(NSObject *)predicateValue
