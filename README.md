@@ -525,14 +525,20 @@ Here:
 <em>many-expressions</em> := <em>expression</em> (&quot;,&quot; <em>expression</em>)*
 
 <em>expression</em> := 
-   <em> logical-expression
-    operator-expression</em>
+    <em>compound-expression</em>
+    <em>comparison-expression</em>
 
-<em>logical-expression</em> := 
+<em>compound-expression</em> := 
     <strong>{</strong> (&quot;$and&quot; | &quot;$nor&quot; | &quot;$or&quot;) <strong>:</strong> <strong>[</strong> <em>many-expressions</em> <strong>] }</strong>  // nor not implemented
+    
+<em>comparison-expression</em> :=
+    <strong>{</strong> <em>field</em> <strong>:</strong> <strong>{</strong> <em>operator-expression</em> <strong>} }</strong>
+
+<em>negation-expression</em> := 
     <strong>{</strong> &quot;$not&quot; <strong>:</strong> <strong>{</strong> <em>operator-expression</em> <strong>} }</strong>
 
 <em>operator-expression</em> := 
+    <em>negation-expression</em>
     <strong>{</strong> <em>operator</em> <strong>:</strong> <em>simple-value</em> <strong>}</strong>
     <strong>{</strong> &quot;$regex&quot; <strong>:</strong> <em>NSRegularExpression</em> <strong>}</strong>  // not implemented
     <strong>{</strong> &quot;$mod&quot; <strong>:</strong> <strong>[</strong> <em>divisor, remainder</em> <strong>] }</strong>  // not implemented
@@ -550,6 +556,8 @@ Here:
 <em>array-value</em> := <strong>[</strong> simple-value (&quot;,&quot; simple-value)+ <strong>]</strong>
 
 // Objective-C mappings of basic types
+
+<em>field</em> := <em>NSString</em>  // a field name
 
 <em>simple-value</em> := <em>NSString</em> | <em>NSNumber</em>
 
