@@ -336,7 +336,8 @@ Will return the document `mike32`. Negation may be slightly confusing:
 { pet: { $not: { $eq: cat } } }
 ```
 
-Will also return `mike32` because there are values in the array that are not `cat`.
+Will also return `mike32` because there are values in the array that are not `cat`. That is,
+this operator is matching for "any values that do not equal 'cat'".
 
 #### Restrictions
 
@@ -381,16 +382,14 @@ adding logging.
 
 ## Supported Cloudant Query features
 
-Right now the list of supported features is small:
+Right now the list of supported features is:
 
-- Create compound indexes using dotted notation that index JSON fields
-- Delete index by name
-- Execute nested queries:
-    - all fields in an $and clause of a query must be in a single compound index.
-      That is, for `{"$and": @["name": "mike", "age": 20]}`, both `name` and `age`
-      must be in an index defined in a single `-ensureIndexed:withName:` call.
+- Create compound indexes using dotted notation that index JSON fields.
+- Delete index by name.
+- Execute nested queries.
 - Limiting returned results.
 - Skipping results.
+- Queries can include unindexed fields.
       
 Selectors -> combination
 
@@ -409,6 +408,10 @@ Selectors -> Conditions -> Equalitites
 Selectors -> combination
 
 - `$not`
+
+Selectors -> Condition -> Objects
+
+- `$exists`
 
 Implicit operators
 
@@ -430,8 +433,6 @@ the commit log :)
 
 Overall restrictions:
 
-- Cannot use more than one index per AND clause in a query.
-- Cannot querying using unindexed fields.
 - Cannot use covering indexes with projection (`fields`) to avoid loading 
   documents from the datastore.
 
@@ -452,7 +453,6 @@ Selectors -> combination
 
 Selectors -> Condition -> Objects
 
-- `$exists` #11
 - `$type` (unplanned)
 
 Selectors -> Condition -> Array
@@ -561,11 +561,11 @@ Here:
 
 <em>simple-value</em> := <em>NSString</em> | <em>NSNumber</em>
 
-<em>positive-integer<em> := <em>NSNumber</em>
+<em>positive-integer</em> := <em>NSNumber</em>
 
-<em>boolean<em> := <em>NSNumber (boxed BOOL)</em>
+<em>boolean</em> := <em>NSNumber (boxed BOOL)</em>
 
-<em>type<em> := <em>Class</em>
+<em>type</em> := <em>Class</em>
 </pre>
 
 
