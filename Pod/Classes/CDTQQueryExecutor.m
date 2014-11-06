@@ -18,6 +18,9 @@
 #import "CDTQResultSet.h"
 #import "CDTQQuerySqlTranslator.h"
 #import "CDTQLogging.h"
+#import "CDTQUnindexedMatcher.h"
+#import "CDTDatastore.h"
+#import "CDTDocumentRevision.h"
 
 #import "FMDB.h"
 
@@ -71,8 +74,11 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     // Execute the query
     //
     
-    CDTQOrQueryNode *root = (CDTQOrQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
-                                                                        toUseIndexes:indexes];
+    // YES if we need to run posthoc matcher
+    BOOL indexesCoverQuery;
+    
+    CDTQChildrenQueryNode *root;
+    root = [self translateQuery:query indexes:indexes indexesCoverQuery:&indexesCoverQuery];
     
     if(!root) {
         return nil;
@@ -99,12 +105,82 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
         return nil;
     }
     
+    // Apply post-hoc filtering
+    docIds = [self postHocMatcherIfRequired:!indexesCoverQuery
+                               forResultSet:docIds
+                              usingSelector:query];
+    
     docIds = [CDTQQueryExecutor applySkip:skip andLimit:limit toResultSet:docIds];
     
-    return [[CDTQResultSet alloc] initWithDocIds:docIds
-                                       datastore:self.datastore
-                                projectionFields:fields];
+    CDTDatastore *ds = self.datastore;
+    return [CDTQResultSet resultSetWithBlock:^(CDTQResultSetBuilder *b){
+        b.docIds = docIds;
+        b.datastore = ds;
+        b.fields = fields;
+    }]; 
 }
+
+// Method exists so we can override it in testing (to force indexesCoverQuery to false)
+- (CDTQChildrenQueryNode *)translateQuery:(NSDictionary *)query 
+                                  indexes:(NSDictionary *)indexes 
+                        indexesCoverQuery:(BOOL *)indexesCoverQuery
+{
+    CDTQChildrenQueryNode *root = (CDTQChildrenQueryNode*)[CDTQQuerySqlTranslator translateQuery:query
+                                                                                    toUseIndexes:indexes
+                                                                               indexesCoverQuery:indexesCoverQuery];
+    return root;
+}
+
+- (NSArray*)postHocMatcherIfRequired:(BOOL)required 
+                        forResultSet:(NSArray*)docIds
+                       usingSelector:(NSDictionary*)selector
+{
+    
+    //
+    // This is very inefficient as we load the document here to check it against
+    // the matcher, then again while returning results to the client. However,
+    // trying to do the matching on-the-fly when returning results to the client
+    // makes skip+limit really painful to implement. For now, assuming this will
+    // mostly be used during development, and the developer will create indexes
+    // for their fields before releasing their application.
+    //
+    // In addition, the matcher checks the full selector for every document, thereby
+    // re-checking fields which have already been constrained by the indexes. While
+    // inefficient, again this makes the code simpler and hopefully will not
+    // cause problems in production.
+    //
+    // Filtering is batched to avoid memory issues.
+    if (required) {
+        LogWarn(@"Query could not be executed using indexes alone; falling back to filtering "
+                @"documents themselves. This will be VERY SLOW as each candidate document is "
+                @"loaded from the datastore and matched against the query selector.");
+        
+        CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+        NSMutableArray *matchedDocIds = [NSMutableArray array];
+        
+        NSUInteger batchSize = 50;
+        NSRange range = NSMakeRange(0, batchSize);
+        while (range.location < docIds.count) {
+            range.length = MIN(batchSize, docIds.count - range.location);
+            NSArray* batch = [docIds subarrayWithRange:range];
+            
+            NSArray *docs = [self.datastore getDocumentsWithIds:batch];
+            
+            for (CDTDocumentRevision *rev in docs) {
+                if ([matcher matches:rev]) {
+                    [matchedDocIds addObject:rev.docId];
+                }
+            }
+            
+            range.location += range.length;
+        }
+        
+        docIds = [NSArray arrayWithArray:matchedDocIds];
+    }
+    
+    return docIds;
+}
+
 + (NSArray *) applySkip:(NSUInteger)skip andLimit:(NSUInteger)limit toResultSet:(NSArray*)docIds
 {
     NSArray *limitedResults = nil;

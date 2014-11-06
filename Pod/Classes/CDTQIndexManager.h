@@ -22,6 +22,7 @@ extern NSString* const kCDTQIndexMetadataTableName;
 @class CDTQResultSet;
 @class CDTDocumentRevision;
 @class FMDatabaseQueue;
+@class FMDatabase;
 
 @interface CDTQSqlParts : NSObject
 
@@ -64,6 +65,7 @@ typedef NS_ENUM(NSInteger, CDTQQueryError) {
 @interface CDTQIndexManager : NSObject
 
 @property (nonatomic,strong) CDTDatastore *datastore;
+@property (nonatomic,strong) FMDatabaseQueue *database;
 
 /**
  Constructs a new CDTQIndexManager which indexes documents in `datastore`
@@ -71,10 +73,15 @@ typedef NS_ENUM(NSInteger, CDTQQueryError) {
 + (CDTQIndexManager*)managerUsingDatastore:(CDTDatastore*)datastore 
                                      error:(NSError * __autoreleasing *)error;
 
+- (instancetype)initUsingDatastore:(CDTDatastore*)datastore
+                             error:(NSError * __autoreleasing *)error;
+
 - (NSDictionary*/* NSString -> NSArray[NSString]*/)listIndexes;
 
 /** Internal */
-+ (NSDictionary/* NSString -> NSArray[NSString]*/*)listIndexesInDatabase:(FMDatabaseQueue*)db;
++ (NSDictionary/* NSString -> NSArray[NSString]*/*)listIndexesInDatabaseQueue:(FMDatabaseQueue*)db;
+/** Internal */
++ (NSDictionary/* NSString -> NSArray[NSString]*/*)listIndexesInDatabase:(FMDatabase*)db;
 
 - (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames withName:(NSString*)indexName;
 

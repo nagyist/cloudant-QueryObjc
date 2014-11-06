@@ -14,10 +14,15 @@
 
 #import <Foundation/Foundation.h>
 
+@class CDTDocumentRevision;
+
 /**
  Extracts values from dictionaries using a field name.
  */
 @interface CDTQValueExtractor : NSObject
+
++ (NSObject*)extractValueForFieldName:(NSString*)possiblyDottedField
+                         fromRevision:(CDTDocumentRevision*)rev;
 
 + (NSObject*)extractValueForFieldName:(NSString*)fieldName
                        fromDictionary:(NSDictionary*)body;

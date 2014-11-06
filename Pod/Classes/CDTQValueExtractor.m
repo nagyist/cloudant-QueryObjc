@@ -15,7 +15,24 @@
 #import "CDTQValueExtractor.h"
 #import "CDTQLogging.h"
 
+#import <CDTDocumentRevision.h>
+
 @implementation CDTQValueExtractor
+
++ (NSObject*)extractValueForFieldName:(NSString*)possiblyDottedField
+                         fromRevision:(CDTDocumentRevision*)rev
+{
+    // _id and _rev are special fields which come from attributes
+    // of the revision and not its body.
+    if ([possiblyDottedField isEqualToString:@"_id"]) {
+        return rev.docId;
+    } else if ([possiblyDottedField isEqualToString:@"_rev"]) {
+        return rev.revId;
+    } else {
+        return [CDTQValueExtractor extractValueForFieldName:possiblyDottedField
+                                             fromDictionary:rev.body];
+    }
+}
 
 + (NSObject*)extractValueForFieldName:(NSString*)possiblyDottedField
                        fromDictionary:(NSDictionary*)body

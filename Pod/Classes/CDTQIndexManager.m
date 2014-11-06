@@ -63,7 +63,6 @@ static const int VERSION = 1;
 
 @interface CDTQIndexManager ()
 
-@property (nonatomic,strong) FMDatabaseQueue *database;
 @property (nonatomic,strong) NSRegularExpression *validFieldName;
 
 @end
@@ -147,16 +146,28 @@ static const int VERSION = 1;
  */
 - (NSDictionary*/* NSString -> NSArray[NSString]*/)listIndexes
 {
-    return [CDTQIndexManager listIndexesInDatabase:_database];
+    return [CDTQIndexManager listIndexesInDatabaseQueue:_database];
 }
 
-+ (NSDictionary/* NSString -> NSArray[NSString]*/*)listIndexesInDatabase:(FMDatabaseQueue*)db
++ (NSDictionary/* NSString -> NSArray[NSString]*/*)listIndexesInDatabaseQueue:(FMDatabaseQueue*)db
+{
+    // Accumulate indexes and definitions into a dictionary
+    
+    __block NSDictionary *indexes;
+    
+    [db inDatabase:^(FMDatabase *db) {
+        indexes = [self listIndexesInDatabase:db];
+    }];
+    
+    return indexes;
+}
+
++ (NSDictionary/* NSString -> NSArray[NSString]*/*)listIndexesInDatabase:(FMDatabase*)db
 {
     // Accumulate indexes and definitions into a dictionary
     
     NSMutableDictionary *indexes = [NSMutableDictionary dictionary];
     
-    [db inDatabase:^(FMDatabase *db) {
     NSString *sql = @"SELECT index_name, index_type, field_name FROM %@;";
     sql = [NSString stringWithFormat:sql, kCDTQIndexMetadataTableName];
     FMResultSet *rs= [db executeQuery:sql];
@@ -174,7 +185,6 @@ static const int VERSION = 1;
         [indexes[rowIndex][@"fields"] addObject:rowField];
     }
     [rs close];
-    }];
     
     // Now we need to make the return value immutable
     

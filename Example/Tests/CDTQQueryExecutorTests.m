@@ -6,19 +6,29 @@
 //  Copyright (c) 2014 Michael Rhodes. All rights reserved.
 //
 
+
+#import "CDTQMatcherIndexManager.h"
+#import "CDTQSQLOnlyIndexManager.h"
+
 #import <CloudantSync.h>
 #import <CDTQIndexManager.h>
 #import <CDTQIndexUpdater.h>
 #import <CDTQIndexCreator.h>
 #import <CDTQResultSet.h>
 #import <CDTQQueryExecutor.h>
-#import "Specta.h"
-#import "Expecta.h"
 
-SpecBegin(CDTQQueryExecutor)
+SharedExamplesBegin(QueryExecution)
 
-
-describe(@"cloudant query", ^{
+// The aim is to make sure that the post hoc matcher class behaves the
+// same as the SQL query engine.
+//
+// For this, we test the entire pipeline using the usual CDTQQueryExectutor class. This does
+// both SQL and post hoc matching. Then we have a sub-class of CDTQQueryExecutor which skips
+// the SQL querying and just runs all documents through the CDTQUnindexedMatcher.
+sharedExamplesFor(@"queries with covering indexes", ^(NSDictionary* data)
+{
+    // Pull the class to test out of the data object
+    Class imClass = data[@"index_manager_class"];
     
     __block NSString *factoryPath;
     __block CDTDatastoreManager *factory;
@@ -83,7 +93,7 @@ describe(@"cloudant query", ^{
             rev.body = @{ @"name": @"fred", @"age": @12 };
             [ds createDocumentFromRevision:rev error:nil];
             
-            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            im = [imClass managerUsingDatastore:ds error:nil];
             expect(im).toNot.beNil();
             
             expect([im ensureIndexed:@[@"name", @"age"] withName:@"basic"]).toNot.beNil();
@@ -143,13 +153,6 @@ describe(@"cloudant query", ^{
             expect(result.documentIds.count).to.equal(0);
         });
         
-        it(@"query without index", ^{
-            NSDictionary *query = @{@"pet": @{@"$eq": @"mike"}, 
-                                    @"age": @{@"$eq": @12}};
-            CDTQResultSet *result = [im find:query];
-            expect(result).to.beNil();
-        });
-        
         context(@"when limiting and offsetting results", ^{
             
             it(@"limits query results", ^{
@@ -175,8 +178,9 @@ describe(@"cloudant query", ^{
 
         });
         
-        describe(@"when using unsupported operator", ^{
-            it(@"uses correct SQL operator", ^{
+        // TODO fill in when separate validation class written
+        xdescribe(@"when using unsupported operator", ^{
+            it(@"fails", ^{
                 NSDictionary *query = @{@"age": @{@"$blah": @12}};
                 CDTQResultSet *result = [im find:query];
                 expect(result).to.beNil();
@@ -334,7 +338,7 @@ describe(@"cloudant query", ^{
             rev.body = @{ @"name": @"fred", @"age": @12 };
             [ds createDocumentFromRevision:rev error:nil];
             
-            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            im = [imClass managerUsingDatastore:ds error:nil];
             expect(im).toNot.beNil();
             
             expect([im ensureIndexed:@[@"age", @"pet.name", @"pet.species"] withName:@"pet"]).toNot.beNil();
@@ -359,7 +363,8 @@ describe(@"cloudant query", ^{
         it(@"query with two level dotted multiple results", ^{
             NSDictionary *query = @{@"pet.species": @{@"$eq": @"cat"}};
             CDTQResultSet *result = [im find:query];
-            expect(result.documentIds).to.equal(@[@"mike12", @"mike23", @"mike34"]);
+            expect(result.documentIds.count).to.equal(3);
+            expect(result.documentIds).to.beSupersetOf(@[@"mike12", @"mike23", @"mike34"]);
         });
         
         it(@"query with three level dotted", ^{
@@ -409,7 +414,7 @@ describe(@"cloudant query", ^{
             rev.body = @{ @"@datatype": @"fred", @"age": @12 };
             [ds createDocumentFromRevision:rev error:nil];
             
-            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            im = [imClass managerUsingDatastore:ds error:nil];
             expect(im).toNot.beNil();
         });
         
@@ -480,7 +485,7 @@ describe(@"cloudant query", ^{
             rev.body = @{ @"name": @"fred", @"age": @12 };
             [ds createDocumentFromRevision:rev error:nil];
             
-            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            im = [imClass managerUsingDatastore:ds error:nil];
             expect(im).toNot.beNil();
             
             expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
@@ -511,7 +516,7 @@ describe(@"cloudant query", ^{
         
         it(@"supports using OR in sub trees", ^{
             NSDictionary *query = @{@"$or": @[@{@"name": @"fred"},
-                                              @{@"$or": @[@{@"age": @"12"},
+                                              @{@"$or": @[@{@"age": @12},
                                                           @{@"pet": @"cat"}
                                                           ]}
                                               ]
@@ -575,7 +580,7 @@ describe(@"cloudant query", ^{
                           @"age": @12 };
             [ds createDocumentFromRevision:rev error:nil];
             
-            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            im = [imClass managerUsingDatastore:ds error:nil];
             expect(im).toNot.beNil();
             
             expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
@@ -638,8 +643,8 @@ describe(@"cloudant query", ^{
             NSDictionary *query = @{@"$and": @[@{@"name": @"mike"}, 
                                                @{@"age": @34},      
                                                @{@"$or": @[@{@"name": @"fred"},
-                                                            @{@"pet": @"dog"}
-                                                            ]}
+                                                           @{@"pet": @"dog"}
+                                                           ]}
                                                ]
                                     };
             CDTQResultSet *result = [im find:query];
@@ -652,8 +657,8 @@ describe(@"cloudant query", ^{
                                                @{@"age":  @{@"$gt": @10}},  
                                                @{@"age":  @{@"$lt": @30}},      
                                                @{@"$and": @[@{@"$and": @[@{@"pet": @"cat"}]},
-                                                           @{@"pet": @{@"$gt": @"ant"}}
-                                                           ]}
+                                                            @{@"pet": @{@"$gt": @"ant"}}
+                                                            ]}
                                                ]
                                     };
             CDTQResultSet *result = [im find:query];
@@ -714,12 +719,12 @@ describe(@"cloudant query", ^{
                           @"pet": @"parrot"};
             [ds createDocumentFromRevision:rev error:nil];
             
-            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            im = [imClass managerUsingDatastore:ds error:nil];
             expect(im).toNot.beNil();
             
             expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
         });
-       
+        
         it(@"works as single clause", ^{
             NSDictionary *query = @{@"_id": @"mike12"};
             CDTQResultSet *result = [im find:query];
@@ -760,7 +765,7 @@ describe(@"cloudant query", ^{
             CDTDocumentRevision *toRetrieve = [ds createDocumentFromRevision:rev error:nil];
             docRev = toRetrieve.revId;
             
-            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            im = [imClass managerUsingDatastore:ds error:nil];
             expect(im).toNot.beNil();
             
             expect([im ensureIndexed:@[@"age", @"pet", @"name"] withName:@"basic"]).toNot.beNil();
@@ -813,7 +818,7 @@ describe(@"cloudant query", ^{
             rev.body = @{ @"name": @"fred", @"age": @12 };
             [ds createDocumentFromRevision:rev error:nil];
             
-            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            im = [imClass managerUsingDatastore:ds error:nil];
             expect(im).toNot.beNil();
             
             expect([im ensureIndexed:@[@"name", @"pet", @"age"] 
@@ -893,7 +898,7 @@ describe(@"cloudant query", ^{
                           @"pet": @"parrot" };
             [ds createDocumentFromRevision:rev error:nil];
             
-            im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+            im = [imClass managerUsingDatastore:ds error:nil];
             expect(im).toNot.beNil();
             
             expect([im ensureIndexed:@[@"name", @"pet", @"age"] 
@@ -913,7 +918,7 @@ describe(@"cloudant query", ^{
             CDTQResultSet *result = [im find:query];
             expect(result).toNot.beNil();
             expect(result.documentIds.count).to.equal(1);
-            expect(result.documentIds[0]).to.equal(@"fred34");
+            expect(result.documentIds).to.beSupersetOf(@[@"fred34"]);
         });
         
         it(@"works with $not", ^{
@@ -993,42 +998,187 @@ describe(@"cloudant query", ^{
         });
         
     });
+});
+
+// The aim is to make sure that the post hoc matcher class behaves the
+// same as the full version with SQL querying too.
+//
+// For this, we test the entire pipeline using the usual CDTQQueryExectutor class. This does
+// both SQL and post hoc matching. Then we have a sub-class of CDTQQueryExecutor which skips
+// the SQL querying and just runs all documents through the CDTQUnindexedMatcher.
+sharedExamplesFor(@"queries without covering indexes", ^(NSDictionary* data)
+{
+    // Pull the class to test out of the data object
+    Class imClass = data[@"index_manager_class"];
+
+    __block NSString *factoryPath;
+    __block CDTDatastoreManager *factory;
     
+    beforeEach(^{
+        // Create a new CDTDatastoreFactory at a temp path
+        
+        NSString *tempDirectoryTemplate =
+        [NSTemporaryDirectory() stringByAppendingPathComponent:@"cloudant_sync_ios_tests.XXXXXX"];
+        const char *tempDirectoryTemplateCString = [tempDirectoryTemplate fileSystemRepresentation];
+        char *tempDirectoryNameCString =  (char *)malloc(strlen(tempDirectoryTemplateCString) + 1);
+        strcpy(tempDirectoryNameCString, tempDirectoryTemplateCString);
+        
+        char *result = mkdtemp(tempDirectoryNameCString);
+        expect(result).to.beTruthy();
+        
+        factoryPath = [[NSFileManager defaultManager]
+                       stringWithFileSystemRepresentation:tempDirectoryNameCString
+                       length:strlen(result)];
+        free(tempDirectoryNameCString);
+        
+        NSError *error;
+        factory = [[CDTDatastoreManager alloc] initWithDirectory:factoryPath error:&error];
+    });
+    
+    afterEach(^{
+        // Delete the databases we used
+        
+        factory = nil;
+        NSError *error;
+        [[NSFileManager defaultManager] removeItemAtPath:factoryPath error:&error];
+    });
+    
+    describe(@"when executing queries", ^{
+        
+        __block CDTDatastore *ds;
+        __block CDTQIndexManager *im;
+        
+        beforeEach(^{
+            ds = [factory datastoreNamed:@"test" error:nil];
+            expect(ds).toNot.beNil();
+            
+            CDTMutableDocumentRevision *rev = [CDTMutableDocumentRevision revision];
+            
+            rev.docId = @"mike12";
+            rev.body = @{ @"name": @"mike", @"age": @12, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike34";
+            rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @"dog" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"mike72";
+            rev.body = @{ @"name": @"mike", @"age": @34, @"pet": @"cat", @"town": @"bristol" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred34";
+            rev.body = @{ @"name": @"fred", @"age": @34, @"pet": @"cat" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            rev.docId = @"fred12";
+            rev.body = @{ @"name": @"fred", @"age": @12, @"town": @"bristol" };
+            [ds createDocumentFromRevision:rev error:nil];
+            
+            im = [imClass managerUsingDatastore:ds error:nil];
+            expect(im).toNot.beNil();
+            
+            expect([im ensureIndexed:@[@"name", @"age"] withName:@"basic"]).toNot.beNil();
+            expect([im ensureIndexed:@[@"name", @"pet"] withName:@"pet"]).toNot.beNil();
+        });
+        
+        it(@"query without index", ^{
+            NSDictionary *query = @{@"pet": @{@"$eq": @"cat"}, 
+                                    @"age": @{@"$eq": @12}};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(1);
+        });
+        
+        it(@"query without index", ^{
+            NSDictionary *query = @{@"town": @"bristol"};
+            CDTQResultSet *result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(2);
+            expect(result.documentIds).to.beSupersetOf(@[@"mike72", @"fred12"]);
+        });
+    });
+});
+
+SharedExamplesEnd
+
+// This spec pushes the standard CDTQQueryExecutor through the shared behaviour tests.
+SpecBegin(CDTQQueryExecutor)
+
+describe(@"full with covering", ^{
+    NSDictionary* data = @{@"index_manager_class": [CDTQIndexManager class]};
+    itShouldBehaveLike(@"queries with covering indexes", data);
+});
+
+describe(@"full without covering", ^{
+    NSDictionary* data = @{@"index_manager_class": [CDTQIndexManager class]};
+    itShouldBehaveLike(@"queries without covering indexes", data);
+});
+
+SpecEnd
+
+// This class skips the matcher to check that SQL only returns the same
+SpecBegin(CDTQSQLOnlyQueryExecutor)
+
+describe(@"sql with covering", ^{
+    NSDictionary* data = @{@"index_manager_class": [CDTQSQLOnlyIndexManager class]};
+    itShouldBehaveLike(@"queries with covering indexes", data);
+});
+
+// Don't run "queries without covering indexes" as they'll obviously not work
+
+SpecEnd
+
+// This class skips SQL and just uses the matcher to ensure the matcher class returns
+// the same as the SQL version.
+SpecBegin(CDTQMatcherQueryExecutor)
+
+describe(@"matcher with covering", ^{
+    NSDictionary* data = @{@"index_manager_class": [CDTQMatcherIndexManager class]};
+    itShouldBehaveLike(@"queries with covering indexes", data);
+});
+
+describe(@"matcher without covering", ^{
+    NSDictionary* data = @{@"index_manager_class": [CDTQMatcherIndexManager class]};
+    itShouldBehaveLike(@"queries without covering indexes", data);
+});
+
+SpecEnd
+
+SpecBegin(CDTQQueryExecutorSkipLimit)
+
+describe(@"when skipping and limiting results", ^{
+    
+    it(@"returns an array with results when limit is over array bounds", ^{
+        NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
+        NSArray *trimmed = [CDTQQueryExecutor applySkip:0 andLimit:4 toResultSet:docIds];
+        NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 3)];
+        expect(trimmed).to.equal(expected);
+    });
+    
+    it(@"returns all results with very large limit", ^{
+        NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
+        NSArray *trimmed = [CDTQQueryExecutor applySkip:0 andLimit:1000 toResultSet:docIds];
+        NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 3)];
+        expect(trimmed).to.equal(expected);
+    });
+    
+    it(@"returns an array with no results when range is out of bounds",^{
+        NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
+        NSArray *trimmed = [CDTQQueryExecutor applySkip:4 andLimit:4 toResultSet:docIds];
+        NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 0)];
+        expect(trimmed).to.equal(expected);
+        
+    });
+    
+    it(@"returns appropriate results skip and large limit used",^{
+        NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
+        NSArray *trimmed = [CDTQQueryExecutor applySkip:4 andLimit:4 toResultSet:docIds];
+        NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 0)];
+        expect(trimmed).to.equal(expected);
+    });
     
 });
 
-    describe(@"when skipping and limiting results", ^{
-    
-        it(@"returns an array with results when limit is over array bounds", ^{
-            NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
-            NSArray *trimmed = [CDTQQueryExecutor applySkip:0 andLimit:4 toResultSet:docIds];
-            NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 3)];
-            expect(trimmed).to.equal(expected);
-        });
-    
-        it(@"returns all results with very large limit", ^{
-            NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
-            NSArray *trimmed = [CDTQQueryExecutor applySkip:0 andLimit:1000 toResultSet:docIds];
-            NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 3)];
-            expect(trimmed).to.equal(expected);
-        });
-    
-        it(@"returns an array with no results when range is out of bounds",^{
-            NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
-            NSArray *trimmed = [CDTQQueryExecutor applySkip:4 andLimit:4 toResultSet:docIds];
-            NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 0)];
-            expect(trimmed).to.equal(expected);
-        
-        });
-    
-        it(@"returns appropriate results skip and large limit used",^{
-            NSArray * docIds = @[@"doc1", @"doc2", @"doc3"];
-            NSArray *trimmed = [CDTQQueryExecutor applySkip:4 andLimit:4 toResultSet:docIds];
-            NSArray * expected = [docIds subarrayWithRange:NSMakeRange(0, 0)];
-            expect(trimmed).to.equal(expected);
-        });
-    
-    });
-
-
 SpecEnd
+
+

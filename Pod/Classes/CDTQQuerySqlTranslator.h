@@ -110,7 +110,9 @@
  */
 @interface CDTQQuerySqlTranslator : NSObject
 
-+ (CDTQQueryNode*)translateQuery:(NSDictionary*)query toUseIndexes:(NSDictionary*)indexes;
++ (CDTQQueryNode*)translateQuery:(NSDictionary*)query 
+                    toUseIndexes:(NSDictionary*)indexes
+               indexesCoverQuery:(BOOL*)indexesCoverQuery;
 
 /**
  Expand implicit operators in a query.
@@ -139,6 +141,11 @@
  @return name of index from `indexes` to ues for `query`, or `nil` if none found.
  */
 + (NSString*)chooseIndexForAndClause:(NSArray*)clause fromIndexes:(NSDictionary*)indexes;
+
+/**
+ Selects an index to use for a set of fields.
+ */
++ (NSString*)chooseIndexForFields:(NSSet*)neededFields fromIndexes:(NSDictionary*)indexes;
 
 /**
  Returns the SQL WHERE clause for a query.
