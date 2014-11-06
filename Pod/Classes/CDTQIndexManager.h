@@ -1,6 +1,6 @@
 //
 //  CDTQIndexManager.h
-//  
+//
 //  Created by Mike Rhodes on 2014-09-27
 //  Copyright (c) 2014 Cloudant. All rights reserved.
 //
@@ -14,9 +14,9 @@
 
 #import <Foundation/Foundation.h>
 
-extern NSString* const CDTQIndexManagerErrorDomain;
-extern NSString* const kCDTQIndexTablePrefix;
-extern NSString* const kCDTQIndexMetadataTableName;
+extern NSString *const CDTQIndexManagerErrorDomain;
+extern NSString *const kCDTQIndexTablePrefix;
+extern NSString *const kCDTQIndexMetadataTableName;
 
 @class CDTDatastore;
 @class CDTQResultSet;
@@ -26,10 +26,10 @@ extern NSString* const kCDTQIndexMetadataTableName;
 
 @interface CDTQSqlParts : NSObject
 
-@property (nonatomic,strong) NSString *sqlWithPlaceholders;
-@property (nonatomic,strong) NSArray *placeholderValues;
+@property (nonatomic, strong) NSString *sqlWithPlaceholders;
+@property (nonatomic, strong) NSArray *placeholderValues;
 
-+ (CDTQSqlParts*)partsForSql:(NSString*)sql parameters:(NSArray*)parameters;
++ (CDTQSqlParts *)partsForSql:(NSString *)sql parameters:(NSArray *)parameters;
 
 @end
 
@@ -54,9 +54,9 @@ typedef NS_ENUM(NSInteger, CDTQQueryError) {
 
 /**
  Main interface to Cloudant query.
- 
+
  Use the manager to:
- 
+
  - create indexes
  - delete indexes
  - execute queries
@@ -64,45 +64,45 @@ typedef NS_ENUM(NSInteger, CDTQQueryError) {
  */
 @interface CDTQIndexManager : NSObject
 
-@property (nonatomic,strong) CDTDatastore *datastore;
-@property (nonatomic,strong) FMDatabaseQueue *database;
+@property (nonatomic, strong) CDTDatastore *datastore;
+@property (nonatomic, strong) FMDatabaseQueue *database;
 
 /**
  Constructs a new CDTQIndexManager which indexes documents in `datastore`
  */
-+ (CDTQIndexManager*)managerUsingDatastore:(CDTDatastore*)datastore 
-                                     error:(NSError * __autoreleasing *)error;
++ (CDTQIndexManager *)managerUsingDatastore:(CDTDatastore *)datastore
+                                      error:(NSError *__autoreleasing *)error;
 
-- (instancetype)initUsingDatastore:(CDTDatastore*)datastore
-                             error:(NSError * __autoreleasing *)error;
+- (instancetype)initUsingDatastore:(CDTDatastore *)datastore
+                             error:(NSError *__autoreleasing *)error;
 
-- (NSDictionary*/* NSString -> NSArray[NSString]*/)listIndexes;
+- (NSDictionary * /* NSString -> NSArray[NSString]*/)listIndexes;
 
 /** Internal */
-+ (NSDictionary/* NSString -> NSArray[NSString]*/*)listIndexesInDatabaseQueue:(FMDatabaseQueue*)db;
++ (NSDictionary /* NSString -> NSArray[NSString]*/ *)listIndexesInDatabaseQueue:
+        (FMDatabaseQueue *)db;
 /** Internal */
-+ (NSDictionary/* NSString -> NSArray[NSString]*/*)listIndexesInDatabase:(FMDatabase*)db;
++ (NSDictionary /* NSString -> NSArray[NSString]*/ *)listIndexesInDatabase:(FMDatabase *)db;
 
-- (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames withName:(NSString*)indexName;
+- (NSString *)ensureIndexed:(NSArray * /* NSString */)fieldNames withName:(NSString *)indexName;
 
-- (NSString*)ensureIndexed:(NSArray*/* NSString */)fieldNames 
-                  withName:(NSString*)indexName
-                      type:(NSString*)type;
+- (NSString *)ensureIndexed:(NSArray * /* NSString */)fieldNames
+                   withName:(NSString *)indexName
+                       type:(NSString *)type;
 
-- (BOOL)deleteIndexNamed:(NSString*)indexName;
+- (BOOL)deleteIndexNamed:(NSString *)indexName;
 
 - (BOOL)updateAllIndexes;
 
-- (CDTQResultSet*)find:(NSDictionary*)query;
+- (CDTQResultSet *)find:(NSDictionary *)query;
 
-- (CDTQResultSet*)find:(NSDictionary *)query 
-                  skip:(NSUInteger)skip 
-                 limit:(NSUInteger)limit
-                fields:(NSArray*)fields
-                  sort:(NSArray*)sortDocument;
+- (CDTQResultSet *)find:(NSDictionary *)query
+                   skip:(NSUInteger)skip
+                  limit:(NSUInteger)limit
+                 fields:(NSArray *)fields
+                   sort:(NSArray *)sortDocument;
 
 /** Internal */
-+ (NSString*)tableNameForIndex:(NSString*)indexName;
-
++ (NSString *)tableNameForIndex:(NSString *)indexName;
 
 @end

@@ -1,6 +1,6 @@
 //
 //  CDTQResultSet.h
-//  
+//
 //  Created by Mike Rhodes on 2014-09-27
 //  Copyright (c) 2014 Cloudant. All rights reserved.
 //
@@ -17,42 +17,40 @@
 @class CDTDatastore;
 @class CDTQResultSetBuilder;
 
-typedef void(^CDTQResultSetBuilderBlock)(CDTQResultSetBuilder *configuration);
+typedef void (^CDTQResultSetBuilderBlock)(CDTQResultSetBuilder *configuration);
 
 /**
  A simple object to aid construction of a CDTQResultSet.
  */
 @interface CDTQResultSetBuilder : NSObject
 
-@property (nonatomic,strong) NSArray *docIds;
-@property (nonatomic,strong) CDTDatastore *datastore;
-@property (nonatomic,strong) NSArray *fields;
+@property (nonatomic, strong) NSArray *docIds;
+@property (nonatomic, strong) CDTDatastore *datastore;
+@property (nonatomic, strong) NSArray *fields;
 
 @end
 
 /**
  Enumerator over documents resulting from query.
- 
+
  Use a forin query to loop over this object:
- 
+
  for (DocumentRevision revision : queryResultObject) {
  // do something
  }
  */
-@interface CDTQResultSet : NSObject<NSFastEnumeration>
-{
+@interface CDTQResultSet : NSObject <NSFastEnumeration> {
     CDTDatastore *_datastore;
 }
 
 + (instancetype)resultSetWithBlock:(CDTQResultSetBuilderBlock)block;
 
--(instancetype)initWithBuilder:(CDTQResultSetBuilder*)builder;
+- (instancetype)initWithBuilder:(CDTQResultSetBuilder *)builder;
 
--(NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state 
-                                 objects:(id __unsafe_unretained*)buffer
-                                   count:(NSUInteger)len;
+- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state
+                                  objects:(id __unsafe_unretained *)buffer
+                                    count:(NSUInteger)len;
 
-
-@property (nonatomic,strong,readonly) NSArray *documentIds; // of type NSString*
+@property (nonatomic, strong, readonly) NSArray *documentIds;  // of type NSString*
 
 @end

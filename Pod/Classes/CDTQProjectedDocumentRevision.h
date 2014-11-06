@@ -18,7 +18,7 @@
 
 /**
  A document revision that has been projected.
- 
+
  This class implements a version of mutableCopy which returns the full
  document when called, to prevent accidental data loss which might come
  from saving a projected document.
@@ -29,11 +29,11 @@
  Initialise with a datastore so mutableCopy can return a full document.
  */
 - (id)initWithDocId:(NSString *)docId
-        revisionId:(NSString *)revId
-              body:(NSDictionary *)body
-           deleted:(BOOL)deleted
-       attachments:(NSDictionary *)attachments
-          sequence:(SequenceNumber)sequence
-         datastore:(CDTDatastore*)datastore;
+         revisionId:(NSString *)revId
+               body:(NSDictionary *)body
+            deleted:(BOOL)deleted
+        attachments:(NSDictionary *)attachments
+           sequence:(SequenceNumber)sequence
+          datastore:(CDTDatastore *)datastore;
 
 @end

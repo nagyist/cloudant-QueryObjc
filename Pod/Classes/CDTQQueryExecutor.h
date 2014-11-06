@@ -1,6 +1,6 @@
 //
 //  CDTQQueryExecutor.h
-//  
+//
 //  Created by Mike Rhodes on 2014-09-29
 //  Copyright (c) 2014 Cloudant. All rights reserved.
 //
@@ -28,15 +28,14 @@
  Constructs a new CDTQQueryExecutor using the indexes in `database` to find documents from
  `datastore`.
  */
-- (instancetype)initWithDatabase:(FMDatabaseQueue*)database
-                       datastore:(CDTDatastore*)datastore;
+- (instancetype)initWithDatabase:(FMDatabaseQueue *)database datastore:(CDTDatastore *)datastore;
 
 /**
  Execute the query passed using the selection of index definition provided.
- 
+
  The index definitions are presumed to already exist and be up to date for the
  datastore and database passed to the constructor.
- 
+
  @param query query to execute.
  @param indexes indexes to use (this method will select the most appropriate).
  @param skip how many results to skip before returning results to caller
@@ -44,23 +43,24 @@
  @param fields fields to project from the result documents
  @param sortDocument document specifying the order to return results, nil to have no sorting
  */
-- (CDTQResultSet*)find:(NSDictionary*)query
-          usingIndexes:(NSDictionary*)indexes
-                  skip:(NSUInteger)skip
-                 limit:(NSUInteger)limit
-                fields:(NSArray *)fields
-                  sort:(NSArray*)sortDocument;
+- (CDTQResultSet *)find:(NSDictionary *)query
+           usingIndexes:(NSDictionary *)indexes
+                   skip:(NSUInteger)skip
+                  limit:(NSUInteger)limit
+                 fields:(NSArray *)fields
+                   sort:(NSArray *)sortDocument;
 
 /**
  Return SQL to get ordered list of docIds.
- 
- @param sortDocument Array of ordering definitions `@[ @{"fieldName": "asc"}, @{@"fieldName2", @"asc"} ]`
+
+ @param sortDocument Array of ordering definitions `@[ @{"fieldName": "asc"}, @{@"fieldName2",
+ @"asc"} ]`
  @param indexes dictionary of indexes
  */
-+ (CDTQSqlParts*)sqlToSortIds:(NSSet/*NSString*/*)docIdSet 
-                   usingOrder:(NSArray/*NSDictionary*/*)sortDocument
-                      indexes:(NSDictionary*)indexes;
++ (CDTQSqlParts *)sqlToSortIds:(NSSet /*NSString*/ *)docIdSet
+                    usingOrder:(NSArray /*NSDictionary*/ *)sortDocument
+                       indexes:(NSDictionary *)indexes;
 
-+ (NSArray *) applySkip:(NSUInteger)skip andLimit:(NSUInteger)limit toResultSet:(NSArray*)docIds;
++ (NSArray *)applySkip:(NSUInteger)skip andLimit:(NSUInteger)limit toResultSet:(NSArray *)docIds;
 
 @end

@@ -18,7 +18,7 @@
 
 @interface CDTQProjectedDocumentRevision ()
 
-@property (nonatomic,strong) CDTDatastore *datastore;
+@property (nonatomic, strong) CDTDatastore *datastore;
 
 @end
 
@@ -30,13 +30,13 @@
             deleted:(BOOL)deleted
         attachments:(NSDictionary *)attachments
            sequence:(SequenceNumber)sequence
-          datastore:(CDTDatastore*)datastore
+          datastore:(CDTDatastore *)datastore
 {
     self = [self initWithDocId:docId
                     revisionId:revId
                           body:body
                        deleted:deleted
-                   attachments:attachments 
+                   attachments:attachments
                       sequence:sequence];
     if (self != nil) {
         _datastore = datastore;
@@ -44,19 +44,18 @@
     return self;
 }
 
-- (CDTMutableDocumentRevision*)mutableCopy
+- (CDTMutableDocumentRevision *)mutableCopy
 {
-    CDTDocumentRevision *rev = [self.datastore getDocumentWithId:self.docId
-                                                           error:nil];
+    CDTDocumentRevision *rev = [self.datastore getDocumentWithId:self.docId error:nil];
     if (rev == nil) {
         return nil;
     }
-    
+
     // Don't want to return an updated version, breaks contract of mutableCopy
     if (![rev.revId isEqualToString:self.revId]) {
         return nil;
     }
-    
+
     return [rev mutableCopy];
 }
 

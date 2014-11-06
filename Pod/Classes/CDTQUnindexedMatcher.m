@@ -27,7 +27,7 @@
 
 @interface CDTQUnindexedMatcher ()
 
-@property (nonatomic,strong) CDTQChildrenQueryNode *root;
+@property (nonatomic, strong) CDTQChildrenQueryNode *root;
 
 @end
 
@@ -39,27 +39,27 @@ static NSString *const NOT = @"$not";
 
 #pragma mark Creating matcher
 
-+ (CDTQUnindexedMatcher*)matcherWithSelector:(NSDictionary*)selector 
++ (CDTQUnindexedMatcher *)matcherWithSelector:(NSDictionary *)selector
 {
     CDTQChildrenQueryNode *root = [CDTQUnindexedMatcher buildExecutionTreeForSelector:selector];
-    
+
     CDTQUnindexedMatcher *matcher = [[CDTQUnindexedMatcher alloc] init];
     matcher.root = root;
     return matcher;
 }
 
-+ (CDTQChildrenQueryNode*)buildExecutionTreeForSelector:(NSDictionary*)selector
++ (CDTQChildrenQueryNode *)buildExecutionTreeForSelector:(NSDictionary *)selector
 {
     selector = [CDTQQuerySqlTranslator normaliseQuery:selector];
-    
+
     // At this point we will have a root compound predicate, AND or OR, and
     // the query will be reduced to a single entry:
     // @{ @"$and": @[ ... predicates (possibly compound) ... ] }
     // @{ @"$or": @[ ... predicates (possibly compound) ... ] }
-    
+
     CDTQChildrenQueryNode *root;
     NSArray *clauses;
-    
+
     if (selector[AND]) {
         clauses = selector[AND];
         root = [[CDTQAndQueryNode alloc] init];
@@ -67,120 +67,116 @@ static NSString *const NOT = @"$not";
         clauses = selector[OR];
         root = [[CDTQOrQueryNode alloc] init];
     }
-    
+
     //
     // First handle the simple @"field": @{ @"$operator": @"value" } clauses.
     //
-    
+
     NSMutableArray *basicClauses = [NSMutableArray array];
-    
+
     [clauses enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        NSDictionary *clause = (NSDictionary*)obj;
+        NSDictionary *clause = (NSDictionary *)obj;
         NSString *field = clause.allKeys[0];
         if (![field hasPrefix:@"$"]) {
             [basicClauses addObject:clauses[idx]];
         }
     }];
-    
+
     // Execution step will evaluate each child node and AND or OR the results.
     for (NSDictionary *expression in basicClauses) {
         CDTQOperatorExpressionNode *node = [[CDTQOperatorExpressionNode alloc] init];
         node.expression = expression;
         [root.children addObject:node];
     }
-    
+
     //
     // AND and OR subclauses are handled identically whatever the parent is.
     // We go through the query twice to order the OR clauses before the AND
     // clauses, for predictability.
     //
-    
+
     // Add subclauses that are OR
     [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
-        NSDictionary *clause = (NSDictionary*)obj;
+        NSDictionary *clause = (NSDictionary *)obj;
         NSString *field = clause.allKeys[0];
         if ([field hasPrefix:@"$or"]) {
-            CDTQQueryNode *orNode = [CDTQUnindexedMatcher buildExecutionTreeForSelector:clauses[idx]];
+            CDTQQueryNode *orNode =
+                [CDTQUnindexedMatcher buildExecutionTreeForSelector:clauses[idx]];
             [root.children addObject:orNode];
         }
     }];
-    
+
     // Add subclauses that are AND
     [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
-        NSDictionary *clause = (NSDictionary*)obj;
+        NSDictionary *clause = (NSDictionary *)obj;
         NSString *field = clause.allKeys[0];
         if ([field hasPrefix:@"$and"]) {
-            CDTQQueryNode *andNode = [CDTQUnindexedMatcher buildExecutionTreeForSelector:clauses[idx]];
+            CDTQQueryNode *andNode =
+                [CDTQUnindexedMatcher buildExecutionTreeForSelector:clauses[idx]];
             [root.children addObject:andNode];
         }
     }];
-    
+
     return root;
 }
 
 #pragma mark Matching documents
 
-- (BOOL)matches:(CDTDocumentRevision*)rev
+- (BOOL)matches:(CDTDocumentRevision *)rev
 {
     return [self executeSelectorTree:self.root onRevision:rev];
 }
 
-
 #pragma mark Tree walking
 
-- (BOOL)executeSelectorTree:(CDTQQueryNode*)node onRevision:(CDTDocumentRevision*)rev
+- (BOOL)executeSelectorTree:(CDTQQueryNode *)node onRevision:(CDTDocumentRevision *)rev
 {
     if ([node isKindOfClass:[CDTQAndQueryNode class]]) {
-        
         BOOL passed = YES;
-        
-        CDTQAndQueryNode *andNode = (CDTQAndQueryNode*)node;
+
+        CDTQAndQueryNode *andNode = (CDTQAndQueryNode *)node;
         for (CDTQQueryNode *child in andNode.children) {
             passed = passed && [self executeSelectorTree:child onRevision:rev];
         }
-        
+
         return passed;
-        
-    } if ([node isKindOfClass:[CDTQOrQueryNode class]]) {
-        
+    }
+    if ([node isKindOfClass:[CDTQOrQueryNode class]]) {
         BOOL passed = NO;
-        
-        CDTQOrQueryNode *orNode = (CDTQOrQueryNode*)node;
+
+        CDTQOrQueryNode *orNode = (CDTQOrQueryNode *)node;
         for (CDTQQueryNode *child in orNode.children) {
             passed = passed || [self executeSelectorTree:child onRevision:rev];
         }
-        
+
         return passed;
-        
+
     } else if ([node isKindOfClass:[CDTQOperatorExpressionNode class]]) {
-        
-        NSDictionary *expression = ((CDTQOperatorExpressionNode*)node).expression;
-        
+        NSDictionary *expression = ((CDTQOperatorExpressionNode *)node).expression;
+
         // Here we could have:
         //   { fieldName: { operator: value } }
         // or
         //   { fieldName: { $not: { operator: value } } }
-        
+
         // Next evaluate the result
         NSString *fieldName = expression.allKeys[0];
         NSDictionary *operatorExpression = expression[fieldName];
-        
-        NSString *operator = operatorExpression.allKeys[0];
-        
+
+        NSString *operator= operatorExpression.allKeys[0];
+
         // First work out whether we need to invert the result when done
         BOOL invertResult = [operator isEqualToString:NOT];
         if (invertResult) {
             operatorExpression = operatorExpression[NOT];
-            operator = operatorExpression.allKeys[0];
+            operator= operatorExpression.allKeys[0];
         }
-        
+
         NSObject *expected = operatorExpression[operator];
-        NSObject *actual = [CDTQValueExtractor extractValueForFieldName:fieldName
-                                                           fromRevision:rev];
-        
-        
+        NSObject *actual = [CDTQValueExtractor extractValueForFieldName:fieldName fromRevision:rev];
+
         BOOL passed = NO;
-        
+
         // For array actual values, the operator expression is matched
         // if any of the array values match it. We need to be careful
         // to invert the match status of every candidate, rather than
@@ -194,7 +190,7 @@ static NSString *const NOT = @"$not";
         // The latter is satisfied using the $nin operator.
         if ([actual isKindOfClass:[NSArray class]]) {
             BOOL currentItemPassed = NO;
-            for (NSObject *item in (NSArray*)actual) {
+            for (NSObject *item in(NSArray *)actual) {
                 // OR as any value in the array can match
                 currentItemPassed = [self actualValue:item
                                       matchesOperator:operator 
@@ -207,9 +203,9 @@ static NSString *const NOT = @"$not";
                       andExpectedValue:expected];
             passed = invertResult ? !passed : passed;
         }
-                
+
         return passed;
-        
+
     } else {
         // We constructed the tree, so shouldn't end up here; error if we do.
         LogError(@"Found unexpected selector execution tree: %@", node);
@@ -217,54 +213,48 @@ static NSString *const NOT = @"$not";
     }
 }
 
-- (BOOL)actualValue:(NSObject*)actual 
-    matchesOperator:(NSString*)operator
-   andExpectedValue:(NSObject*)expected
+- (BOOL)actualValue:(NSObject *)actual
+     matchesOperator:(NSString *) operator
+    andExpectedValue:(NSObject *)expected
 {
     BOOL passed = NO;
-    
+
     if ([operator isEqualToString:@"$eq"]) {
         passed = [self eqL:actual R:expected];
-        
+
     } else if ([operator isEqualToString:@"$ne"]) {
         passed = [self neL:actual R:expected];
-        
+
     } else if ([operator isEqualToString:@"$lt"]) {
         passed = [self ltL:actual R:expected];
-        
+
     } else if ([operator isEqualToString:@"$lte"]) {
         passed = [self lteL:actual R:expected];
-        
+
     } else if ([operator isEqualToString:@"$gt"]) {
         passed = [self gtL:actual R:expected];
-        
+
     } else if ([operator isEqualToString:@"$gte"]) {
         passed = [self gteL:actual R:expected];
-        
+
     } else if ([operator isEqualToString:@"$exists"]) {
-        BOOL expectedBool = [((NSNumber*)expected) boolValue];
+        BOOL expectedBool = [((NSNumber *)expected)boolValue];
         BOOL exists = (actual != nil);
         passed = (exists == expectedBool);
-        
+
     } else {
         LogWarn(@"Found unexpected operator in selector: %@", operator);
         passed = NO;  // didn't understand
     }
-    
+
     return passed;
 }
 
 #pragma mark matchers
 
-- (BOOL)eqL:(NSObject*)l R:(NSObject*)r
-{
-    return [l isEqual:r];
-}
+- (BOOL)eqL:(NSObject *)l R:(NSObject *)r { return [l isEqual:r]; }
 
-- (BOOL)neL:(NSObject*)l R:(NSObject*)r
-{
-    return ![self eqL:l R:r];
-}
+- (BOOL)neL:(NSObject *)l R:(NSObject *)r { return ![self eqL:l R:r]; }
 
 //
 // Try to respect SQLite's ordering semantics:
@@ -272,85 +262,81 @@ static NSString *const NOT = @"$not";
 //  2. INT/REAL
 //  3. TEXT
 //  4. BLOB
-- (BOOL)ltL:(NSObject*)l R:(NSObject*)r
+- (BOOL)ltL:(NSObject *)l R:(NSObject *)r
 {
     if (l == nil) {
-        
         return NO;  // nil fails all lt/gt/lte/gte tests
-        
+
     } else if (!([l isKindOfClass:[NSString class]] || [l isKindOfClass:[NSNumber class]])) {
-    
         LogWarn(@"Value in document not NSNumber or NSString: %@", l);
         return NO;  // Not sure how to compare values that are not numbers or strings
-    
+
     } else if ([l isKindOfClass:[NSString class]]) {
-        
         if ([r isKindOfClass:[NSNumber class]]) {
             return NO;  // INT < STRING
         }
-        
-        NSString *lStr = (NSString*)l;
-        NSString *rStr = (NSString*)r;
-        
+
+        NSString *lStr = (NSString *)l;
+        NSString *rStr = (NSString *)r;
+
         NSComparisonResult result = [lStr compare:rStr];
         return (result == NSOrderedAscending);
-        
+
     } else if ([l isKindOfClass:[NSNumber class]]) {
-        
         if ([r isKindOfClass:[NSString class]]) {
             return YES;  // INT < STRING
         }
-        
-        NSNumber *lNum = (NSNumber*)l;
-        NSNumber *rNum = (NSNumber*)r;
-        
+
+        NSNumber *lNum = (NSNumber *)l;
+        NSNumber *rNum = (NSNumber *)r;
+
         NSComparisonResult result = [lNum compare:rNum];
         return (result == NSOrderedAscending);
-        
+
     } else {
         return NO;  // Catch all which we cannot reach
     }
 }
 
-- (BOOL)lteL:(NSObject*)l R:(NSObject*)r
+- (BOOL)lteL:(NSObject *)l R:(NSObject *)r
 {
     if (l == nil) {
         return NO;  // nil fails all lt/gt/lte/gte tests
     }
-    
+
     if (!([l isKindOfClass:[NSString class]] || [l isKindOfClass:[NSNumber class]])) {
         LogWarn(@"Value in document not NSNumber or NSString: %@", l);
         return NO;  // Not sure how to compare values that are not numbers or strings
     }
-    
+
     return [self ltL:l R:r] || [l isEqual:r];
 }
 
-- (BOOL)gtL:(NSObject*)l R:(NSObject*)r
+- (BOOL)gtL:(NSObject *)l R:(NSObject *)r
 {
     if (l == nil) {
         return NO;  // nil fails all lt/gt/lte/gte tests
     }
-    
+
     if (!([l isKindOfClass:[NSString class]] || [l isKindOfClass:[NSNumber class]])) {
         LogWarn(@"Value in document not NSNumber or NSString: %@", l);
         return NO;  // Not sure how to compare values that are not numbers or strings
     }
-    
+
     return ![self lteL:l R:r];
 }
 
-- (BOOL)gteL:(NSObject*)l R:(NSObject*)r
+- (BOOL)gteL:(NSObject *)l R:(NSObject *)r
 {
     if (l == nil) {
         return NO;  // nil fails all lt/gt/lte/gte tests
     }
-    
+
     if (!([l isKindOfClass:[NSString class]] || [l isKindOfClass:[NSNumber class]])) {
         LogWarn(@"Value in document not NSNumber or NSString: %@", l);
         return NO;  // Not sure how to compare values that are not numbers or strings
     }
-    
+
     return ![self ltL:l R:r];
 }
 

@@ -1,6 +1,6 @@
 //
 //  CDTQResultSet.m
-//  
+//
 //  Created by Mike Rhodes on 2014-09-27
 //  Copyright (c) 2014 Cloudant. All rights reserved.
 //
@@ -19,12 +19,12 @@
 #import <CloudantSync.h>
 
 @interface CDTQResultSet ()
-@property (nonatomic,strong,readwrite) NSArray *fields;
+@property (nonatomic, strong, readwrite) NSArray *fields;
 @end
 
 @implementation CDTQResultSetBuilder
 
-- (CDTQResultSet*)build;
+- (CDTQResultSet *)build;
 {
     return [[CDTQResultSet alloc] initWithBuilder:self];
 }
@@ -33,31 +33,31 @@
 
 @implementation CDTQResultSet
 
--(instancetype)initWithBuilder:(CDTQResultSetBuilder*)builder
+- (instancetype)initWithBuilder:(CDTQResultSetBuilder *)builder
 {
     self = [super init];
     if (self) {
         _documentIds = builder.docIds;
-        _datastore   = builder.datastore;
+        _datastore = builder.datastore;
         _fields = builder.fields;
     }
     return self;
 }
 
-+ (instancetype)resultSetWithBlock:(CDTQResultSetBuilderBlock)block 
++ (instancetype)resultSetWithBlock:(CDTQResultSetBuilderBlock)block
 {
     NSParameterAssert(block);
-    
+
     CDTQResultSetBuilder *builder = [[CDTQResultSetBuilder alloc] init];
     block(builder);
     return [builder build];
 }
 
--(NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state
-                                 objects:(id __unsafe_unretained [])buffer
-                                   count:(NSUInteger)len
+- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state
+                                  objects:(id __unsafe_unretained[])buffer
+                                    count:(NSUInteger)len
 {
-    if(state->state == 0) {
+    if (state->state == 0) {
         state->state = 1;
         // this is our index into docids list
         state->extra[0] = 0;
@@ -66,52 +66,50 @@
     }
     // get our current index for this batch
     unsigned long *index = &state->extra[0];
-    
+
     NSRange range;
     range.location = (unsigned int)*index;
-    range.length   = MIN((len), ([_documentIds count]-range.location));
-    
+    range.length = MIN((len), ([_documentIds count] - range.location));
+
     // get documents for this batch of documentids
     NSArray *batchIds = [_documentIds subarrayWithRange:range];
     __unsafe_unretained NSArray *docs = [_datastore getDocumentsWithIds:batchIds];
-    
-    if(self.fields){
+
+    if (self.fields) {
         docs = [CDTQResultSet projectFields:self.fields fromRevisions:docs datastore:_datastore];
     }
-    
+
     int i;
-    for (i=0; i < range.length; i++){
+    for (i = 0; i < range.length; i++) {
         buffer[i] = docs[i];
     }
     // update index ready for next time round
     (*index) += i;
-    
+
     state->itemsPtr = buffer;
     return i;
 }
 
-+ (NSArray *)projectFields:(NSArray*)fields 
-             fromRevisions:(NSArray*)revisions
-                 datastore:(CDTDatastore*)datastore
++ (NSArray *)projectFields:(NSArray *)fields
+             fromRevisions:(NSArray *)revisions
+                 datastore:(CDTDatastore *)datastore
 {
+    NSMutableArray *projectedDocs = [NSMutableArray array];
 
-    NSMutableArray * projectedDocs = [NSMutableArray array];
-    
-    for(CDTDocumentRevision * rev in revisions){
-        //grab the dictionary filter fields and rebuild object
-        NSDictionary * body = [rev.body dictionaryWithValuesForKeys:fields];
-        CDTQProjectedDocumentRevision *rev2 = [[CDTQProjectedDocumentRevision alloc]
-                                               initWithDocId:rev.docId
-                                               revisionId:rev.revId
-                                               body:body
-                                               deleted:rev.deleted
-                                               attachments:rev.attachments
-                                               sequence:rev.sequence
-                                               datastore:datastore];
+    for (CDTDocumentRevision *rev in revisions) {
+        // grab the dictionary filter fields and rebuild object
+        NSDictionary *body = [rev.body dictionaryWithValuesForKeys:fields];
+        CDTQProjectedDocumentRevision *rev2 =
+            [[CDTQProjectedDocumentRevision alloc] initWithDocId:rev.docId
+                                                      revisionId:rev.revId
+                                                            body:body
+                                                         deleted:rev.deleted
+                                                     attachments:rev.attachments
+                                                        sequence:rev.sequence
+                                                       datastore:datastore];
         [projectedDocs addObject:rev2];
     }
     return projectedDocs;
-
 }
 
 @end
