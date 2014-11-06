@@ -224,7 +224,6 @@ SharedExamplesBegin(QueryExecution)
 
                     expect([results.documentIds count]).to.equal(0);
                 });
-
             });
 
             // TODO fill in when separate validation class written
@@ -335,7 +334,6 @@ SharedExamplesBegin(QueryExecution)
                         expect(rev.body[@"age"]).to.equal(12);
                     }];
                 });
-
             });
 
             describe(@"when using $lte operator", ^{
@@ -443,7 +441,6 @@ SharedExamplesBegin(QueryExecution)
                 CDTQResultSet* result = [im find:query];
                 expect(result.documentIds).to.equal(@[ @"mike23" ]);
             });
-
         });
 
         describe(@"when using non-ascii text", ^{
@@ -835,7 +832,6 @@ SharedExamplesBegin(QueryExecution)
                 expect(result).toNot.beNil();
                 expect(result.documentIds.count).to.equal(1);
             });
-
         });
 
         describe(@"_rev is queryable", ^{
@@ -878,7 +874,6 @@ SharedExamplesBegin(QueryExecution)
                 expect(result).toNot.beNil();
                 expect(result.documentIds.count).to.equal(1);
             });
-
         });
 
         describe(@"when using $not", ^{
@@ -975,7 +970,6 @@ SharedExamplesBegin(QueryExecution)
                 expect(result).toNot.beNil();
                 expect(result.documentIds.count).to.equal(5);
             });
-
         });
 
         describe(@"when indexing array fields", ^{
@@ -1027,7 +1021,6 @@ SharedExamplesBegin(QueryExecution)
                 expect(result.documentIds.count).to.equal(2);
                 expect(result.documentIds).to.equal(@[ @"mike12", @"fred34" ]);
             });
-
         });
 
         describe(@"when using the $exists operator", ^{
@@ -1095,7 +1088,6 @@ SharedExamplesBegin(QueryExecution)
                 expect(result).toNot.beNil();
                 expect([result.documentIds count]).to.equal(1);
             });
-
         });
 
         describe(@"stopping enumeration", ^{
@@ -1362,12 +1354,10 @@ sharedExamplesFor(@"queries without covering indexes", ^(NSDictionary* data) {
 SharedExamplesEnd
 
     // This spec pushes the standard CDTQQueryExecutor through the shared behaviour tests.
-    SpecBegin(CDTQQueryExecutor)
-
-        describe(@"full with covering", ^{
-            NSDictionary* data = @{ @"index_manager_class" : [CDTQIndexManager class] };
-            itShouldBehaveLike(@"queries with covering indexes", data);
-        });
+    SpecBegin(CDTQQueryExecutor) describe(@"full with covering", ^{
+        NSDictionary* data = @{ @"index_manager_class" : [CDTQIndexManager class] };
+        itShouldBehaveLike(@"queries with covering indexes", data);
+    });
 
 describe(@"full without covering", ^{
     NSDictionary* data = @{ @"index_manager_class" : [CDTQIndexManager class] };
@@ -1377,12 +1367,10 @@ describe(@"full without covering", ^{
 SpecEnd
 
     // This class skips the matcher to check that SQL only returns the same
-    SpecBegin(CDTQSQLOnlyQueryExecutor)
-
-        describe(@"sql with covering", ^{
-            NSDictionary* data = @{ @"index_manager_class" : [CDTQSQLOnlyIndexManager class] };
-            itShouldBehaveLike(@"queries with covering indexes", data);
-        });
+    SpecBegin(CDTQSQLOnlyQueryExecutor) describe(@"sql with covering", ^{
+        NSDictionary* data = @{ @"index_manager_class" : [CDTQSQLOnlyIndexManager class] };
+        itShouldBehaveLike(@"queries with covering indexes", data);
+    });
 
 // Don't run "queries without covering indexes" as they'll obviously not work
 
@@ -1390,12 +1378,10 @@ SpecEnd
 
     // This class skips SQL and just uses the matcher to ensure the matcher class returns
     // the same as the SQL version.
-    SpecBegin(CDTQMatcherQueryExecutor)
-
-        describe(@"matcher with covering", ^{
-            NSDictionary* data = @{ @"index_manager_class" : [CDTQMatcherIndexManager class] };
-            itShouldBehaveLike(@"queries with covering indexes", data);
-        });
+    SpecBegin(CDTQMatcherQueryExecutor) describe(@"matcher with covering", ^{
+        NSDictionary* data = @{ @"index_manager_class" : [CDTQMatcherIndexManager class] };
+        itShouldBehaveLike(@"queries with covering indexes", data);
+    });
 
 describe(@"matcher without covering", ^{
     NSDictionary* data = @{ @"index_manager_class" : [CDTQMatcherIndexManager class] };

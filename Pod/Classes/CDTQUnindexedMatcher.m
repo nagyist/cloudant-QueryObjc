@@ -18,6 +18,7 @@
 #import "CDTQQuerySqlTranslator.h"
 #import "CDTQLogging.h"
 #import "CDTQValueExtractor.h"
+#import "CDTQQueryValidator.h"
 
 #import "CDTDocumentRevision.h"
 
@@ -43,6 +44,10 @@ static NSString *const NOT = @"$not";
 {
     CDTQChildrenQueryNode *root = [CDTQUnindexedMatcher buildExecutionTreeForSelector:selector];
 
+    if (!root) {
+        return nil;
+    }
+
     CDTQUnindexedMatcher *matcher = [[CDTQUnindexedMatcher alloc] init];
     matcher.root = root;
     return matcher;
@@ -50,8 +55,6 @@ static NSString *const NOT = @"$not";
 
 + (CDTQChildrenQueryNode *)buildExecutionTreeForSelector:(NSDictionary *)selector
 {
-    selector = [CDTQQuerySqlTranslator normaliseQuery:selector];
-
     // At this point we will have a root compound predicate, AND or OR, and
     // the query will be reduced to a single entry:
     // @{ @"$and": @[ ... predicates (possibly compound) ... ] }
@@ -135,6 +138,12 @@ static NSString *const NOT = @"$not";
         BOOL passed = YES;
 
         CDTQAndQueryNode *andNode = (CDTQAndQueryNode *)node;
+
+//        if ([andNode.children count] == 0) {
+//            // well this isn't right, something has gone wrong
+//            return NO;
+//        }
+
         for (CDTQQueryNode *child in andNode.children) {
             passed = passed && [self executeSelectorTree:child onRevision:rev];
         }
@@ -176,7 +185,6 @@ static NSString *const NOT = @"$not";
         NSObject *actual = [CDTQValueExtractor extractValueForFieldName:fieldName fromRevision:rev];
 
         BOOL passed = NO;
-
         // For array actual values, the operator expression is matched
         // if any of the array values match it. We need to be careful
         // to invert the match status of every candidate, rather than
@@ -194,13 +202,15 @@ static NSString *const NOT = @"$not";
                 // OR as any value in the array can match
                 currentItemPassed = [self actualValue:item
                                       matchesOperator:operator 
-                                     andExpectedValue:expected];
+                                     andExpectedValue:expected
+                                     ];
                 passed = passed || (invertResult ? !currentItemPassed : currentItemPassed);
             }
         } else {
             passed = [self actualValue:actual
                        matchesOperator:operator 
-                      andExpectedValue:expected];
+                      andExpectedValue:expected
+                      ];
             passed = invertResult ? !passed : passed;
         }
 

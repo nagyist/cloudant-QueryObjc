@@ -21,6 +21,7 @@
 #import "CDTQUnindexedMatcher.h"
 #import "CDTDatastore.h"
 #import "CDTDocumentRevision.h"
+#import "CDTQQueryValidator.h"
 
 #import "FMDB.h"
 
@@ -68,6 +69,14 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
         return nil;  // validate logs error message
     }
 
+    // normailse and validate query by passing into the executors
+
+    query = [CDTQQueryValidator normaliseAndValidateQuery:query];
+
+    if (!query) {
+        return nil;
+    }
+
     //
     // Execute the query
     //
@@ -103,9 +112,8 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
         return nil;
     }
 
-    // Apply post-hoc filtering
-
     CDTQUnindexedMatcher *matcher = [self matcherForIndexCoverage:indexesCoverQuery selector:query];
+
     if (matcher) {
         LogWarn(@"Query could not be executed using indexes alone; falling back to filtering "
                 @"documents themselves. This will be VERY SLOW as each candidate document is "

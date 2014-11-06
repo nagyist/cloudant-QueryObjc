@@ -117,7 +117,7 @@
 /**
  Expand implicit operators in a query.
  */
-+ (NSDictionary *)normaliseQuery:(NSDictionary *)query;
+//+ (NSDictionary *)normaliseQuery:(NSDictionary *)query;
 
 /**
  Extract fields from an AND clause
