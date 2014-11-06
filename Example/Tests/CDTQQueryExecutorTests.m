@@ -99,6 +99,18 @@ SharedExamplesBegin(QueryExecution)
                 expect([im ensureIndexed:@[ @"name", @"age" ] withName:@"basic"]).toNot.beNil();
                 expect([im ensureIndexed:@[ @"name", @"pet" ] withName:@"pet"]).toNot.beNil();
             });
+            
+            it(@"returns nil for no query", ^{
+                CDTQResultSet* result = [im find:nil];
+                expect(result).to.beNil();
+            });
+            
+            it(@"returns all docs for empty query", ^{
+                NSDictionary* query = @{  };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(5);
+            });
 
             it(@"can query over one string field", ^{
                 NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };

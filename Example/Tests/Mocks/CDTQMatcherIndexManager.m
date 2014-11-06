@@ -10,27 +10,30 @@
 
 #import "CDTQMatcherQueryExecutor.h"
 
-@implementation CDTQMatcherIndexManager 
+@implementation CDTQMatcherIndexManager
 
-
-+ (CDTQIndexManager*)managerUsingDatastore:(CDTDatastore*)datastore 
-                                     error:(NSError * __autoreleasing *)error
++ (CDTQIndexManager *)managerUsingDatastore:(CDTDatastore *)datastore
+                                      error:(NSError *__autoreleasing *)error
 {
     return [[CDTQMatcherIndexManager alloc] initUsingDatastore:datastore error:error];
 }
 
--(CDTQResultSet *)find:(NSDictionary *)query
-                  skip:(NSUInteger)skip
-                 limit:(NSUInteger)limit
-                fields:(NSArray *)fields 
-                  sort:(NSArray *)sortDocument
+- (CDTQResultSet *)find:(NSDictionary *)query
+                   skip:(NSUInteger)skip
+                  limit:(NSUInteger)limit
+                 fields:(NSArray *)fields
+                   sort:(NSArray *)sortDocument
 {
-    if(! [self updateAllIndexes]){
+    if (!query) {
         return nil;
     }
-    
-    CDTQMatcherQueryExecutor *queryExecutor = [[CDTQMatcherQueryExecutor alloc] initWithDatabase:self.database
-                                                                                        datastore:self.datastore];
+
+    if (![self updateAllIndexes]) {
+        return nil;
+    }
+
+    CDTQMatcherQueryExecutor *queryExecutor =
+        [[CDTQMatcherQueryExecutor alloc] initWithDatabase:self.database datastore:self.datastore];
     return [queryExecutor find:query
                   usingIndexes:[self listIndexes]
                           skip:skip

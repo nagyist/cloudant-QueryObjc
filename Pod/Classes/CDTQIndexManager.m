@@ -319,6 +319,11 @@ static const int VERSION = 1;
                  fields:(NSArray *)fields
                    sort:(NSArray *)sortDocument
 {
+    if (!query) {
+        LogError(@"-find called with nil selector; bailing.");
+        return nil;
+    }
+    
     if (![self updateAllIndexes]) {
         return nil;
     }
