@@ -37,7 +37,7 @@
 {
     self = [super init];
     if (self) {
-        _documentIds = builder.docIds;
+        _originalDocumentIds = builder.docIds;
         _datastore = builder.datastore;
         _fields = builder.fields;
     }
@@ -53,41 +53,44 @@
     return [builder build];
 }
 
-- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state
-                                  objects:(id __unsafe_unretained[])buffer
-                                    count:(NSUInteger)len
+- (NSArray /* NSString */ *)documentIds
 {
-    if (state->state == 0) {
-        state->state = 1;
-        // this is our index into docids list
-        state->extra[0] = 0;
-        // number of mutations, although we ignore this
-        state->mutationsPtr = &state->extra[1];
+    // This is implemented using -enumerateObjectsUsingBlock so that when we're using
+    // skip, limit or post hoc matching the documentIds array is output correctly.
+    NSMutableArray *accumulator = [NSMutableArray array];
+    [self enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger idx, BOOL *stop) {
+        [accumulator addObject:rev.docId];
+    }];
+    return [NSArray arrayWithArray:accumulator];
+}
+
+- (void)enumerateObjectsUsingBlock:(void (^)(CDTDocumentRevision *rev, NSUInteger idx,
+                                             BOOL *stop))block
+{
+    NSUInteger idx = 0;
+    BOOL stop = NO;
+    NSUInteger batchSize = 50;
+    NSRange range = NSMakeRange(0, batchSize);
+    while (range.location < _originalDocumentIds.count) {
+        range.length = MIN(batchSize, _originalDocumentIds.count - range.location);
+        NSArray *batch = [_originalDocumentIds subarrayWithRange:range];
+
+        NSArray *docs = [_datastore getDocumentsWithIds:batch];
+        if (self.fields) {
+            docs =
+                [CDTQResultSet projectFields:self.fields fromRevisions:docs datastore:_datastore];
+        }
+
+        for (CDTDocumentRevision *rev in docs) {
+            block(rev, idx, &stop);
+            if (stop) {
+                break;
+            }
+            idx++;
+        }
+
+        range.location += range.length;
     }
-    // get our current index for this batch
-    unsigned long *index = &state->extra[0];
-
-    NSRange range;
-    range.location = (unsigned int)*index;
-    range.length = MIN((len), ([_documentIds count] - range.location));
-
-    // get documents for this batch of documentids
-    NSArray *batchIds = [_documentIds subarrayWithRange:range];
-    __unsafe_unretained NSArray *docs = [_datastore getDocumentsWithIds:batchIds];
-
-    if (self.fields) {
-        docs = [CDTQResultSet projectFields:self.fields fromRevisions:docs datastore:_datastore];
-    }
-
-    int i;
-    for (i = 0; i < range.length; i++) {
-        buffer[i] = docs[i];
-    }
-    // update index ready for next time round
-    (*index) += i;
-
-    state->itemsPtr = buffer;
-    return i;
 }
 
 + (NSArray *)projectFields:(NSArray *)fields

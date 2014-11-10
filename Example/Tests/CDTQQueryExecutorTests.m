@@ -99,14 +99,14 @@ SharedExamplesBegin(QueryExecution)
                 expect([im ensureIndexed:@[ @"name", @"age" ] withName:@"basic"]).toNot.beNil();
                 expect([im ensureIndexed:@[ @"name", @"pet" ] withName:@"pet"]).toNot.beNil();
             });
-            
+
             it(@"returns nil for no query", ^{
                 CDTQResultSet* result = [im find:nil];
                 expect(result).to.beNil();
             });
-            
+
             it(@"returns all docs for empty query", ^{
-                NSDictionary* query = @{  };
+                NSDictionary* query = @{};
                 CDTQResultSet* result = [im find:query];
                 expect(result).toNot.beNil();
                 expect(result.documentIds.count).to.equal(5);
@@ -220,10 +220,11 @@ SharedExamplesBegin(QueryExecution)
                     CDTQResultSet* result = [im find:query];
                     expect(result).toNot.beNil();
 
-                    for (CDTDocumentRevision* rev in result) {
+                    [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                         BOOL* s) {
                         expect([rev.body count]).to.beInTheRangeOf(@2, @3);
                         expect(rev.body[@"name"]).to.equal(@"mike");
-                    }
+                    }];
                 });
 
                 it(@"can compare string values as part of an $and query", ^{
@@ -231,11 +232,12 @@ SharedExamplesBegin(QueryExecution)
                     CDTQResultSet* result = [im find:query];
                     expect(result).toNot.beNil();
 
-                    for (CDTDocumentRevision* rev in result) {
+                    [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                         BOOL* s) {
                         expect([rev.body count]).to.beInTheRangeOf(@2, @3);
                         expect(rev.body[@"name"]).to.equal(@"mike");
                         expect(rev.body[@"age"]).to.equal(34);
-                    }
+                    }];
                 });
             });
 
@@ -277,10 +279,11 @@ SharedExamplesBegin(QueryExecution)
                     CDTQResultSet* result = [im find:query];
                     expect(result).toNot.beNil();
 
-                    for (CDTDocumentRevision* rev in result) {
+                    [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                         BOOL* s) {
                         expect([rev.body count]).to.beInTheRangeOf(@2, @3);
                         expect(rev.body[@"name"]).to.equal(@"fred");
-                    }
+                    }];
                 });
 
                 it(@"can compare string values as part of an $and query", ^{
@@ -288,11 +291,12 @@ SharedExamplesBegin(QueryExecution)
                     CDTQResultSet* result = [im find:query];
                     expect(result).toNot.beNil();
 
-                    for (CDTDocumentRevision* rev in result) {
+                    [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                         BOOL* s) {
                         expect([rev.body count]).to.beInTheRangeOf(@2, @3);
                         expect(rev.body[@"name"]).to.equal(@"fred");
                         expect(rev.body[@"age"]).to.equal(12);
-                    }
+                    }];
                 });
 
             });
