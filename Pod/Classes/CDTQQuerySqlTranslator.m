@@ -82,6 +82,11 @@ static NSString *const EXISTS = @"$exists";
         NSString *allDocsIndex =
             [CDTQQuerySqlTranslator chooseIndexForFields:neededFields fromIndexes:indexes];
 
+        if (!allDocsIndex) {
+            LogError(@"No indexes defined, cannot execute query for all documents");
+            return nil;
+        }
+
         NSString *tableName = [CDTQIndexManager tableNameForIndex:allDocsIndex];
 
         NSString *sql = @"SELECT _id FROM %@;";

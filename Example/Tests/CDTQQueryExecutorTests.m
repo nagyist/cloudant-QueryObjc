@@ -99,14 +99,14 @@ SharedExamplesBegin(QueryExecution)
                 expect([im ensureIndexed:@[ @"name", @"age" ] withName:@"basic"]).toNot.beNil();
                 expect([im ensureIndexed:@[ @"name", @"pet" ] withName:@"pet"]).toNot.beNil();
             });
-            
+
             it(@"returns nil for no query", ^{
                 CDTQResultSet* result = [im find:nil];
                 expect(result).to.beNil();
             });
-            
+
             it(@"returns all docs for empty query", ^{
-                NSDictionary* query = @{  };
+                NSDictionary* query = @{};
                 CDTQResultSet* result = [im find:query];
                 expect(result).toNot.beNil();
                 expect(result.documentIds.count).to.equal(5);
@@ -220,10 +220,11 @@ SharedExamplesBegin(QueryExecution)
                     CDTQResultSet* result = [im find:query];
                     expect(result).toNot.beNil();
 
-                    for (CDTDocumentRevision* rev in result) {
+                    [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                         BOOL* s) {
                         expect([rev.body count]).to.beInTheRangeOf(@2, @3);
                         expect(rev.body[@"name"]).to.equal(@"mike");
-                    }
+                    }];
                 });
 
                 it(@"can compare string values as part of an $and query", ^{
@@ -231,11 +232,12 @@ SharedExamplesBegin(QueryExecution)
                     CDTQResultSet* result = [im find:query];
                     expect(result).toNot.beNil();
 
-                    for (CDTDocumentRevision* rev in result) {
+                    [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                         BOOL* s) {
                         expect([rev.body count]).to.beInTheRangeOf(@2, @3);
                         expect(rev.body[@"name"]).to.equal(@"mike");
                         expect(rev.body[@"age"]).to.equal(34);
-                    }
+                    }];
                 });
             });
 
@@ -277,10 +279,11 @@ SharedExamplesBegin(QueryExecution)
                     CDTQResultSet* result = [im find:query];
                     expect(result).toNot.beNil();
 
-                    for (CDTDocumentRevision* rev in result) {
+                    [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                         BOOL* s) {
                         expect([rev.body count]).to.beInTheRangeOf(@2, @3);
                         expect(rev.body[@"name"]).to.equal(@"fred");
-                    }
+                    }];
                 });
 
                 it(@"can compare string values as part of an $and query", ^{
@@ -288,11 +291,12 @@ SharedExamplesBegin(QueryExecution)
                     CDTQResultSet* result = [im find:query];
                     expect(result).toNot.beNil();
 
-                    for (CDTDocumentRevision* rev in result) {
+                    [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                         BOOL* s) {
                         expect([rev.body count]).to.beInTheRangeOf(@2, @3);
                         expect(rev.body[@"name"]).to.equal(@"fred");
                         expect(rev.body[@"age"]).to.equal(12);
-                    }
+                    }];
                 });
 
             });
@@ -1057,6 +1061,79 @@ SharedExamplesBegin(QueryExecution)
             });
 
         });
+
+        fdescribe(@"stopping enumeration", ^{
+
+            __block CDTDatastore* ds;
+            __block CDTQIndexManager* im;
+
+            beforeEach(^{
+                ds = [factory datastoreNamed:@"test" error:nil];
+                expect(ds).toNot.beNil();
+
+                CDTMutableDocumentRevision* rev = [CDTMutableDocumentRevision revision];
+
+                rev.docId = @"mike12";
+                rev.body = @{ @"name" : @"mike", @"age" : @12, @"pet" : @"cat" };
+                [ds createDocumentFromRevision:rev error:nil];
+
+                rev.docId = @"mike34";
+                rev.body = @{ @"name" : @"mike", @"age" : @34, @"pet" : @"dog" };
+                [ds createDocumentFromRevision:rev error:nil];
+
+                rev.docId = @"mike72";
+                rev.body = @{ @"name" : @"mike", @"age" : @67, @"pet" : @"cat" };
+                [ds createDocumentFromRevision:rev error:nil];
+
+                im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+                expect(im).toNot.beNil();
+
+                [im ensureIndexed:@[ @"_id" ] withName:@"id"];
+            });
+
+            it(@"enumerates all results when stop not set", ^{
+                NSDictionary* query = @{};
+                CDTQResultSet* result = [im find:query];
+                __block NSUInteger count = 0;
+
+                [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                     BOOL* s) { count++; }];
+
+                expect(count).to.equal(3);
+            });
+
+            it(@"enumerates all results when set set to NO", ^{
+                NSDictionary* query = @{};
+                CDTQResultSet* result = [im find:query];
+                __block NSUInteger count = 0;
+
+                [result
+                    enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i, BOOL* s) {
+                        count++;
+                        *s = NO;
+                    }];
+
+                expect(count).to.equal(3);
+            });
+
+            it(@"stops when stop is set to YES", ^{
+                NSDictionary* query = @{};
+                CDTQResultSet* result = [im find:query];
+                __block NSUInteger count = 0;
+
+                [result
+                    enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i, BOOL* s) {
+                        count++;
+                        if (count == 2) {
+                            *s = NO;
+                        }
+                    }];
+
+                expect(count).to.equal(3);
+            });
+
+        });
+
     });
 
 // The aim is to make sure that the post hoc matcher class behaves the

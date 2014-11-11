@@ -92,10 +92,10 @@ SpecBegin(CDTQFilterFieldsTest)
                 [im find:query skip:0 limit:NSUIntegerMax fields:@[ @"name" ] sort:nil];
             expect(result).toNot.beNil();
 
-            for (CDTDocumentRevision *revision in result) {
-                expect([revision.body count]).to.equal(1);
-                expect([revision.body objectForKey:@"name"]).to.equal(@"mike");
-            }
+            [result enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger i, BOOL *s) {
+                expect([rev.body count]).to.equal(1);
+                expect([rev.body objectForKey:@"name"]).to.equal(@"mike");
+            }];
         });
 
         it(@"returns all fields when fields array is empty", ^{
@@ -103,12 +103,12 @@ SpecBegin(CDTQFilterFieldsTest)
             CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[] sort:nil];
             expect(result).toNot.beNil();
 
-            for (CDTDocumentRevision *revision in result) {
-                expect([revision.body count]).to.equal(3);
-                expect([revision.body objectForKey:@"name"]).toNot.beNil();
-                expect([revision.body objectForKey:@"pet"]).toNot.beNil();
-                expect([revision.body objectForKey:@"age"]).toNot.beNil();
-            }
+            [result enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger i, BOOL *s) {
+                expect([rev.body count]).to.equal(3);
+                expect([rev.body objectForKey:@"name"]).toNot.beNil();
+                expect([rev.body objectForKey:@"pet"]).toNot.beNil();
+                expect([rev.body objectForKey:@"age"]).toNot.beNil();
+            }];
         });
 
         it(@"returns all fields when fields array is nil", ^{
@@ -116,12 +116,12 @@ SpecBegin(CDTQFilterFieldsTest)
             CDTQResultSet *result = [im find:query skip:0 limit:NSUIntegerMax fields:@[] sort:nil];
             expect(result).toNot.beNil();
 
-            for (CDTDocumentRevision *revision in result) {
-                expect([revision.body count]).to.equal(3);
-                expect([revision.body objectForKey:@"name"]).toNot.beNil();
-                expect([revision.body objectForKey:@"pet"]).toNot.beNil();
-                expect([revision.body objectForKey:@"age"]).toNot.beNil();
-            }
+            [result enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger i, BOOL *s) {
+                expect([rev.body count]).to.equal(3);
+                expect([rev.body objectForKey:@"name"]).toNot.beNil();
+                expect([rev.body objectForKey:@"pet"]).toNot.beNil();
+                expect([rev.body objectForKey:@"age"]).toNot.beNil();
+            }];
         });
 
         it(@"returns nil when fields array contains a type other than NSString", ^{
@@ -146,11 +146,11 @@ SpecBegin(CDTQFilterFieldsTest)
                 [im find:query skip:0 limit:NSUIntegerMax fields:@[ @"name", @"pet" ] sort:nil];
             expect(result).toNot.beNil();
 
-            for (CDTDocumentRevision *revision in result) {
-                expect([revision.body count]).to.equal(2);
-                expect([revision.body objectForKey:@"name"]).toNot.beNil();
-                expect([revision.body objectForKey:@"pet"]).toNot.beNil();
-            }
+            [result enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger i, BOOL *s) {
+                expect([rev.body count]).to.equal(2);
+                expect([rev.body objectForKey:@"name"]).toNot.beNil();
+                expect([rev.body objectForKey:@"pet"]).toNot.beNil();
+            }];
         });
 
         context(@"mutableCopy of projected doc", ^{
@@ -161,16 +161,17 @@ SpecBegin(CDTQFilterFieldsTest)
                     [im find:query skip:0 limit:NSUIntegerMax fields:@[ @"name" ] sort:nil];
                 expect(result.documentIds.count).to.equal(1);
 
-                for (CDTDocumentRevision *revision in result) {
-                    expect(revision.body.count).to.equal(1);
-                    expect(revision.body[@"name"]).to.equal(@"mike");
+                [result
+                    enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger i, BOOL *s) {
+                        expect(rev.body.count).to.equal(1);
+                        expect(rev.body[@"name"]).to.equal(@"mike");
 
-                    CDTMutableDocumentRevision *mutable = [revision mutableCopy];
-                    expect(mutable.body.count).to.equal(3);
-                    expect(mutable.body[@"name"]).to.equal(@"mike");
-                    expect(mutable.body[@"age"]).to.equal(@12);
-                    expect(mutable.body[@"pet"]).to.equal(@"cat");
-                }
+                        CDTMutableDocumentRevision *mutable = [rev mutableCopy];
+                        expect(mutable.body.count).to.equal(3);
+                        expect(mutable.body[@"name"]).to.equal(@"mike");
+                        expect(mutable.body[@"age"]).to.equal(@12);
+                        expect(mutable.body[@"pet"]).to.equal(@"cat");
+                    }];
             });
 
             it(@"returns nil when doc updated", ^{
@@ -179,18 +180,19 @@ SpecBegin(CDTQFilterFieldsTest)
                     [im find:query skip:0 limit:NSUIntegerMax fields:@[ @"name" ] sort:nil];
                 expect(result.documentIds.count).to.equal(1);
 
-                for (CDTDocumentRevision *revision in result) {
-                    expect(revision.body.count).to.equal(1);
-                    expect(revision.body[@"name"]).to.equal(@"mike");
+                [result
+                    enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger i, BOOL *s) {
+                        expect(rev.body.count).to.equal(1);
+                        expect(rev.body[@"name"]).to.equal(@"mike");
 
-                    CDTDocumentRevision *original = [ds getDocumentWithId:revision.docId error:nil];
-                    CDTMutableDocumentRevision *update = [original mutableCopy];
-                    update.body[@"name"] = @"charles";
-                    expect([ds updateDocumentFromRevision:update error:nil]).toNot.beNil();
+                        CDTDocumentRevision *original = [ds getDocumentWithId:rev.docId error:nil];
+                        CDTMutableDocumentRevision *update = [original mutableCopy];
+                        update.body[@"name"] = @"charles";
+                        expect([ds updateDocumentFromRevision:update error:nil]).toNot.beNil();
 
-                    CDTMutableDocumentRevision *mutable = [revision mutableCopy];
-                    expect(mutable).to.beNil();
-                }
+                        CDTMutableDocumentRevision *mutable = [rev mutableCopy];
+                        expect(mutable).to.beNil();
+                    }];
             });
 
             it(@"returns nil when doc deleted", ^{
@@ -199,15 +201,16 @@ SpecBegin(CDTQFilterFieldsTest)
                     [im find:query skip:0 limit:NSUIntegerMax fields:@[ @"name" ] sort:nil];
                 expect(result.documentIds.count).to.equal(1);
 
-                for (CDTDocumentRevision *revision in result) {
-                    expect(revision.body.count).to.equal(1);
-                    expect(revision.body[@"name"]).to.equal(@"mike");
+                [result
+                    enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger i, BOOL *s) {
+                        expect(rev.body.count).to.equal(1);
+                        expect(rev.body[@"name"]).to.equal(@"mike");
 
-                    expect([ds deleteDocumentFromRevision:revision error:nil]).toNot.beNil();
+                        expect([ds deleteDocumentFromRevision:rev error:nil]).toNot.beNil();
 
-                    CDTMutableDocumentRevision *mutable = [revision mutableCopy];
-                    expect(mutable).to.beNil();
-                }
+                        CDTMutableDocumentRevision *mutable = [rev mutableCopy];
+                        expect(mutable).to.beNil();
+                    }];
             });
 
         });

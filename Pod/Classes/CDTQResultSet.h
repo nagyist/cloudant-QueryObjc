@@ -16,6 +16,7 @@
 
 @class CDTDatastore;
 @class CDTQResultSetBuilder;
+@class CDTDocumentRevision;
 
 typedef void (^CDTQResultSetBuilderBlock)(CDTQResultSetBuilder *configuration);
 
@@ -39,17 +40,17 @@ typedef void (^CDTQResultSetBuilderBlock)(CDTQResultSetBuilder *configuration);
  // do something
  }
  */
-@interface CDTQResultSet : NSObject <NSFastEnumeration> {
+@interface CDTQResultSet : NSObject {
     CDTDatastore *_datastore;
+    NSArray *_originalDocumentIds;
 }
 
 + (instancetype)resultSetWithBlock:(CDTQResultSetBuilderBlock)block;
 
 - (instancetype)initWithBuilder:(CDTQResultSetBuilder *)builder;
 
-- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state
-                                  objects:(id __unsafe_unretained *)buffer
-                                    count:(NSUInteger)len;
+- (void)enumerateObjectsUsingBlock:(void (^)(CDTDocumentRevision *rev, NSUInteger idx,
+                                             BOOL *stop))block;
 
 @property (nonatomic, strong, readonly) NSArray *documentIds;  // of type NSString*
 
