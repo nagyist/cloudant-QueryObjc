@@ -1061,6 +1061,79 @@ SharedExamplesBegin(QueryExecution)
             });
 
         });
+
+        fdescribe(@"stopping enumeration", ^{
+
+            __block CDTDatastore* ds;
+            __block CDTQIndexManager* im;
+
+            beforeEach(^{
+                ds = [factory datastoreNamed:@"test" error:nil];
+                expect(ds).toNot.beNil();
+
+                CDTMutableDocumentRevision* rev = [CDTMutableDocumentRevision revision];
+
+                rev.docId = @"mike12";
+                rev.body = @{ @"name" : @"mike", @"age" : @12, @"pet" : @"cat" };
+                [ds createDocumentFromRevision:rev error:nil];
+
+                rev.docId = @"mike34";
+                rev.body = @{ @"name" : @"mike", @"age" : @34, @"pet" : @"dog" };
+                [ds createDocumentFromRevision:rev error:nil];
+
+                rev.docId = @"mike72";
+                rev.body = @{ @"name" : @"mike", @"age" : @67, @"pet" : @"cat" };
+                [ds createDocumentFromRevision:rev error:nil];
+
+                im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
+                expect(im).toNot.beNil();
+
+                [im ensureIndexed:@[ @"_id" ] withName:@"id"];
+            });
+
+            it(@"enumerates all results when stop not set", ^{
+                NSDictionary* query = @{};
+                CDTQResultSet* result = [im find:query];
+                __block NSUInteger count = 0;
+
+                [result enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i,
+                                                     BOOL* s) { count++; }];
+
+                expect(count).to.equal(3);
+            });
+
+            it(@"enumerates all results when set set to NO", ^{
+                NSDictionary* query = @{};
+                CDTQResultSet* result = [im find:query];
+                __block NSUInteger count = 0;
+
+                [result
+                    enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i, BOOL* s) {
+                        count++;
+                        *s = NO;
+                    }];
+
+                expect(count).to.equal(3);
+            });
+
+            it(@"stops when stop is set to YES", ^{
+                NSDictionary* query = @{};
+                CDTQResultSet* result = [im find:query];
+                __block NSUInteger count = 0;
+
+                [result
+                    enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i, BOOL* s) {
+                        count++;
+                        if (count == 2) {
+                            *s = NO;
+                        }
+                    }];
+
+                expect(count).to.equal(3);
+            });
+
+        });
+
     });
 
 // The aim is to make sure that the post hoc matcher class behaves the
