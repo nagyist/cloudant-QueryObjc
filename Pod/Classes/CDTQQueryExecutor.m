@@ -104,8 +104,11 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     }
 
     // Apply post-hoc filtering
-    docIds =
-        [self postHocMatcherIfRequired:!indexesCoverQuery forResultSet:docIds usingSelector:query];
+
+    CDTQUnindexedMatcher *matcher = [self matcherForIndexCoverage:indexesCoverQuery selector:query];
+    if (matcher) {
+        docIds = [self applyMatcher:matcher toResultSet:docIds];
+    }
 
     docIds = [CDTQQueryExecutor applySkip:skip andLimit:limit toResultSet:docIds];
 
@@ -129,9 +132,14 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     return root;
 }
 
-- (NSArray *)postHocMatcherIfRequired:(BOOL)required
-                         forResultSet:(NSArray *)docIds
-                        usingSelector:(NSDictionary *)selector
+// Method exists so we can override it in testing (to force matcher to always be nil)
+- (CDTQUnindexedMatcher *)matcherForIndexCoverage:(BOOL)indexesCoverQuery
+                                         selector:(NSDictionary *)selector
+{
+    return indexesCoverQuery ? nil : [CDTQUnindexedMatcher matcherWithSelector:selector];
+}
+
+- (NSArray *)applyMatcher:(CDTQUnindexedMatcher *)matcher toResultSet:(NSArray *)docIds
 {
     //
     // This is very inefficient as we load the document here to check it against
@@ -147,12 +155,14 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     // cause problems in production.
     //
     // Filtering is batched to avoid memory issues.
-    if (required) {
+    if (!matcher) {
+        return docIds;
+    }
+
         LogWarn(@"Query could not be executed using indexes alone; falling back to filtering "
                 @"documents themselves. This will be VERY SLOW as each candidate document is "
                 @"loaded from the datastore and matched against the query selector.");
 
-        CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
         NSMutableArray *matchedDocIds = [NSMutableArray array];
 
         NSUInteger batchSize = 50;
@@ -172,10 +182,7 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
             range.location += range.length;
         }
 
-        docIds = [NSArray arrayWithArray:matchedDocIds];
-    }
-
-    return docIds;
+    return [NSArray arrayWithArray:matchedDocIds];
 }
 
 + (NSArray *)applySkip:(NSUInteger)skip andLimit:(NSUInteger)limit toResultSet:(NSArray *)docIds

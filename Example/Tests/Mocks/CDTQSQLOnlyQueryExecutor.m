@@ -7,15 +7,15 @@
 //
 
 #import "CDTQSQLOnlyQueryExecutor.h"
+#import <CDTQUnindexedMatcher.h>
 
 @implementation CDTQSQLOnlyQueryExecutor
 
 // MOD: SQL only, so never run matcher
-- (NSArray*)postHocMatcherIfRequired:(BOOL)required 
-                        forResultSet:(NSArray*)docIds
-                       usingSelector:(NSDictionary*)selector
+- (CDTQUnindexedMatcher *)matcherForIndexCoverage:(BOOL)indexesCoverQuery
+                                         selector:(NSDictionary *)selector
 {
-    return docIds;
+    return nil;
 }
 
 @end
