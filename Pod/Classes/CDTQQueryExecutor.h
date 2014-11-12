@@ -61,6 +61,4 @@
                     usingOrder:(NSArray /*NSDictionary*/ *)sortDocument
                        indexes:(NSDictionary *)indexes;
 
-+ (NSArray *)applySkip:(NSUInteger)skip andLimit:(NSUInteger)limit toResultSet:(NSArray *)docIds;
-
 @end

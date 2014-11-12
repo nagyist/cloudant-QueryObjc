@@ -107,16 +107,19 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
 
     CDTQUnindexedMatcher *matcher = [self matcherForIndexCoverage:indexesCoverQuery selector:query];
     if (matcher) {
-        docIds = [self applyMatcher:matcher toResultSet:docIds];
+        LogWarn(@"Query could not be executed using indexes alone; falling back to filtering "
+                @"documents themselves. This will be VERY SLOW as each candidate document is "
+                @"loaded from the datastore and matched against the query selector.");
     }
-
-    docIds = [CDTQQueryExecutor applySkip:skip andLimit:limit toResultSet:docIds];
 
     CDTDatastore *ds = self.datastore;
     return [CDTQResultSet resultSetWithBlock:^(CDTQResultSetBuilder *b) {
         b.docIds = docIds;
         b.datastore = ds;
         b.fields = fields;
+        b.skip = skip;
+        b.limit = limit;
+        b.matcher = matcher;
     }];
 }
 
@@ -139,71 +142,12 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     return indexesCoverQuery ? nil : [CDTQUnindexedMatcher matcherWithSelector:selector];
 }
 
-- (NSArray *)applyMatcher:(CDTQUnindexedMatcher *)matcher toResultSet:(NSArray *)docIds
-{
-    //
-    // This is very inefficient as we load the document here to check it against
-    // the matcher, then again while returning results to the client. However,
-    // trying to do the matching on-the-fly when returning results to the client
-    // makes skip+limit really painful to implement. For now, assuming this will
-    // mostly be used during development, and the developer will create indexes
-    // for their fields before releasing their application.
-    //
-    // In addition, the matcher checks the full selector for every document, thereby
-    // re-checking fields which have already been constrained by the indexes. While
-    // inefficient, again this makes the code simpler and hopefully will not
-    // cause problems in production.
-    //
-    // Filtering is batched to avoid memory issues.
-    if (!matcher) {
-        return docIds;
-    }
-
-        LogWarn(@"Query could not be executed using indexes alone; falling back to filtering "
-                @"documents themselves. This will be VERY SLOW as each candidate document is "
-                @"loaded from the datastore and matched against the query selector.");
-
-        NSMutableArray *matchedDocIds = [NSMutableArray array];
-
-        NSUInteger batchSize = 50;
-        NSRange range = NSMakeRange(0, batchSize);
-        while (range.location < docIds.count) {
-            range.length = MIN(batchSize, docIds.count - range.location);
-            NSArray *batch = [docIds subarrayWithRange:range];
-
-            NSArray *docs = [self.datastore getDocumentsWithIds:batch];
-
-            for (CDTDocumentRevision *rev in docs) {
-                if ([matcher matches:rev]) {
-                    [matchedDocIds addObject:rev.docId];
-                }
-            }
-
-            range.location += range.length;
-        }
-
-    return [NSArray arrayWithArray:matchedDocIds];
-}
-
-+ (NSArray *)applySkip:(NSUInteger)skip andLimit:(NSUInteger)limit toResultSet:(NSArray *)docIds
-{
-    NSArray *limitedResults = nil;
-    if (skip < docIds.count) {
-        NSUInteger maxLength = docIds.count - skip;
-        NSRange range = NSMakeRange(skip, MIN(limit, maxLength));
-        limitedResults = [docIds subarrayWithRange:range];
-    } else {
-        limitedResults = @[];
-    }
-    return limitedResults;
-}
-
 #pragma mark Validation helpers
 
 + (BOOL)validateSortDocument:(NSArray /*NSDictionary*/ *)sortDocument
 {
     if (sortDocument == nil || sortDocument.count == 0) {
-        return YES;  // empty or nil sort docs just mean "don't sort", so are valid
+        return YES;  // empty or ni l sort docs just mean "don't sort", so are valid
     }
 
     for (NSDictionary *clause in sortDocument) {

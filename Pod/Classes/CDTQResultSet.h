@@ -17,6 +17,7 @@
 @class CDTDatastore;
 @class CDTQResultSetBuilder;
 @class CDTDocumentRevision;
+@class CDTQUnindexedMatcher;
 
 typedef void (^CDTQResultSetBuilderBlock)(CDTQResultSetBuilder *configuration);
 
@@ -28,6 +29,9 @@ typedef void (^CDTQResultSetBuilderBlock)(CDTQResultSetBuilder *configuration);
 @property (nonatomic, strong) NSArray *docIds;
 @property (nonatomic, strong) CDTDatastore *datastore;
 @property (nonatomic, strong) NSArray *fields;
+@property (nonatomic) NSUInteger skip;
+@property (nonatomic) NSUInteger limit;
+@property (nonatomic, strong) CDTQUnindexedMatcher *matcher;
 
 @end
 

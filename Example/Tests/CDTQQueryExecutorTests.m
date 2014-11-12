@@ -178,12 +178,45 @@ SharedExamplesBegin(QueryExecution)
                         [im find:query skip:1 limit:1 fields:nil sort:nil];
                     CDTQResultSet* results = [im find:query skip:0 limit:2 fields:nil sort:nil];
 
+                    expect(results.documentIds.count).to.equal(2);
                     expect(results.documentIds[1]).to.equal(offsetResults.documentIds[0]);
                 });
 
                 it(@"returns empty array when skip results goes over array bounds", ^{
                     NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };
                     CDTQResultSet* results = [im find:query skip:2 limit:0 fields:nil sort:nil];
+
+                    expect([results.documentIds count]).to.equal(0);
+                });
+
+                // ===
+
+                it(@"returns an array with results when limit is over array bounds", ^{
+                    NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };
+                    CDTQResultSet* results = [im find:query skip:0 limit:4 fields:nil sort:nil];
+
+                    expect([results.documentIds count]).to.equal(3);
+                });
+
+                it(@"returns all results with very large limit", ^{
+                    NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };
+                    CDTQResultSet* results = [im find:query skip:0 limit:1000 fields:nil sort:nil];
+
+                    expect([results.documentIds count]).to.equal(3);
+                });
+
+                it(@"returns an array with no results when range is out of bounds", ^{
+                    NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };
+                    CDTQResultSet* results = [im find:query skip:4 limit:4 fields:nil sort:nil];
+
+                    expect([results.documentIds count]).to.equal(0);
+
+                });
+
+                it(@"returns appropriate results skip and large limit used", ^{
+                    NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };
+                    CDTQResultSet* results =
+                        [im find:query skip:1000 limit:1000 fields:nil sort:nil];
 
                     expect([results.documentIds count]).to.equal(0);
                 });
@@ -1275,42 +1308,5 @@ describe(@"matcher without covering", ^{
     NSDictionary* data = @{ @"index_manager_class" : [CDTQMatcherIndexManager class] };
     itShouldBehaveLike(@"queries without covering indexes", data);
 });
-
-SpecEnd
-
-    SpecBegin(CDTQQueryExecutorSkipLimit)
-
-        describe(@"when skipping and limiting results", ^{
-
-            it(@"returns an array with results when limit is over array bounds", ^{
-                NSArray* docIds = @[ @"doc1", @"doc2", @"doc3" ];
-                NSArray* trimmed = [CDTQQueryExecutor applySkip:0 andLimit:4 toResultSet:docIds];
-                NSArray* expected = [docIds subarrayWithRange:NSMakeRange(0, 3)];
-                expect(trimmed).to.equal(expected);
-            });
-
-            it(@"returns all results with very large limit", ^{
-                NSArray* docIds = @[ @"doc1", @"doc2", @"doc3" ];
-                NSArray* trimmed = [CDTQQueryExecutor applySkip:0 andLimit:1000 toResultSet:docIds];
-                NSArray* expected = [docIds subarrayWithRange:NSMakeRange(0, 3)];
-                expect(trimmed).to.equal(expected);
-            });
-
-            it(@"returns an array with no results when range is out of bounds", ^{
-                NSArray* docIds = @[ @"doc1", @"doc2", @"doc3" ];
-                NSArray* trimmed = [CDTQQueryExecutor applySkip:4 andLimit:4 toResultSet:docIds];
-                NSArray* expected = [docIds subarrayWithRange:NSMakeRange(0, 0)];
-                expect(trimmed).to.equal(expected);
-
-            });
-
-            it(@"returns appropriate results skip and large limit used", ^{
-                NSArray* docIds = @[ @"doc1", @"doc2", @"doc3" ];
-                NSArray* trimmed = [CDTQQueryExecutor applySkip:4 andLimit:4 toResultSet:docIds];
-                NSArray* expected = [docIds subarrayWithRange:NSMakeRange(0, 0)];
-                expect(trimmed).to.equal(expected);
-            });
-
-        });
 
 SpecEnd

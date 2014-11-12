@@ -15,11 +15,15 @@
 #import "CDTQResultSet.h"
 #import "CDTQLogging.h"
 #import "CDTQProjectedDocumentRevision.h"
+#import "CDTQUnindexedMatcher.h"
 
 #import <CloudantSync.h>
 
 @interface CDTQResultSet ()
 @property (nonatomic, strong, readwrite) NSArray *fields;
+@property (nonatomic) NSUInteger skip;
+@property (nonatomic) NSUInteger limit;
+@property (nonatomic, strong) CDTQUnindexedMatcher *matcher;
 @end
 
 @implementation CDTQResultSetBuilder
@@ -40,6 +44,9 @@
         _originalDocumentIds = builder.docIds;
         _datastore = builder.datastore;
         _fields = builder.fields;
+        _skip = builder.skip;
+        _limit = builder.limit;
+        _matcher = builder.matcher;
     }
     return self;
 }
@@ -68,6 +75,20 @@
                                              BOOL *stop))block
 {
     NSUInteger idx = 0;
+
+    NSUInteger nSkipped = 0;   // used for skip
+    NSUInteger nReturned = 0;  // used for limit
+
+    // Avoid method calls in the loop
+    NSUInteger skip = self.skip;
+    NSUInteger limit = self.limit;
+    CDTQUnindexedMatcher *matcher = self.matcher;
+    NSArray *fields = self.fields;
+
+    if (limit == 0) {
+        return;
+    }
+
     BOOL stop = NO;
     NSUInteger batchSize = 50;
     NSRange range = NSMakeRange(0, batchSize);
@@ -76,17 +97,35 @@
         NSArray *batch = [_originalDocumentIds subarrayWithRange:range];
 
         NSArray *docs = [_datastore getDocumentsWithIds:batch];
-        if (self.fields) {
+        if (fields) {
             docs =
                 [CDTQResultSet projectFields:self.fields fromRevisions:docs datastore:_datastore];
         }
 
         for (CDTDocumentRevision *rev in docs) {
+            // Apply post-hoc matcher
+            if (matcher && ![matcher matches:rev]) {
+                continue;
+            }
+
+            // Apply skip
+            if (skip > 0 && nSkipped < skip) {
+                nSkipped++;
+                continue;
+            }
+
+            // Run callback
             block(rev, idx, &stop);
             if (stop) {
                 break;
             }
             idx++;
+
+            // Apply limit
+            nReturned++;
+            if (limit > 0 && nReturned >= limit) {
+                break;
+            }
         }
 
         range.location += range.length;
