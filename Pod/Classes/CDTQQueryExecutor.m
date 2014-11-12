@@ -207,6 +207,11 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
     }
 
     for (NSDictionary *clause in sortDocument) {
+        if (![clause isKindOfClass:[NSDictionary class]]) {
+            LogError(@"Sort clauses must be dict, e.g., {name: asc}. Did you just use a string?");
+            return NO;
+        }
+
         if (clause.count > 1) {
             LogError(@"Each order clause can only be a single field, %@", clause);
             return NO;
