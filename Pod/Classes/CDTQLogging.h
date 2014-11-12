@@ -20,21 +20,21 @@
 #define CDTQ_LOGGING_CONTEXT 17  // one level higher than CDT logger myabe should be 20?
 static DDLogLevel CDTQLogLevel = DDLogLevelWarning;
 
-#define LogError(frmt, ...)                                                                      \
-    LOG_MAYBE(NO, CDTQLogLevel, DDLogLevelError, CDTQ_LOGGING_CONTEXT, nil, __PRETTY_FUNCTION__, \
+#define LogError(frmt, ...)                                                                     \
+    LOG_MAYBE(NO, CDTQLogLevel, DDLogFlagError, CDTQ_LOGGING_CONTEXT, nil, __PRETTY_FUNCTION__, \
               frmt, ##__VA_ARGS__)
-#define LogWarn(frmt, ...)                                                     \
-    LOG_MAYBE(YES, CDTQLogLevel, DDLogLevelWarning, CDTQ_LOGGING_CONTEXT, nil, \
-              __PRETTY_FUNCTION__, frmt, ##__VA_ARGS__)
-#define LogInfo(frmt, ...)                                                                       \
-    LOG_MAYBE(YES, CDTQLogLevel, DDLogLevelInfo, CDTQ_LOGGING_CONTEXT, nil, __PRETTY_FUNCTION__, \
+#define LogWarn(frmt, ...)                                                                         \
+    LOG_MAYBE(YES, CDTQLogLevel, DDLogFlagWarning, CDTQ_LOGGING_CONTEXT, nil, __PRETTY_FUNCTION__, \
               frmt, ##__VA_ARGS__)
-#define LogDebug(frmt, ...)                                                                       \
-    LOG_MAYBE(YES, CDTQLogLevel, DDLogLevelDebug, CDTQ_LOGGING_CONTEXT, nil, __PRETTY_FUNCTION__, \
+#define LogInfo(frmt, ...)                                                                      \
+    LOG_MAYBE(YES, CDTQLogLevel, DDLogFlagInfo, CDTQ_LOGGING_CONTEXT, nil, __PRETTY_FUNCTION__, \
               frmt, ##__VA_ARGS__)
-#define LogVerbose(frmt, ...)                                                  \
-    LOG_MAYBE(YES, CDTQLogLevel, DDLogLevelVerbose, CDTQ_LOGGING_CONTEXT, nil, \
-              __PRETTY_FUNCTION__, frmt, ##__VA_ARGS__)
+#define LogDebug(frmt, ...)                                                                      \
+    LOG_MAYBE(YES, CDTQLogLevel, DDLogFlagDebug, CDTQ_LOGGING_CONTEXT, nil, __PRETTY_FUNCTION__, \
+              frmt, ##__VA_ARGS__)
+#define LogVerbose(frmt, ...)                                                                      \
+    LOG_MAYBE(YES, CDTQLogLevel, DDLogFlagVerbose, CDTQ_LOGGING_CONTEXT, nil, __PRETTY_FUNCTION__, \
+              frmt, ##__VA_ARGS__)
 
 #define CDTQChangeLogLevel(level) CDTQLogLevel = level
 
