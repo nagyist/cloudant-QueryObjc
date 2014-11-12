@@ -1062,7 +1062,7 @@ SharedExamplesBegin(QueryExecution)
 
         });
 
-        fdescribe(@"stopping enumeration", ^{
+        describe(@"stopping enumeration", ^{
 
             __block CDTDatastore* ds;
             __block CDTQIndexManager* im;
