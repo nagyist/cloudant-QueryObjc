@@ -85,7 +85,7 @@
     CDTQUnindexedMatcher *matcher = self.matcher;
     NSArray *fields = self.fields;
 
-    BOOL stop = NO;
+    BOOL stop = NO;  // user stopped, or we returned `limit` results
     NSUInteger batchSize = 50;
     NSRange range = NSMakeRange(0, batchSize);
     while (range.location < _originalDocumentIds.count) {
@@ -124,8 +124,13 @@
             // Apply limit (limit == 0 means disable)
             nReturned++;
             if (limit > 0 && nReturned >= limit) {
+                stop = YES;
                 break;
             }
+        }
+
+        if (stop) {
+            break;
         }
 
         range.location += range.length;

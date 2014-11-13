@@ -225,6 +225,22 @@ SharedExamplesBegin(QueryExecution)
                     expect([results.documentIds count]).to.equal(0);
                 });
 
+                it(@"when querying a large number of docs and limiting", ^{
+
+                    CDTMutableDocumentRevision* rev = [CDTMutableDocumentRevision revision];
+                    [im ensureIndexed:@[ @"large_field" ] withName:@"large"];
+
+                    for (int i = 0; i < 100; i++) {
+                        rev.body = @{ @"large_field" : @"cat" };
+                        [ds createDocumentFromRevision:rev error:nil];
+                    }
+
+                    NSDictionary* query = @{ @"large_field" : @{@"$eq" : @"cat"} };
+                    CDTQResultSet* results = [im find:query skip:0 limit:20 fields:nil sort:nil];
+
+                    expect([results.documentIds count]).to.equal(20);
+                });
+
             });
 
             // TODO fill in when separate validation class written
@@ -1167,6 +1183,31 @@ SharedExamplesBegin(QueryExecution)
                     }];
 
                 expect(count).to.equal(3);
+            });
+
+            it(@"stops when querying lots of docs", ^{
+
+                CDTMutableDocumentRevision* rev = [CDTMutableDocumentRevision revision];
+                [im ensureIndexed:@[ @"large_field" ] withName:@"large"];
+
+                for (int i = 0; i < 100; i++) {
+                    rev.body = @{ @"large_field" : @"cat" };
+                    [ds createDocumentFromRevision:rev error:nil];
+                }
+
+                NSDictionary* query = @{ @"large_field" : @{@"$eq" : @"cat"} };
+                CDTQResultSet* result = [im find:query skip:0 limit:0 fields:nil sort:nil];
+                __block NSUInteger count = 0;
+
+                [result
+                    enumerateObjectsUsingBlock:^(CDTDocumentRevision* rev, NSUInteger i, BOOL* s) {
+                        count++;
+                        if (count == 20) {
+                            *s = YES;
+                        }
+                    }];
+
+                expect(count).to.equal(20);
             });
 
         });
