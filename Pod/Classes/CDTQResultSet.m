@@ -85,10 +85,6 @@
     CDTQUnindexedMatcher *matcher = self.matcher;
     NSArray *fields = self.fields;
 
-    if (limit == 0) {
-        return;
-    }
-
     BOOL stop = NO;
     NSUInteger batchSize = 50;
     NSRange range = NSMakeRange(0, batchSize);

@@ -310,7 +310,7 @@ static const int VERSION = 1;
 
 - (CDTQResultSet *)find:(NSDictionary *)query
 {
-    return [self find:query skip:0 limit:NSUIntegerMax fields:nil sort:nil];
+    return [self find:query skip:0 limit:0 fields:nil sort:nil];
 }
 
 - (CDTQResultSet *)find:(NSDictionary *)query
@@ -323,7 +323,7 @@ static const int VERSION = 1;
         LogError(@"-find called with nil selector; bailing.");
         return nil;
     }
-    
+
     if (![self updateAllIndexes]) {
         return nil;
     }

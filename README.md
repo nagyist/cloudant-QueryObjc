@@ -235,7 +235,7 @@ NSArray *sortDocument = @[ @{ @"name": @"asc" },
                            @{ @"age": @"desc" } ];
 CDTQResultSet *result = [im find:query
                             skip:0
-                           limit:NSUIntegerMax
+                           limit:0
                           fields:nil
                             sort:sortDocument];
 ```
@@ -270,7 +270,7 @@ To project the `name` and `age` fields of the above document:
 NSArray *fields = @[ @"name", @"age" ];
 CDTQResultSet *result = [im find:query
                             skip:0
-                           limit:NSUIntegerMax
+                           limit:0
                           fields:fields
                             sort:nil];
 ```
@@ -298,7 +298,7 @@ CDTQResultSet *result = [im find:query
 To disable:
 
 - `skip`, pass `0` as the `skip` argument.
-- `limit`, pass `NSUIntegerMax` as the `limit` argument.
+- `limit`, pass `0` as the `limit` argument.
 
 ### Array fields
 
@@ -363,9 +363,9 @@ However, if there was one index with `pet` in and another with `name` in, like t
 
 ```objc
 NSString *name = [im ensureIndexed:@[@"name", @"age"] 
-                          withName:@"basic"];
+                          withName:@"one_index"];
 NSString *name = [im ensureIndexed:@[@"age", @"pet"] 
-                          withName:@"basic"]
+                          withName:@"another_index"]
 ```
 
 The document _would_ be indexed in both of these indexes: each index only contains one of
@@ -438,8 +438,6 @@ Overall restrictions:
 
 #### Query syntax
 
-- Sorting results #7.
-- Field projection #8.
 - Using non-dotted notation to query sub-documents.
     - That is, `{"pet": { "species": {"$eq": "cat"} } }` is unsupported,
       you must use `{"pet.species": {"$eq": "cat"}}`.

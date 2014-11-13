@@ -166,6 +166,12 @@ SharedExamplesBegin(QueryExecution)
 
             context(@"when limiting and offsetting results", ^{
 
+                it(@"returns all for skip = limit = 0", ^{
+                    NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };
+                    CDTQResultSet* results = [im find:query skip:0 limit:0 fields:nil sort:nil];
+                    expect(results.documentIds.count).to.equal(3);
+                });
+
                 it(@"limits query results", ^{
                     NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };
                     CDTQResultSet* results = [im find:query skip:0 limit:1 fields:nil sort:nil];
@@ -182,14 +188,12 @@ SharedExamplesBegin(QueryExecution)
                     expect(results.documentIds[1]).to.equal(offsetResults.documentIds[0]);
                 });
 
-                it(@"returns empty array when skip results goes over array bounds", ^{
+                it(@"disables limit for 0", ^{
                     NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };
-                    CDTQResultSet* results = [im find:query skip:2 limit:0 fields:nil sort:nil];
+                    CDTQResultSet* results = [im find:query skip:1 limit:0 fields:nil sort:nil];
 
-                    expect([results.documentIds count]).to.equal(0);
+                    expect([results.documentIds count]).to.equal(2);
                 });
-
-                // ===
 
                 it(@"returns an array with results when limit is over array bounds", ^{
                     NSDictionary* query = @{ @"name" : @{@"$eq" : @"mike"} };
