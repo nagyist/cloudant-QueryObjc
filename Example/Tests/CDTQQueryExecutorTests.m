@@ -225,22 +225,6 @@ SharedExamplesBegin(QueryExecution)
                     expect([results.documentIds count]).to.equal(0);
                 });
 
-                it(@"when querying a large number of docs and limiting", ^{
-
-                    CDTMutableDocumentRevision* rev = [CDTMutableDocumentRevision revision];
-                    [im ensureIndexed:@[ @"large_field" ] withName:@"large"];
-
-                    for (int i = 0; i < 100; i++) {
-                        rev.body = @{ @"large_field" : @"cat" };
-                        [ds createDocumentFromRevision:rev error:nil];
-                    }
-
-                    NSDictionary* query = @{ @"large_field" : @{@"$eq" : @"cat"} };
-                    CDTQResultSet* results = [im find:query skip:0 limit:20 fields:nil sort:nil];
-
-                    expect([results.documentIds count]).to.equal(20);
-                });
-
             });
 
             // TODO fill in when separate validation class written
@@ -370,7 +354,6 @@ SharedExamplesBegin(QueryExecution)
                     expect(result.documentIds.count).to.equal(1);
                 });
             });
-
         });
 
         describe(@"when using dotted notation", ^{
@@ -1210,8 +1193,65 @@ SharedExamplesBegin(QueryExecution)
                 expect(count).to.equal(20);
             });
 
-        });
+            describe(@"large result set", ^{
 
+                it(@"limits correctly", ^{
+                    CDTMutableDocumentRevision* rev = [CDTMutableDocumentRevision revision];
+                    [im ensureIndexed:@[ @"large_field", @"idx" ] withName:@"large"];
+
+                    for (int i = 0; i < 100; i++) {
+                        rev.docId = [NSString stringWithFormat:@"d%d", i];
+                        rev.body = @{ @"large_field" : @"cat", @"idx" : @(i) };
+                        [ds createDocumentFromRevision:rev error:nil];
+                    }
+                    NSDictionary* query = @{ @"large_field" : @"cat" };
+                    CDTQResultSet* results = [im find:query skip:0 limit:20 fields:nil sort:nil];
+                    expect([results.documentIds count]).to.equal(20);
+                });
+
+                it(@"skips and limits across batch border", ^{
+                    CDTMutableDocumentRevision* rev = [CDTMutableDocumentRevision revision];
+                    [im ensureIndexed:@[ @"large_field", @"idx" ] withName:@"large"];
+
+                    for (int i = 0; i < 150; i++) {
+                        rev.docId = [NSString stringWithFormat:@"d%d", i];
+                        rev.body = @{ @"large_field" : @"cat", @"idx" : @(i) };
+                        [ds createDocumentFromRevision:rev error:nil];
+                    }
+
+                    NSDictionary* query = @{ @"large_field" : @"cat" };
+                    CDTQResultSet* results =
+                        [im find:query skip:90 limit:20 fields:nil sort:@[
+                            @{ @"idx" : @"asc" }
+                        ]];
+                    expect([results.documentIds count]).to.equal(20);
+                    expect(results.documentIds)
+                        .to.equal(@[
+                            @"d90",
+                            @"d91",
+                            @"d92",
+                            @"d93",
+                            @"d94",
+                            @"d95",
+                            @"d96",
+                            @"d97",
+                            @"d98",
+                            @"d99",
+                            @"d100",
+                            @"d101",
+                            @"d102",
+                            @"d103",
+                            @"d104",
+                            @"d105",
+                            @"d106",
+                            @"d107",
+                            @"d108",
+                            @"d109"
+                        ]);
+                });
+            });
+
+        });
     });
 
 // The aim is to make sure that the post hoc matcher class behaves the
