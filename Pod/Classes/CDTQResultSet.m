@@ -93,14 +93,12 @@
         NSArray *batch = [_originalDocumentIds subarrayWithRange:range];
 
         NSArray *docs = [_datastore getDocumentsWithIds:batch];
-        if (fields) {
-            docs =
-                [CDTQResultSet projectFields:self.fields fromRevisions:docs datastore:_datastore];
-        }
 
         for (CDTDocumentRevision *rev in docs) {
+            CDTDocumentRevision *innerRev = rev;  // allows us to replace later if projecting
+
             // Apply post-hoc matcher
-            if (matcher && ![matcher matches:rev]) {
+            if (matcher && ![matcher matches:innerRev]) {
                 continue;
             }
 
@@ -110,8 +108,14 @@
                 continue;
             }
 
+            // Apply projection if result matches
+            if (fields) {
+                innerRev =
+                    [CDTQResultSet projectFields:self.fields fromRevision:rev datastore:_datastore];
+            }
+
             // Run callback
-            block(rev, idx, &stop);
+            block(innerRev, idx, &stop);
             if (stop) {
                 break;
             }
@@ -128,26 +132,19 @@
     }
 }
 
-+ (NSArray *)projectFields:(NSArray *)fields
-             fromRevisions:(NSArray *)revisions
-                 datastore:(CDTDatastore *)datastore
++ (CDTDocumentRevision *)projectFields:(NSArray *)fields
+                          fromRevision:(CDTDocumentRevision *)rev
+                             datastore:(CDTDatastore *)datastore
 {
-    NSMutableArray *projectedDocs = [NSMutableArray array];
-
-    for (CDTDocumentRevision *rev in revisions) {
-        // grab the dictionary filter fields and rebuild object
-        NSDictionary *body = [rev.body dictionaryWithValuesForKeys:fields];
-        CDTQProjectedDocumentRevision *rev2 =
-            [[CDTQProjectedDocumentRevision alloc] initWithDocId:rev.docId
-                                                      revisionId:rev.revId
-                                                            body:body
-                                                         deleted:rev.deleted
-                                                     attachments:rev.attachments
-                                                        sequence:rev.sequence
-                                                       datastore:datastore];
-        [projectedDocs addObject:rev2];
-    }
-    return projectedDocs;
+    // grab the dictionary filter fields and rebuild object
+    NSDictionary *body = [rev.body dictionaryWithValuesForKeys:fields];
+    return [[CDTQProjectedDocumentRevision alloc] initWithDocId:rev.docId
+                                                     revisionId:rev.revId
+                                                           body:body
+                                                        deleted:rev.deleted
+                                                    attachments:rev.attachments
+                                                       sequence:rev.sequence
+                                                      datastore:datastore];
 }
 
 @end

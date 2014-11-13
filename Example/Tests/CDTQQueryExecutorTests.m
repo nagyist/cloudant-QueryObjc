@@ -1267,6 +1267,14 @@ sharedExamplesFor(@"queries without covering indexes", ^(NSDictionary* data) {
             expect(result.documentIds.count).to.equal(2);
             expect(result.documentIds).to.beSupersetOf(@[ @"mike72", @"fred12" ]);
         });
+
+        it(@"post-hoc matches when projecting over non-queried fields", ^{
+            NSDictionary* query = @{ @"town" : @"bristol" };
+            CDTQResultSet* result = [im find:query skip:0 limit:0 fields:@[ @"name" ] sort:nil];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(2);
+            expect(result.documentIds).to.beSupersetOf(@[ @"mike72", @"fred12" ]);
+        });
     });
 });
 
