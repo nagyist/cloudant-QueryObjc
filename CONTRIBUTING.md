@@ -24,3 +24,33 @@ We suggest Xcode should be set up to use clang-format to format code on save, an
     - Set the application to be Xcode
     - Set the menu title to "Format File in Focus"
     - Set your shortcut to `ctrl-i`et your shortcut to `ctrl-i`
+
+## Avoid committing focused tests
+
+Specta allows you to focus a set of tests using `fit`/`fdescribe`/`fcontext`. This prevents the
+other tests from running. Very useful when developing, very un-useful in CI situations.
+
+The easiest way to prevent committing this is a git hook:
+
+```bash
+$ cd .git/hooks
+$ vim pre-commit
+# See below for content
+$ chmod +x pre-commit
+$ cd ../..
+```
+
+The `pre-commit` file should contain:
+
+```bash
+#!/bin/bash
+
+! find Example/Tests -name "*.m" | xargs grep -I -E "(fit|fdescribe|fcontext)"
+```
+
+If you try to `git commit` when there are one or more focused tests, you'll get a listing of them:
+
+```
+$ git commit
+Example/Tests/CDTQQueryExecutorTests.m:        fit(@"query without index", ^{
+```
