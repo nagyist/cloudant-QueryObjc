@@ -104,7 +104,7 @@
                 continue;
             }
 
-            // Apply skip
+            // Apply skip (skip == 0 means disable)
             if (skip > 0 && nSkipped < skip) {
                 nSkipped++;
                 continue;
@@ -117,7 +117,7 @@
             }
             idx++;
 
-            // Apply limit
+            // Apply limit (limit == 0 means disable)
             nReturned++;
             if (limit > 0 && nReturned >= limit) {
                 break;
