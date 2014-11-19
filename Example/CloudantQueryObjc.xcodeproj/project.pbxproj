@@ -38,6 +38,7 @@
 		98816E6319F8FC71003D98B8 /* CDTQQuerySortTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 98816E6019F8FC71003D98B8 /* CDTQQuerySortTests.m */; };
 		98ABE17719ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m in Sources */ = {isa = PBXBuildFile; fileRef = 98ABE17619ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m */; };
 		98C18F0419F5055F00B350E7 /* CDTQFilterFieldsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 98C18F0319F5055F00B350E7 /* CDTQFilterFieldsTest.m */; };
+		98E501791A1CECE70017DC5E /* CDTDatastoreQueryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 98E501781A1CECE70017DC5E /* CDTDatastoreQueryTests.m */; };
 		F055C16D9F7BF733E655981D /* libPods-Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FF673B5E498B99CA0743E9C9 /* libPods-Tests.a */; };
 /* End PBXBuildFile section */
 
@@ -94,6 +95,7 @@
 		98816E6019F8FC71003D98B8 /* CDTQQuerySortTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQQuerySortTests.m; sourceTree = "<group>"; };
 		98ABE17619ED15FD00EBFC50 /* CDTQInvalidQuerySyntax.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQInvalidQuerySyntax.m; sourceTree = "<group>"; };
 		98C18F0319F5055F00B350E7 /* CDTQFilterFieldsTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTQFilterFieldsTest.m; sourceTree = "<group>"; };
+		98E501781A1CECE70017DC5E /* CDTDatastoreQueryTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CDTDatastoreQueryTests.m; sourceTree = "<group>"; };
 		BBC23D0739813A44E6C7E622 /* Pods-Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		BCEBEBED17811A0373FCB306 /* Pods-Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.release.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.release.xcconfig"; sourceTree = "<group>"; };
 		C537BC82D35B03D44040A882 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = README.md; path = ../README.md; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = "<none>"; };
@@ -207,6 +209,7 @@
 		6003F5B5195388D20070C39A /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				98E501781A1CECE70017DC5E /* CDTDatastoreQueryTests.m */,
 				273220AF1A053D350039DF69 /* Mocks */,
 				98816E5E19F8FC71003D98B8 /* CDTQIndexManagerTests.m */,
 				98816E5F19F8FC71003D98B8 /* CDTQPerformanceTests.m */,
@@ -432,6 +435,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				98E501791A1CECE70017DC5E /* CDTDatastoreQueryTests.m in Sources */,
 				98816E6119F8FC71003D98B8 /* CDTQIndexManagerTests.m in Sources */,
 				27029AF11A03A97800D0BE51 /* CDTQUnindexedMatcherTests.m in Sources */,
 				273220B51A053DD10039DF69 /* CDTQMatcherQueryExecutor.m in Sources */,
