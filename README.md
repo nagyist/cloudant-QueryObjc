@@ -59,24 +59,15 @@ For the following examples, assume these documents are in the datastore:
 
 ### Headers
 
-You need to include `CDTQIndexManager.h`:
+You need to include `CDTDatastore+Query.h`:
 
 ```objc
-#import "CDTQIndexManager.h"
+#import "CDTDatastore+Query.h"
 ```
 
-### The index manager
+### The CDTDatastore+Query Category 
 
-The `CDTQIndexManager` object is used to manage and query the indexes on a single
-`CDTDatastore` object. To create one, pass a datastore to its convenience constructor:
-
-```objc
-CDTDatastore *ds = //... see CDTDatastore documentation ...
-CDTQIndexManager *im;
-im = [CDTQIndexManager managerUsingDatastore:ds error:nil];
-
-// Note CDTQ prefix!
-```
+The `CDTDatastore+Query` category adds the ability to manage query indexes and execute queries directly on the `CDTDatastore` object.
 
 ### Creating indexes
 
@@ -105,7 +96,7 @@ field of the `pet` sub-document in the examples above, use `pet.species`.
 
 ```objc
 // Create an index over the name and age fields.
-NSString *name = [im ensureIndexed:@[@"name", @"age", @"pet.species"] 
+NSString *name = [ds ensureIndexed:@[@"name", @"age", @"pet.species"] 
                           withName:@"basic"]
 if (!name) {
     // there was an error creating the index
@@ -201,7 +192,7 @@ function. This returns an object that can be used in `for..in` loops to
 enumerate over the results.
 
 ```objc
-CDTQResultSet *result = [im find:query];
+CDTQResultSet *result = [ds find:query];
 for (CDTDocumentRevision *rev in result) {
     // The returned revision object contains all fields for
     // the object. You cannot project certain fields in the
@@ -233,7 +224,7 @@ or `desc` (descending).
 ```objc
 NSArray *sortDocument = @[ @{ @"name": @"asc" }, 
                            @{ @"age": @"desc" } ];
-CDTQResultSet *result = [im find:query
+CDTQResultSet *result = [ds find:query
                             skip:0
                            limit:0
                           fields:nil
@@ -268,7 +259,7 @@ To project the `name` and `age` fields of the above document:
 
 ```objc
 NSArray *fields = @[ @"name", @"age" ];
-CDTQResultSet *result = [im find:query
+CDTQResultSet *result = [ds find:query
                             skip:0
                            limit:0
                           fields:fields
@@ -288,7 +279,7 @@ useful in pagination.
 To display the twenty-first to thirtieth results:
 
 ```objc
-CDTQResultSet *result = [im find:query
+CDTQResultSet *result = [ds find:query
                             skip:20
                            limit:10
                           fields:fields
@@ -319,7 +310,7 @@ Take this document as an example:
 You can create an index over the `pet` field:
 
 ```objc
-NSString *name = [im ensureIndexed:@[@"name", @"age", @"pet"] 
+NSString *name = [ds ensureIndexed:@[@"name", @"age", @"pet"] 
                           withName:@"basic"]
 ```
 
@@ -362,9 +353,9 @@ successful.
 However, if there was one index with `pet` in and another with `name` in, like this:
 
 ```objc
-NSString *name = [im ensureIndexed:@[@"name", @"age"] 
+NSString *name = [ds ensureIndexed:@[@"name", @"age"] 
                           withName:@"one_index"];
-NSString *name = [im ensureIndexed:@[@"age", @"pet"] 
+NSString *name = [ds ensureIndexed:@[@"age", @"pet"] 
                           withName:@"another_index"]
 ```
 
