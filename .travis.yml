@@ -5,4 +5,4 @@ install:
   - gem install cocoapods xcpretty
   - cd Example && pod install && cd -
 script:
-  - xcodebuild -workspace Example/CloudantQueryObjc.xcworkspace -scheme 'CloudantQueryObjc' -destination 'platform=iOS Simulator,OS=8.0,name=iPhone 4S' build test | xcpretty; exit ${PIPESTATUS[0]}
+  - xcodebuild -workspace Example/CloudantQueryObjc.xcworkspace -scheme 'CloudantQueryObjc' -destination 'platform=iOS Simulator,OS=8.1,name=iPhone 4S' build test | xcpretty; exit ${PIPESTATUS[0]}
