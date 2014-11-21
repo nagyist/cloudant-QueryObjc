@@ -27,7 +27,7 @@ CloudantQueryObjc is available through [CocoaPods](http://cocoapods.org). To ins
 it, add the following line to your Podfile:
 
 ```ruby
-pod "CloudantQueryObjc", :git => 'https://github.com/cloudant/CloudantQueryObjc.git'
+pod "CloudantQueryObjc"
 ```
 
 ## Usage
