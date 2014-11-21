@@ -17,6 +17,7 @@
 #import "CDTQQueryExecutor.h"
 #import "CDTQIndexManager.h"
 #import "CDTQLogging.h"
+#import "CDTQQueryValidator.h"
 
 @interface CDTQTranslatorState : NSObject
 
@@ -111,8 +112,6 @@ static NSString *const EXISTS = @"$exists";
                      toUseIndexes:(NSDictionary *)indexes
                             state:(CDTQTranslatorState *)state
 {
-    query = [CDTQQuerySqlTranslator normaliseQuery:query];
-
     // At this point we will have a root compound predicate, AND or OR, and
     // the query will be reduced to a single entry:
     // @{ @"$and": @[ ... predicates (possibly compound) ... ] }
@@ -127,35 +126,6 @@ static NSString *const EXISTS = @"$exists";
     } else if (query[OR]) {
         clauses = query[OR];
         root = [[CDTQOrQueryNode alloc] init];
-    }
-
-    if (![clauses isKindOfClass:[NSArray class]]) {
-        LogError(@"Arugment to compound operator is not an NSArray: %@", [query description]);
-        return nil;
-    }
-
-    // validate arugments to operator first
-    __block BOOL error = NO;
-    [clauses enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        if ([obj isKindOfClass:[NSDictionary class]]) {
-            NSDictionary *clause = (NSDictionary *)obj;
-            if ([clause count] != 1) {
-                LogError(@"Operator argument clause should only have one key value pair: %@",
-                         [query description]);
-                *stop = YES;
-                error = YES;
-                return;
-            }
-        } else {
-            LogError(@"Operator argument must be a dictionary %@", [query description]);
-            *stop = YES;
-            error = YES;
-            return;
-        }
-    }];
-
-    if (error) {
-        return nil;
     }
 
     //
@@ -280,93 +250,6 @@ static NSString *const EXISTS = @"$exists";
     return root;
 }
 
-#pragma mark Pre-process query
-
-+ (NSDictionary *)normaliseQuery:(NSDictionary *)query
-{
-    // First expand the query to include a leading compound predicate
-    // if there isn't one already.
-    query = [CDTQQuerySqlTranslator addImplicitAnd:query];
-
-    // At this point we will have a single entry dict, key AND or OR,
-    // forming the compound predicate.
-    // Next make sure all the predicates have an operator -- the EQ
-    // operator is implicit and we need to add it if there isn't one.
-    // Take
-    //     @[ @{"field1": @"mike"}, ... ]
-    // and make
-    //     @[ @{"field1": @{ @"$eq": @"mike"} }, ... } ]
-    NSString *compoundOperator = [query allKeys][0];
-    NSArray *predicates = query[compoundOperator];
-    if ([predicates isKindOfClass:[NSArray class]]) {
-        predicates = [CDTQQuerySqlTranslator addImplicitEq:predicates];
-    }
-
-    return @{compoundOperator : predicates};
-}
-
-+ (NSDictionary *)addImplicitAnd:(NSDictionary *)query
-{
-    // query is:
-    //  either @{ @"field1": @"value1", ... } -- we need to add $and
-    //  or     @{ @"$and": @[ ... ] } -- we don't
-    //  or     @{ @"$or": @[ ... ] } -- we don't
-
-    if (query.count == 1 && (query[AND] || query[OR])) {
-        return query;
-    } else {
-        // Take
-        //     @{"field1": @"mike", ...}
-        //     @{"field1": @[ @"mike", @"bob" ], ...}
-        // and make
-        //     @[ @{"field1": @"mike"}, ... ]
-        //     @[ @{"field1": @[ @"mike", @"bob" ]}, ... ]
-
-        NSMutableArray *andClause = [NSMutableArray array];
-        for (NSString *k in query) {
-            NSObject *predicate = query[k];
-            [andClause addObject:@{k : predicate}];
-        }
-        return @{AND : [NSArray arrayWithArray:andClause]};
-    }
-}
-
-+ (NSArray *)addImplicitEq:(NSArray *)andClause
-{
-    NSMutableArray *accumulator = [NSMutableArray array];
-
-    for (NSDictionary *fieldClause in andClause) {
-        // fieldClause is:
-        //  either @{ @"field1": @"mike"} -- we need to add the $eq operator
-        //  or     @{ @"field1": @{ @"$operator": @"value" } -- we don't
-        //  or     @{ @"$and": @[ ... ] } -- we don't
-        //  or     @{ @"$or": @[ ... ] } -- we don't
-        NSObject *predicate = nil;
-        NSString *fieldName = nil;
-        // if this isn't a dictionary, we don't know what to do so pass it back
-        if ([fieldClause isKindOfClass:[NSDictionary class]] && [fieldClause count] != 0) {
-            fieldName = fieldClause.allKeys[0];
-            predicate = fieldClause[fieldName];
-        } else {
-            [accumulator addObject:fieldClause];
-            continue;
-        }
-
-        // If the clause isn't a special clause (the field name starts with
-        // $, e.g., $and), we need to check whether the clause already
-        // has an operator. If not, we need to add the implicit $eq.
-        if (![fieldName hasPrefix:@"$"]) {
-            if (![predicate isKindOfClass:[NSDictionary class]]) {
-                predicate = @{EQ : predicate};
-            }
-        }
-
-        [accumulator addObject:@{fieldName : predicate}];  // can't put nil in this
-    }
-
-    return [NSArray arrayWithArray:accumulator];
-}
-
 #pragma mark Process single AND clause with no sub-clauses
 
 + (NSArray *)fieldsForAndClause:(NSArray *)clause
@@ -466,17 +349,11 @@ static NSString *const EXISTS = @"$exists";
                 // what we do here depends on the value of the exists are
                 predicateValue = [negatedPredicate objectForKey:operator];
 
-                if ([predicateValue isKindOfClass:[NSNumber class]]) {
-                    BOOL exists = ![(NSNumber *)predicateValue boolValue];
-                    // since this clause is negated we need to negate the bool value
-                    [sqlClauses addObject:[self convertExistsToSqlClauseForFieldName:fieldName
-                                                                              exists:exists]];
+                BOOL exists = ![(NSNumber *)predicateValue boolValue];
+                // since this clause is negated we need to negate the bool value
+                [sqlClauses
+                    addObject:[self convertExistsToSqlClauseForFieldName:fieldName exists:exists]];
                     [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
-
-                } else {
-                    LogError(@"$exists operator expects YES or NO. Query: %@", clause);
-                    return nil;
-                }
 
             } else {
                 NSString *sqlOperator = notOperatorMap[operator];
@@ -490,26 +367,17 @@ static NSString *const EXISTS = @"$exists";
                                                                  fieldName, sqlOperator, fieldName];
                 predicateValue = [negatedPredicate objectForKey:operator];
 
-                if ([self validatePredicateValue:predicateValue]) {
-                    [sqlParameters addObject:predicateValue];
-                    [sqlClauses addObject:sqlClause];
-                } else {
-                    return nil;
-                }
+                [sqlParameters addObject:predicateValue];
+                [sqlClauses addObject:sqlClause];
             }
 
         } else {
             if ([operator isEqualToString:EXISTS]){
-                if([predicate[operator] isKindOfClass:[NSNumber class]]){
                     BOOL  exists = [(NSNumber *)predicate[operator] boolValue];
                     [sqlClauses addObject:[self convertExistsToSqlClauseForFieldName:fieldName
                                                                               exists:exists]];
                     [sqlParameters addObject:[predicate objectForKey:operator]];
 
-                } else {
-                    LogError(@"$exists operator expects YES or NO. Query: %@", clause);
-                    return nil;
-                }
             } else {
                 NSString *sqlOperator = operatorMap[operator];
 
