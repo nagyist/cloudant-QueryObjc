@@ -1,6 +1,33 @@
 Contributing
 ---
 
+## Getting going
+
+The code is developed in a workspace containing the example application.
+
+Prerequisites:
+
+- Xcode
+- [Cocoapods](http://cocoapods.org/)
+- [xcpretty](https://github.com/supermarin/xcpretty) (optional)
+
+It should be as easy as:
+
+    $ git clone git@github.com:cloudant/CloudantQueryObjc.git
+    $ cd CloudantQueryObjc/Example
+    $ pod install
+    $ open Example/CloudantQueryObjc.xcworkspace
+
+### Running tests
+
+From the root of your cloned repository:
+
+    xcodebuild -workspace Example/CloudantQueryObjc.xcworkspace -scheme 'CloudantQueryObjc' \
+        -destination 'platform=iOS Simulator,OS=8.1,name=iPhone 4s' build test | xcpretty -c
+
+Unfortunately you need to run on the 4S right now, because of ordering differences when iterating
+through `NSDictionary` between the 4S and later devices. Yes, I know, we'll fix it sometime!
+
 ## Code Style
 
 Code style for CloudantQueryObjc is defined with a clang format file (.clang-format) in the root of the project. All code should be formatted using the clang-format tool. 
