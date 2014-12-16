@@ -41,7 +41,25 @@ more than one index.
 Querying is carried out by supplying a query in the form of a dictionary which describes the
 query.
 
-For the following examples, assume these documents are in the datastore:
+For the following examples, assume two things.
+
+Firstly, we set up a `CDTDatastore` object, `ds`, as follows:
+
+```objc
+#import <CloudantSync.h>
+
+NSError *outError = nil;
+NSString *path = /* a path within your app's file hierarchy */;
+
+CDTDatastoreManager *manager =
+[[CDTDatastoreManager alloc] initWithDirectory:path
+                                         error:&outError];
+
+CDTDatastore *ds = [manager datastoreNamed:@"my_datastore"
+                                     error:&outError];
+```
+
+Secondly, these documents are in the datastore:
 
 ```objc
 @{ @"name": @"mike", 
