@@ -1,25 +1,25 @@
 PODS:
-  - CDTDatastore (0.11.0):
-    - CDTDatastore/no-arc
-    - CocoaLumberjack (= 2.0.0-beta4)
+  - CDTDatastore (0.13.0):
+    - CDTDatastore/no-arc (= 0.13.0)
+    - CocoaLumberjack (= 2.0.0-rc)
     - FMDB (= 2.3)
-  - CDTDatastore/no-arc (0.11.0):
-    - CocoaLumberjack (= 2.0.0-beta4)
+  - CDTDatastore/no-arc (0.13.0):
+    - CocoaLumberjack (= 2.0.0-rc)
     - FMDB (= 2.3)
-  - CloudantQueryObjc (1.0.0):
-    - CDTDatastore (>= 0.7)
-    - CocoaLumberjack (= 2.0.0-beta4)
-  - CocoaLumberjack (2.0.0-beta4):
-    - CocoaLumberjack/Default
-    - CocoaLumberjack/Extensions
-  - CocoaLumberjack/Core (2.0.0-beta4)
-  - CocoaLumberjack/Default (2.0.0-beta4):
+  - CloudantQueryObjc (1.0.1):
+    - CDTDatastore (>= 0.13)
+    - CocoaLumberjack (= 2.0.0-rc)
+  - CocoaLumberjack (2.0.0-rc):
+    - CocoaLumberjack/Default (= 2.0.0-rc)
+    - CocoaLumberjack/Extensions (= 2.0.0-rc)
+  - CocoaLumberjack/Core (2.0.0-rc)
+  - CocoaLumberjack/Default (2.0.0-rc):
     - CocoaLumberjack/Core
-  - CocoaLumberjack/Extensions (2.0.0-beta4):
+  - CocoaLumberjack/Extensions (2.0.0-rc):
     - CocoaLumberjack/Default
   - Expecta (0.3.1)
   - FMDB (2.3):
-    - FMDB/standard
+    - FMDB/standard (= 2.3)
   - FMDB/common (2.3)
   - FMDB/standard (2.3):
     - FMDB/common
@@ -37,12 +37,17 @@ EXTERNAL SOURCES:
     :git: https://github.com/specta/specta.git
     :tag: v0.3.0.beta1
 
+CHECKOUT OPTIONS:
+  Specta:
+    :git: https://github.com/specta/specta.git
+    :tag: v0.3.0.beta1
+
 SPEC CHECKSUMS:
-  CDTDatastore: 5c6631ac07dcd8f039851393380f9d2d71f284a5
-  CloudantQueryObjc: 33dfc3bd523c573a974e9b27ee1177b2ff0c89e6
-  CocoaLumberjack: 24153b24b17d853d7182b22b128971fb98e8cb18
+  CDTDatastore: 272c5e384064d6b8406d06408af72799fce52eab
+  CloudantQueryObjc: 41f9955c50a2728fef2dbac45e1a6438619d0852
+  CocoaLumberjack: 6186e27827fc574b50b16c10102fcc591437f06c
   Expecta: 03aabd0a89d8dea843baecb19a7fd7466a69a31d
   FMDB: 31ec26773c7f7b7890a6038235a1f2bbd933a7cb
-  Specta: 63e8ac8e07db6675c7096d37f77a266a1be4c02d
+  Specta: d2158a483ad179e5f8d3a29f75ff4fc0ff6fab16
 
-COCOAPODS: 0.34.4
+COCOAPODS: 0.36.0.beta.1
