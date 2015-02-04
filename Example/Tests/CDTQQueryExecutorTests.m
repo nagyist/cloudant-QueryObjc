@@ -15,6 +15,8 @@
 #import <CDTQIndexCreator.h>
 #import <CDTQResultSet.h>
 #import <CDTQQueryExecutor.h>
+#import "Matchers/CDTQContainsAllElementsMatcher.h"
+#import "Matchers/CDTQEitherMatcher.h"
 
 SharedExamplesBegin(QueryExecution)
 
@@ -1019,7 +1021,7 @@ SharedExamplesBegin(QueryExecution)
                 CDTQResultSet* result = [im find:query];
                 expect(result).toNot.beNil();
                 expect(result.documentIds.count).to.equal(2);
-                expect(result.documentIds).to.equal(@[ @"mike12", @"fred34" ]);
+                expect(result.documentIds).to.containAllElements(@[ @"mike12", @"fred34" ]);
             });
         });
 
@@ -1218,7 +1220,7 @@ SharedExamplesBegin(QueryExecution)
                         ]];
                     expect([results.documentIds count]).to.equal(20);
                     expect(results.documentIds)
-                        .to.equal(@[
+                        .to.containAllElements(@[
                             @"d90",
                             @"d91",
                             @"d92",

@@ -197,7 +197,7 @@ const NSUInteger kSmallResultSetSizeThreshold = 500;
             return NO;
         }
 
-        if ([field containsString:@"."]) {
+        if ([field rangeOfString:@"."].location != NSNotFound) {
             LogError(@"Projection field cannot use dotted notation: %@", [field description]);
             return NO;
         }

@@ -16,6 +16,9 @@
 #import <CDTQQueryValidator.h>
 #import <Specta.h>
 #import <Expecta.h>
+#import "Matchers/CDTQContainsAllElementsMatcher.h"
+#import "Matchers/CDTQQueryMatcher.h"
+#import "Matchers/CDTQEitherMatcher.h"
 
 SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
 
@@ -103,8 +106,10 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
             CDTQSqlQueryNode *sqlNode = and.children[0];
             NSString *sql = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
                              "WHERE \"pet\" = ? AND \"name\" = ?;";
-            expect(sqlNode.sql.sqlWithPlaceholders).to.equal(sql);
-            expect(sqlNode.sql.placeholderValues).to.equal(@[ @"cat", @"mike" ]);
+            NSString *otherSql = @"SELECT _id FROM _t_cloudant_sync_query_index_basic "
+            "WHERE \"name\" = ? AND \"pet\" = ?;";
+            expect(sqlNode.sql.sqlWithPlaceholders).to.isEqualToEither(sql,otherSql);
+            expect(sqlNode.sql.placeholderValues).to.containsAllElements(@[ @"cat", @"mike" ]);
         });
 
         it(@"can cope with longhand single level ANDed query", ^{
@@ -846,7 +851,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 @"pet" : @"cat",
                 @"age" : @12
             }];
-            expect(actual).to.equal(@{
+            expect(actual).to.beTheSameQueryAs(@{
                 @"$and" : @[
                     @{@"pet" : @{@"$eq" : @"cat"}},
                     @{@"name" : @{@"$eq" : @"mike"}},
@@ -890,7 +895,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                                                             @{ @"pet" : @"cat" },
                                                                             @{ @"age" : @12 }
                                                                          ]];
-            expect(fields).to.equal(@[ @"name", @"pet", @"age" ]);
+            expect(fields).to.containAllElements(@[ @"name", @"pet", @"age" ]);
         });
     });
 });
