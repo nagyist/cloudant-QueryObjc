@@ -3,7 +3,7 @@
 //  CloudantQueryObjc
 //
 //  Created by Rhys Short on 21/01/2015.
-//  Copyright (c) 2015 Michael Rhodes. All rights reserved.
+//  Copyright (c) 2015 IBM Corp. All rights reserved.
 //
 
 #import "CDTQQueryMatcher.h"
