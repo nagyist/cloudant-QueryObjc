@@ -21,8 +21,9 @@
 
 @interface CDTQTranslatorState : NSObject
 
-@property (nonatomic) BOOL atLeastOneIndexUsed;     // if NO, need to generate a return all query
-@property (nonatomic) BOOL atLeastOneIndexMissing;  // i.e., we need to use posthoc matcher
+@property (nonatomic) BOOL atLeastOneIndexUsed;       // if NO, need to generate a return all query
+@property (nonatomic) BOOL atLeastOneIndexMissing;    // i.e., we need to use posthoc matcher
+@property (nonatomic) BOOL atLeastOneORIndexMissing;  //       we need to use posthoc matcher
 
 @end
 
@@ -78,7 +79,7 @@ static NSString *const EXISTS = @"$exists";
     // If we haven't used a single index, we need to return a query
     // which returns every document, so the posthoc matcher can
     // run over every document to manually carry out the query.
-    if (!state.atLeastOneIndexUsed) {
+    if (!state.atLeastOneIndexUsed || state.atLeastOneORIndexMissing) {
         NSSet *neededFields = [NSSet setWithObject:@"_id"];
         NSString *allDocsIndex =
             [CDTQQuerySqlTranslator chooseIndexForFields:neededFields fromIndexes:indexes];
@@ -192,6 +193,7 @@ static NSString *const EXISTS = @"$exists";
                 [CDTQQuerySqlTranslator chooseIndexForAndClause:wrappedClause fromIndexes:indexes];
             if (!chosenIndex) {
                 state.atLeastOneIndexMissing = YES;
+                state.atLeastOneORIndexMissing = YES;
 
                 LogWarn(@"No single index contains all of %@; add index for these fields to "
                         @"query efficiently.",
