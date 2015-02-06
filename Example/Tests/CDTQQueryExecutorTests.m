@@ -1342,6 +1342,39 @@ sharedExamplesFor(@"queries without covering indexes", ^(NSDictionary* data) {
             expect(result.documentIds.count).to.equal(2);
             expect(result.documentIds).to.beSupersetOf(@[ @"mike72", @"fred12" ]);
         });
+        
+        it(@"query using OR while missing a covering index", ^{
+            NSDictionary* query = @{ @"$or" : @[ @{ @"pet" : @{@"$eq" : @"cat"} },
+                                                 @{ @"town" : @{@"$eq" : @"bristol"} }
+                                               ]
+                                   };
+            CDTQResultSet* result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(4);
+            expect(result.documentIds).to.beSupersetOf(@[ @"mike12",
+                                                          @"mike72",
+                                                          @"fred34",
+                                                          @"fred12" ]);
+        });
+        
+        it(@"query using OR without any covering indexes", ^{
+            expect([im deleteIndexNamed:@"pet"]).toNot.beNil();
+            NSDictionary *indexes = [im listIndexes];
+            expect(indexes.count).to.equal(1);
+            expect(indexes.allKeys).to.beSupersetOf(@[ @"basic" ]);
+            
+            NSDictionary* query = @{ @"$or" : @[ @{ @"pet" : @{@"$eq" : @"cat"} },
+                                                 @{ @"town" : @{@"$eq" : @"bristol"} }
+                                               ]
+                                   };
+            CDTQResultSet* result = [im find:query];
+            expect(result).toNot.beNil();
+            expect(result.documentIds.count).to.equal(4);
+            expect(result.documentIds).to.beSupersetOf(@[ @"mike12",
+                                                          @"mike72",
+                                                          @"fred34",
+                                                          @"fred12" ]);
+        });
 
         it(@"post-hoc matches when projecting over non-queried fields", ^{
             NSDictionary* query = @{ @"town" : @"bristol" };
