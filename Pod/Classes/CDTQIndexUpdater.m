@@ -109,14 +109,16 @@
     SequenceNumber lastSequence = [self sequenceNumberForIndex:indexName];
 
     do {
-        changes = [self.datastore.database changesSinceSequence:lastSequence
-                                                        options:&options
-                                                         filter:nil
-                                                         params:nil];
-        success = success && [self updateIndex:indexName
-                                    withFields:fieldNames
-                                       changes:changes
-                                  lastSequence:&lastSequence];
+        @autoreleasepool {
+            changes = [self.datastore.database changesSinceSequence:lastSequence
+                                                            options:&options
+                                                             filter:nil
+                                                             params:nil];
+            success = success && [self updateIndex:indexName
+                                        withFields:fieldNames
+                                           changes:changes
+                                      lastSequence:&lastSequence];
+        }
     } while (success && [changes count] > 0);
 
     // raise error
@@ -145,48 +147,53 @@
     [_database inTransaction:^(FMDatabase *db, BOOL *rollback) {
 
         for (TD_Revision *rev in changes) {
-            // Delete existing values
-            CDTQSqlParts *parts =
+            
+            @autoreleasepool {
+            
+                // Delete existing values
+                CDTQSqlParts *parts =
                 [CDTQIndexUpdater partsToDeleteIndexEntriesForDocId:rev.docID fromIndex:indexName];
-            [db executeUpdate:parts.sqlWithPlaceholders
-                withArgumentsInArray:parts.placeholderValues];
-
-            // Insert new values if the rev isn't deleted
-            if (!rev.deleted) {
-                // Ignoring the attachments seems reasonable right now as we don't index them.
-                CDTDocumentRevision *cdtRev =
+                [db executeUpdate:parts.sqlWithPlaceholders
+             withArgumentsInArray:parts.placeholderValues];
+                
+                // Insert new values if the rev isn't deleted
+                if (!rev.deleted) {
+                    // Ignoring the attachments seems reasonable right now as we don't index them.
+                    CDTDocumentRevision *cdtRev =
                     [[CDTDocumentRevision alloc] initWithDocId:rev.docID
                                                     revisionId:rev.revID
                                                           body:rev.body.properties
                                                        deleted:rev.deleted
                                                    attachments:@{}
                                                       sequence:rev.sequence];
-
-                // If we are indexing a document where one field is an array, we
-                // have multiple rows to insert into the index.
-                NSArray *insertStatements = [CDTQIndexUpdater partsToIndexRevision:cdtRev
-                                                                           inIndex:indexName
-                                                                    withFieldNames:fieldNames];
-
-                for (CDTQSqlParts *insert in insertStatements) {
-                    // partsToIndexRevision:... returns nil if there are no applicable fields to
-                    // index
-                    if (insert) {
-                        success = success && [db executeUpdate:insert.sqlWithPlaceholders
-                                                 withArgumentsInArray:insert.placeholderValues];
-                    }
-
-                    if (!success) {
-                        LogError(@"Updating index %@ failed, CDTSqlParts: %@", indexName, insert);
+                    
+                    // If we are indexing a document where one field is an array, we
+                    // have multiple rows to insert into the index.
+                    NSArray *insertStatements = [CDTQIndexUpdater partsToIndexRevision:cdtRev
+                                                                               inIndex:indexName
+                                                                        withFieldNames:fieldNames];
+                    
+                    for (CDTQSqlParts *insert in insertStatements) {
+                        // partsToIndexRevision:... returns nil if there are no applicable fields to
+                        // index
+                        if (insert) {
+                            success = success && [db executeUpdate:insert.sqlWithPlaceholders
+                                              withArgumentsInArray:insert.placeholderValues];
+                        }
+                        
+                        if (!success) {
+                            LogError(@"Updating index %@ failed, CDTSqlParts: %@", indexName, insert);
+                        }
                     }
                 }
+                if (!success) {
+                    // TODO fill in error
+                    *rollback = YES;
+                    break;
+                }
+                *lastSequence = [rev sequence];
+                
             }
-            if (!success) {
-                // TODO fill in error
-                *rollback = YES;
-                break;
-            }
-            *lastSequence = [rev sequence];
         }
     }];
 

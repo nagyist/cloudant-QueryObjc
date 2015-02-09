@@ -58,6 +58,9 @@ SpecBegin(CDTQPerformance)
             CDTDatastore *ds50k = [factory datastoreNamed:@"test50k" error:nil];
             CDTDatastore *ds100k = [factory datastoreNamed:@"test100k" error:nil];
             for (int i = 0; i < 100000; i++) {
+                
+                @autoreleasepool {
+                    
                 rev.docId = [NSString stringWithFormat:@"doc-%d", i];
                 rev.body = @{
                     @"name" : @"mike",
@@ -79,6 +82,8 @@ SpecBegin(CDTQPerformance)
                 }
 
                 [ds100k createDocumentFromRevision:rev error:nil];
+                    
+                }
             }
         });
 
