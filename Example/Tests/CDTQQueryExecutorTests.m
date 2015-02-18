@@ -992,6 +992,24 @@ SharedExamplesBegin(QueryExecution)
                 rev.docId = @"fred34";
                 rev.body = @{ @"name" : @"fred", @"age" : @34, @"pet" : @"parrot" };
                 [ds createDocumentFromRevision:rev error:nil];
+                
+                rev.docId = @"mike34";
+                rev.body = @{ @"name" : @"mike",
+                              @"age" : @34,
+                              @"pet" : @[ @"cat", @"dog", @"fish" ] };
+                [ds createDocumentFromRevision:rev error:nil];
+                
+                rev.docId = @"fred12";
+                rev.body = @{ @"name" : @"fred", @"age" : @12 };
+                [ds createDocumentFromRevision:rev error:nil];
+                
+                rev.docId = @"john44";
+                rev.body = @{ @"name" : @"john", @"age" : @44, @"pet" : @[ @"hamster", @"snake" ] };
+                [ds createDocumentFromRevision:rev error:nil];
+                
+                rev.docId = @"john22";
+                rev.body = @{ @"name" : @"john", @"age" : @22, @"pet" : @"cat" };
+                [ds createDocumentFromRevision:rev error:nil];
 
                 im = [imClass managerUsingDatastore:ds error:nil];
                 expect(im).toNot.beNil();
@@ -1000,12 +1018,12 @@ SharedExamplesBegin(QueryExecution)
                     .toNot.beNil();
             });
 
-            it(@"finds document with array", ^{
+            it(@"finds documents with array", ^{
                 NSDictionary* query = @{ @"pet" : @{@"$eq" : @"dog"} };
                 CDTQResultSet* result = [im find:query];
                 expect(result).toNot.beNil();
-                expect(result.documentIds.count).to.equal(1);
-                expect(result.documentIds[0]).to.equal(@"mike12");
+                expect(result.documentIds.count).to.equal(2);
+                expect(result.documentIds).to.containAllElements(@[ @"mike12", @"mike34" ]);
             });
 
             it(@"finds document without array", ^{
@@ -1013,16 +1031,118 @@ SharedExamplesBegin(QueryExecution)
                 CDTQResultSet* result = [im find:query];
                 expect(result).toNot.beNil();
                 expect(result.documentIds.count).to.equal(1);
-                expect(result.documentIds).to.beSupersetOf(@[ @"fred34" ]);
+                expect(result.documentIds).to.containAllElements(@[ @"fred34" ]);
             });
+            
+            // Queries like { "pet" : "$eq" : "cat" } }
+            //     and      { "pet" : { "$not" : { "$ne" : "cat" } } }
+            // Should yield the same result set.  Evidenced in the next two tests.
+            
+            it(@"finds documents with and without array", ^{
+                NSDictionary* query = @{ @"pet" : @{@"$eq" : @"cat"} };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(3);
+                expect(result.documentIds).to.containAllElements(@[ @"mike12",
+                                                                    @"mike34",
+                                                                    @"john22" ]);
+            });
+            
+            it(@"finds documents with and without array while using $not..$ne", ^{
+                NSDictionary* query = @{ @"pet" : @{ @"$not" : @{@"$ne" : @"cat"} } };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(3);
+                expect(result.documentIds).to.containAllElements(@[ @"mike12",
+                                                                    @"mike34",
+                                                                    @"john22" ]);
+            });
+            
+            // Queries like { "pet" : { "$not" : { "$eq" : "dog" } } }
+            //     and      { "pet" : { "$ne" : "dog" } } }
+            // Should yield the same result set.  Evidenced in the next two tests.
 
             it(@"works with $not", ^{
                 NSDictionary* query = @{ @"pet" : @{@"$not" : @{@"$eq" : @"dog"}} };
                 CDTQResultSet* result = [im find:query];
                 expect(result).toNot.beNil();
-                expect(result.documentIds.count).to.equal(2);
-                expect(result.documentIds).to.containAllElements(@[ @"mike12", @"fred34" ]);
+                expect(result.documentIds.count).to.equal(4);
+                expect(result.documentIds).to.containAllElements(@[ @"fred34",
+                                                                    @"john44",
+                                                                    @"john22",
+                                                                    @"fred12" ]);
             });
+            
+            it(@"works with $ne", ^{
+                NSDictionary* query = @{ @"pet" : @{@"$ne" : @"dog"} };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(4);
+                expect(result.documentIds).to.containAllElements(@[ @"fred34",
+                                                                    @"john44",
+                                                                    @"john22",
+                                                                    @"fred12" ]);
+            });
+            
+            // The $gt and $lte operators are logically opposite.  Consequently querying
+            // with those operators and for that matter $gte/$lt will yield result sets
+            // that are logically opposite.  Whereas using $not..$gt will yield a result
+            // set that consists of documents that do NOT satisfy the "greater than"
+            // condition.  This can be a result set that differs from the logical
+            // opposite as is evidenced in the following three tests.
+            
+            it(@"works with $gt", ^{
+                NSDictionary* query = @{ @"pet" : @{@"$gt" : @"dog"} };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(3);
+                expect(result.documentIds).to.containAllElements(@[ @"fred34",
+                                                                    @"john44",
+                                                                    @"mike34" ]);
+            });
+            
+            it(@"works with $lte", ^{
+                NSDictionary* query = @{ @"pet" : @{@"$lte" : @"dog"} };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(3);
+                expect(result.documentIds).to.containAllElements(@[ @"mike12",
+                                                                    @"john22",
+                                                                    @"mike34" ]);
+            });
+            
+            it(@"works with $not..$gt", ^{
+                NSDictionary* query = @{ @"pet" : @{ @"$not" : @{@"$gt" : @"dog"} } };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(3);
+                expect(result.documentIds).to.containAllElements(@[ @"fred12",
+                                                                    @"john22",
+                                                                    @"mike12" ]);
+            });
+            
+            it(@"can find documents with and without arrays using $not multiple times", ^{
+                NSDictionary* query = @{ @"$and" :
+                                             @[ @{ @"pet" : @{ @"$not" : @{@"$eq" : @"cat"} } },
+                                                @{ @"pet" : @{ @"$not" : @{@"$eq" : @"dog"} } }
+                                              ]
+                                       };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(3);
+                expect(result.documentIds).to.containAllElements(@[ @"fred34",
+                                                                    @"fred12",
+                                                                    @"john44" ]);
+            });
+            
+            // Arrays as part of the query is not yet supported.
+            
+            it(@"returns nil when using array in query", ^{
+                NSDictionary* query = @{ @"pet" : @{ @"$not" : @{@"$eq" : @[ @"dog" ] } } };
+                CDTQResultSet* result = [im find:query];
+                expect(result).to.beNil();
+            });
+            
         });
 
         describe(@"when using the $exists operator", ^{

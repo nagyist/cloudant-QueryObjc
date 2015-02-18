@@ -552,7 +552,8 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
     describe(@"when generating query WHERE clauses", ^{
 
         it(@"returns nil when no query terms", ^{
-            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[]];
+            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[]
+                                                                      usingIndex:@"named"];
             expect(parts).to.beNil();
         });
 
@@ -562,7 +563,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$eq" : @"mike"} }
-                                           ]];
+                                           ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ?");
                 expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
@@ -573,20 +574,11 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                     @{ @"age" : @{@"$eq" : @12} },
                     @{ @"pet" : @{@"$eq" : @"cat"} }
                 ];
-                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:query];
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:query
+                                                                          usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders)
                     .to.equal(@"\"name\" = ? AND \"age\" = ? AND \"pet\" = ?");
                 expect(parts.placeholderValues).to.equal(@[ @"mike", @12, @"cat" ]);
-            });
-        });
-
-        describe(@"when using unsupported operator", ^{
-            it(@"uses correct SQL operator", ^{
-                CDTQSqlParts *parts = [CDTQQuerySqlTranslator
-                    wherePartsForAndClause:@[
-                                              @{ @"name" : @{@"$blah" : @"mike"} }
-                                           ]];
-                expect(parts).to.beNil();
             });
         });
 
@@ -595,7 +587,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$gt" : @"mike"} }
-                                           ]];
+                                           ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" > ?");
             });
         });
@@ -605,7 +597,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$gte" : @"mike"} }
-                                           ]];
+                                           ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" >= ?");
             });
         });
@@ -615,7 +607,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$lt" : @"mike"} }
-                                           ]];
+                                           ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" < ?");
             });
         });
@@ -625,48 +617,51 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$lte" : @"mike"} }
-                                           ]];
+                                           ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" <= ?");
             });
         });
 
         describe(@"when using $ne operator", ^{
-            it(@"uses correct SQL operator", ^{
+            it(@"uses correct SQL operator and translates $ne to $not..$eq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$ne" : @"mike"} }
-                                           ]];
-                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" != ?");
+                                           ] usingIndex:@"named"];
+                NSString *expected = @"_id NOT IN (SELECT _id "
+                                                 @"FROM _t_cloudant_sync_query_index_named "
+                                                 @"WHERE \"name\" = ?)";
+                expect(parts.sqlWithPlaceholders).to.equal(expected);
             });
         });
 
-        describe(@"when using the $exists oprtator", ^{
+        describe(@"when using the $exists operator", ^{
             it(@"uses correct SQL operator for $exits : true", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$exists" : @YES} }
-                                           ]];
+                                           ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" IS NOT NULL)");
             });
             it(@"uses correct SQL operator for $exits : false:", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$exists" : @NO} }
-                                           ]];
+                                           ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" IS NULL)");
             });
             it(@"uses correct SQL operator for $not { $exits : false}", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$not" : @{@"$exists" : @NO}} }
-                                           ]];
+                                           ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" IS NOT NULL)");
             });
             it(@"uses correct SQL operator for $not {$exits : true}", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$not" : @{@"$exists" : @YES}} }
-                                           ]];
+                                           ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" IS NULL)");
             });
         });
@@ -675,7 +670,8 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
     describe(@"when generating WHERE with $not", ^{
 
         it(@"returns nil when no query terms", ^{
-            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[]];
+            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:@[]
+                                                                      usingIndex:@"named"];
             expect(parts).to.beNil();
         });
 
@@ -685,8 +681,11 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$not" : @{@"$eq" : @"mike"}} }
-                                           ]];
-                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" != ? OR \"name\" IS NULL)");
+                                           ] usingIndex:@"named"];
+                NSString *expected = @"_id NOT IN (SELECT _id "
+                                                 @"FROM _t_cloudant_sync_query_index_named "
+                                                 @"WHERE \"name\" = ?)";
+                expect(parts.sqlWithPlaceholders).to.equal(expected);
                 expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
 
@@ -696,21 +695,21 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                     @{ @"age" : @{@"$eq" : @12} },
                     @{ @"pet" : @{@"$not" : @{@"$eq" : @"cat"}} }
                 ];
-                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:query];
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:query
+                                                                          usingIndex:@"named"];
+                NSString *expected = @"_id NOT IN (SELECT _id "
+                                                 @"FROM _t_cloudant_sync_query_index_named "
+                                                 @"WHERE \"name\" = ?) "
+                                     @"AND "
+                                     @"\"age\" = ? "
+                                     @"AND "
+                                     @"_id NOT IN (SELECT _id "
+                                                 @"FROM _t_cloudant_sync_query_index_named "
+                                                 @"WHERE \"pet\" = ?)";
+                
                 expect(parts.sqlWithPlaceholders)
-                    .to.equal(@"(\"name\" != ? OR \"name\" IS NULL) AND \"age\" = ? AND "
-                              @"(\"pet\" != ? OR \"pet\" IS NULL)");
+                    .to.equal(expected);
                 expect(parts.placeholderValues).to.equal(@[ @"mike", @12, @"cat" ]);
-            });
-        });
-
-        describe(@"when using unsupported operator", ^{
-            it(@"uses correct SQL operator", ^{
-                CDTQSqlParts *parts = [CDTQQuerySqlTranslator
-                    wherePartsForAndClause:@[
-                                              @{ @"name" : @{@"$not" : @{@"$blah" : @"mike"}} }
-                                           ]];
-                expect(parts).to.beNil();
             });
         });
 
@@ -719,8 +718,11 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$not" : @{@"$gt" : @"mike"}} }
-                                           ]];
-                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" <= ? OR \"name\" IS NULL)");
+                                           ] usingIndex:@"named"];
+                NSString *expected = @"_id NOT IN (SELECT _id "
+                                                 @"FROM _t_cloudant_sync_query_index_named "
+                                                 @"WHERE \"name\" > ?)";
+                expect(parts.sqlWithPlaceholders).to.equal(expected);
             });
         });
 
@@ -729,8 +731,11 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$not" : @{@"$gte" : @"mike"}} }
-                                           ]];
-                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" < ? OR \"name\" IS NULL)");
+                                           ] usingIndex:@"named"];
+                NSString *expected = @"_id NOT IN (SELECT _id "
+                                                 @"FROM _t_cloudant_sync_query_index_named "
+                                                 @"WHERE \"name\" >= ?)";
+                expect(parts.sqlWithPlaceholders).to.equal(expected);
             });
         });
 
@@ -739,8 +744,11 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$not" : @{@"$lt" : @"mike"}} }
-                                           ]];
-                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" >= ? OR \"name\" IS NULL)");
+                                           ] usingIndex:@"named"];
+                NSString *expected = @"_id NOT IN (SELECT _id "
+                                                 @"FROM _t_cloudant_sync_query_index_named "
+                                                 @"WHERE \"name\" < ?)";
+                expect(parts.sqlWithPlaceholders).to.equal(expected);
             });
         });
 
@@ -749,8 +757,11 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$not" : @{@"$lte" : @"mike"}} }
-                                           ]];
-                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" > ? OR \"name\" IS NULL)");
+                                           ] usingIndex:@"named"];
+                NSString *expected = @"_id NOT IN (SELECT _id "
+                                                 @"FROM _t_cloudant_sync_query_index_named "
+                                                 @"WHERE \"name\" <= ?)";
+                expect(parts.sqlWithPlaceholders).to.equal(expected);
             });
         });
 
@@ -759,8 +770,8 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[
                                               @{ @"name" : @{@"$not" : @{@"$ne" : @"mike"}} }
-                                           ]];
-                expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" = ? OR \"name\" IS NULL)");
+                                           ] usingIndex:@"named"];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ?");
             });
         });
     });
@@ -772,9 +783,13 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 @{ @"name" : @{@"$not" : @{@"$eq" : @"mike"}} },
                 @{ @"name" : @{@"$eq" : @"john"} }
             ];
-            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:clause];
-            expect(parts.sqlWithPlaceholders)
-                .to.equal(@"(\"name\" != ? OR \"name\" IS NULL) AND \"name\" = ?");
+            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:clause
+                                                                      usingIndex:@"named"];
+            NSString *expected = @"_id NOT IN (SELECT _id "
+                                             @"FROM _t_cloudant_sync_query_index_named "
+                                             @"WHERE \"name\" = ?) "
+                                 @"AND \"name\" = ?";
+            expect(parts.sqlWithPlaceholders).to.equal(expected);
             expect(parts.placeholderValues).to.equal(@[ @"mike", @"john" ]);
         });
 
@@ -786,10 +801,16 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 @{ @"age" : @{@"$ne" : @30} },
                 @{ @"age" : @{@"$eq" : @42} },
             ];
-            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:clause];
-            expect(parts.sqlWithPlaceholders).to.equal(@"\"age\" > ? AND \"age\" <= ? AND "
-                                                       @"\"name\" = ? AND \"age\" != ? AND "
-                                                       @"\"age\" = ?");
+            CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:clause
+                                                                      usingIndex:@"named"];
+            NSString *expected = @"\"age\" > ? "
+                                 @"AND \"age\" <= ? "
+                                 @"AND \"name\" = ? "
+                                 @"AND _id NOT IN (SELECT _id "
+                                                 @"FROM _t_cloudant_sync_query_index_named "
+                                                 @"WHERE \"age\" = ?) "
+                                 @"AND \"age\" = ?";
+            expect(parts.sqlWithPlaceholders).to.equal(expected);
             expect(parts.placeholderValues).to.equal(@[ @12, @54, @"mike", @30, @42 ]);
         });
     });
@@ -871,6 +892,18 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                     @{@"age" : @{@"$eq" : @12}}
                 ]
             });
+        });
+        
+        it(@"returns nil for query containing invalid operator", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"name" : @{ @"$blah" : @"mike" } } ];
+            expect(actual).to.beNil;
+        });
+        
+        it(@"returns nil for query containing invalid operator using $not", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"name" : @{ @"$not" : @{ @"$blah" : @"mike" } } } ];
+            expect(actual).to.beNil;
         });
     });
 

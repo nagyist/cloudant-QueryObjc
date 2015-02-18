@@ -66,6 +66,8 @@ static NSString *const AND = @"$and";
 static NSString *const OR = @"$or";
 static NSString *const EQ = @"$eq";
 static NSString *const EXISTS = @"$exists";
+static NSString *const NOT = @"$not";
+static NSString *const NE = @"$ne";  // $ne is used as shorthand for $not..$eq
 
 + (CDTQQueryNode *)translateQuery:(NSDictionary *)query
                      toUseIndexes:(NSDictionary *)indexes
@@ -291,7 +293,7 @@ static NSString *const EXISTS = @"$exists";
     return chosenIndex;
 }
 
-+ (CDTQSqlParts *)wherePartsForAndClause:(NSArray *)clause
++ (CDTQSqlParts *)wherePartsForAndClause:(NSArray *)clause usingIndex:(NSString *)indexName
 {
     if (clause.count == 0) {
         return nil;  // no point in querying empty set of fields
@@ -306,19 +308,9 @@ static NSString *const EXISTS = @"$exists";
         @"$gt" : @">",
         @"$gte" : @">=",
         @"$lt" : @"<",
-        @"$lte" : @"<=",
-        @"$ne" : @"!="
+        @"$lte" : @"<="
     };
 
-    // We apply these if the clause is negated, along with the NULL clause
-    NSDictionary *notOperatorMap = @{
-        @"$eq" : @"!=",
-        @"$gt" : @"<=",
-        @"$gte" : @"<",
-        @"$lt" : @">=",
-        @"$lte" : @">",
-        @"$ne" : @"="
-    };
     for (NSDictionary *component in clause) {
         if (component.count != 1) {
             LogError(@"Expected single predicate per clause dictionary, got %@", component);
@@ -335,7 +327,7 @@ static NSString *const EXISTS = @"$exists";
 
         NSString *operator= predicate.allKeys[0];
 
-        // $not specifies the opposite operator OR NULL documents be returned
+        // $not specifies ALL documents NOT in the set of documents that match the operator.
         if ([operator isEqualToString:@"$not"]) {
             NSDictionary *negatedPredicate = predicate[@"$not"];
 
@@ -358,19 +350,28 @@ static NSString *const EXISTS = @"$exists";
                     [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
 
             } else {
-                NSString *sqlOperator = notOperatorMap[operator];
-
-                if (!sqlOperator) {
-                    LogError(@"Unsupported comparison operator %@", operator);
+                NSString *sqlClause;
+                if ([operator isEqualToString:NE]) {
+                    // Treat $not..$ne as $eq
+                    NSString *sqlOperator = operatorMap[EQ];
+                    sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", fieldName,
+                                   sqlOperator];
+                } else {
+                    NSString *sqlOperator = operatorMap[operator];
+                    NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
+                    sqlClause = [CDTQQuerySqlTranslator whereClauseForNot:fieldName
+                                                            usingOperator:sqlOperator
+                                                                 forTable:tableName];
+                }
+                
+                [sqlClauses addObject:sqlClause];
+                predicateValue = [negatedPredicate objectForKey:operator];
+                if ([self validatePredicateValue:predicateValue]) {
+                    [sqlParameters addObject:predicateValue];
+                } else {
+                    LogError(@"Predicate value is invalid.");
                     return nil;
                 }
-
-                NSString *sqlClause = [NSString stringWithFormat:@"(\"%@\" %@ ? OR \"%@\" IS NULL)",
-                                                                 fieldName, sqlOperator, fieldName];
-                predicateValue = [negatedPredicate objectForKey:operator];
-
-                [sqlParameters addObject:predicateValue];
-                [sqlClauses addObject:sqlClause];
             }
 
         } else {
@@ -381,20 +382,25 @@ static NSString *const EXISTS = @"$exists";
                     [sqlParameters addObject:[predicate objectForKey:operator]];
 
             } else {
-                NSString *sqlOperator = operatorMap[operator];
-
-                if (!sqlOperator) {
-                    LogError(@"Unsupported comparison operator %@", operator);
-                    return nil;
+                NSString *sqlClause;
+                if ([operator isEqualToString:NE]) {
+                    NSString *sqlOperator = operatorMap[EQ];
+                    NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
+                    sqlClause = [CDTQQuerySqlTranslator whereClauseForNot:fieldName
+                                                            usingOperator:sqlOperator
+                                                                 forTable:tableName];
+                } else {
+                    NSString *sqlOperator = operatorMap[operator];
+                    sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", fieldName,
+                                 sqlOperator];
                 }
-
-                NSString *sqlClause =
-                    [NSString stringWithFormat:@"\"%@\" %@ ?", fieldName, sqlOperator];
+                
                 [sqlClauses addObject:sqlClause];
                 NSObject * predicateValue = [predicate objectForKey:operator];
                 if ([self validatePredicateValue:predicateValue]) {
                     [sqlParameters addObject:predicateValue];
                 } else {
+                    LogError(@"Predicate value is invalid.");
                     return nil;
                 }
             }
@@ -403,6 +409,28 @@ static NSString *const EXISTS = @"$exists";
 
     return [CDTQSqlParts partsForSql:[sqlClauses componentsJoinedByString:@" AND "]
                           parameters:sqlParameters];
+}
+
+/**
+ * WHERE clause representation of $not must be handled by using a
+ * sub-SELECT statement of the operator which is then applied to
+ * _id NOT IN (...).  This is because this process is the only
+ * way that we can ensure that documents that contain arrays are
+ * handled correctly.
+ *
+ */
++ (NSString *)whereClauseForNot:(NSString *)fieldName
+                  usingOperator:(NSString *)sqlOperator
+                       forTable:(NSString *)tableName
+{
+    NSString *whereForSubSelect = [NSString stringWithFormat:@"\"%@\" %@ ?",
+                                   fieldName,
+                                   sqlOperator];
+    NSString *subSelect = [NSString stringWithFormat:@"SELECT _id FROM %@ WHERE %@",
+                           tableName,
+                           whereForSubSelect];
+    
+    return [NSString stringWithFormat:@"_id NOT IN (%@)", subSelect];
 }
 
 + (NSString *)convertExistsToSqlClauseForFieldName:(NSString *)fieldName exists:(BOOL)exists
@@ -434,7 +462,8 @@ static NSString *const EXISTS = @"$exists";
         return nil;
     }
 
-    CDTQSqlParts *where = [CDTQQuerySqlTranslator wherePartsForAndClause:clause];
+    CDTQSqlParts *where = [CDTQQuerySqlTranslator wherePartsForAndClause:clause
+                                                              usingIndex:indexName];
 
     if (!where) {
         return nil;
