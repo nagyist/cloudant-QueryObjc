@@ -37,6 +37,8 @@
 static NSString *const AND = @"$and";
 static NSString *const OR = @"$or";
 static NSString *const NOT = @"$not";
+static NSString *const NE = @"$ne";
+static NSString *const EQ = @"$eq";
 
 #pragma mark Creating matcher
 
@@ -81,7 +83,14 @@ static NSString *const NOT = @"$not";
         NSDictionary *clause = (NSDictionary *)obj;
         NSString *field = clause.allKeys[0];
         if (![field hasPrefix:@"$"]) {
-            [basicClauses addObject:clauses[idx]];
+            NSDictionary *converted = nil;
+            converted = [CDTQUnindexedMatcher convertNeClauseToNotEq:field
+                                                            onClause:[clause objectForKey:field]];
+            if (!converted) {
+                [basicClauses addObject:clauses[idx]];
+            } else {
+                [basicClauses addObject:converted];
+            }
         }
     }];
 
@@ -121,6 +130,27 @@ static NSString *const NOT = @"$not";
     }];
 
     return root;
+}
+
++ (NSDictionary *)convertNeClauseToNotEq:(NSString *)field onClause:(NSDictionary *)clause
+{
+    // We either have { "$not" : { "$operator" : "value" } }
+    //     or         { "$operator" : "value" }
+    NSDictionary *converted = nil;
+    NSString *operator = clause.allKeys[0];
+    if ([operator isEqualToString:NE]) {
+        // Convert { "$ne" : "value" } to { "$not" : { "$eq" : "value" } }
+        converted = @{ field : @{ NOT : @{ EQ : [clause objectForKey:operator] } } };
+    } else if ([operator isEqualToString:NOT]) {
+        NSDictionary *subClause = [clause objectForKey:operator];
+        NSString *subOperator = subClause.allKeys[0];
+        if ([subOperator isEqualToString:NE]) {
+            // Convert { "$not" : { "$ne" : "value" } } to { "$eq" : "value" }
+            converted = @{ field : @{ EQ : [subClause objectForKey:subOperator] } };
+        }
+    }
+    
+    return converted;
 }
 
 #pragma mark Matching documents
@@ -185,37 +215,20 @@ static NSString *const NOT = @"$not";
         NSObject *actual = [CDTQValueExtractor extractValueForFieldName:fieldName fromRevision:rev];
 
         BOOL passed = NO;
-        // For array actual values, the operator expression is matched
-        // if any of the array values match it. We need to be careful
-        // to invert the match status of every candidate, rather than
-        // just flipping the result at the end.
-        //
-        // This is because @{ @"$not": @{ @"$eq": @"white_cat" } } needs
-        // to be taken as an atomic check, meaning:
-        //   "there's an item in the array that matches `!= "white_cat"`"
-        // rather than:
-        //   "not (there's an item that matches white_cat)"
-        // The latter is satisfied using the $nin operator.
         if ([actual isKindOfClass:[NSArray class]]) {
-            BOOL currentItemPassed = NO;
             for (NSObject *item in(NSArray *)actual) {
                 // OR as any value in the array can match
-                currentItemPassed = [self actualValue:item
-                                      matchesOperator:operator 
-                                     andExpectedValue:expected
-                                     ];
-                passed = passed || (invertResult ? !currentItemPassed : currentItemPassed);
+                passed = passed || [self actualValue:item
+                                     matchesOperator:operator
+                                    andExpectedValue:expected];
             }
         } else {
             passed = [self actualValue:actual
                        matchesOperator:operator 
-                      andExpectedValue:expected
-                      ];
-            passed = invertResult ? !passed : passed;
+                      andExpectedValue:expected];
         }
 
-        return passed;
-
+        return invertResult ? !passed : passed;
     } else {
         // We constructed the tree, so shouldn't end up here; error if we do.
         LogError(@"Found unexpected selector execution tree: %@", node);
@@ -231,9 +244,6 @@ static NSString *const NOT = @"$not";
 
     if ([operator isEqualToString:@"$eq"]) {
         passed = [self eqL:actual R:expected];
-
-    } else if ([operator isEqualToString:@"$ne"]) {
-        passed = [self neL:actual R:expected];
 
     } else if ([operator isEqualToString:@"$lt"]) {
         passed = [self ltL:actual R:expected];
@@ -263,8 +273,6 @@ static NSString *const NOT = @"$not";
 #pragma mark matchers
 
 - (BOOL)eqL:(NSObject *)l R:(NSObject *)r { return [l isEqual:r]; }
-
-- (BOOL)neL:(NSObject *)l R:(NSObject *)r { return ![self eqL:l R:r]; }
 
 //
 // Try to respect SQLite's ordering semantics:

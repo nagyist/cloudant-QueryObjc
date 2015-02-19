@@ -431,7 +431,8 @@ describe(@"matches", ^{
 
     context(@"not", ^{
 
-        // We can be fairly simple here as we know that the internal is that not just negates.
+        //  We can be fairly simple here as we know that the internal is that $not just negates
+        //  and $ne is just translated to $not..$eq
 
         context(@"eq", ^{
 
@@ -459,6 +460,45 @@ describe(@"matches", ^{
                 expect([matcher matches:rev]).to.beTruthy();
             });
         });
+        
+        context(@"ne", ^{
+            
+            it(@"doesn't match using $ne", ^{
+                NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                    @"name" : @{@"$ne" : @"mike"}
+                }];
+                CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+                expect([matcher matches:rev]).to.beFalsy();
+            });
+            it(@"doesn't match using $not..$ne", ^{
+                NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                    @"name" : @{@"$not" : @{@"$ne" : @"fred"}}
+                }];
+                CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+                expect([matcher matches:rev]).to.beFalsy();
+            });
+            it(@"matches using $ne", ^{
+                NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                    @"name" : @{@"$ne" : @"fred"}
+                }];
+                CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+                expect([matcher matches:rev]).to.beTruthy();
+            });
+            it(@"matches using $not..$ne", ^{
+                NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                    @"name" : @{@"$not" : @{@"$ne" : @"mike"}}
+                }];
+                CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+                expect([matcher matches:rev]).to.beTruthy();
+            });
+            it(@"matches bad field using $ne", ^{
+                NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                    @"species" : @{@"$ne" : @"fred"}
+                }];
+                CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+                expect([matcher matches:rev]).to.beTruthy();
+            });
+        });
     });
 
     context(@"array fields", ^{
@@ -471,12 +511,20 @@ describe(@"matches", ^{
             expect([matcher matches:rev]).to.beTruthy();
         });
 
-        it(@"matches good item with not", ^{
+        it(@"doesn't match good item with $not", ^{
             NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
                 @"pets" : @{@"$not" : @{@"$eq" : @"white_cat"}}
             }];
             CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
-            expect([matcher matches:rev]).to.beTruthy();
+            expect([matcher matches:rev]).to.beFalsy();
+        });
+        
+        it(@"doesn't match good item with $ne", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pets" : @{@"$ne" : @"white_cat"}
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beFalsy();
         });
 
         it(@"doesn't match bad item", ^{
@@ -487,9 +535,17 @@ describe(@"matches", ^{
             expect([matcher matches:rev]).to.beFalsy();
         });
 
-        it(@"matches bad item with not", ^{
+        it(@"matches bad item with $not", ^{
             NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
                 @"pets" : @{@"$not" : @{@"$eq" : @"tabby_cat"}}
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beTruthy();
+        });
+        
+        it(@"matches bad item with $ne", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pets" : @{@"$ne" : @"tabby_cat"}
             }];
             CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
             expect([matcher matches:rev]).to.beTruthy();

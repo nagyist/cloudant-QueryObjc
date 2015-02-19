@@ -149,7 +149,7 @@
 /**
  Returns the SQL WHERE clause for a query.
  */
-+ (CDTQSqlParts *)wherePartsForAndClause:(NSArray *)clause;
++ (CDTQSqlParts *)wherePartsForAndClause:(NSArray *)clause usingIndex:(NSString *)indexName;
 
 /**
  Returns the SQL statement to find document IDs matching query.
