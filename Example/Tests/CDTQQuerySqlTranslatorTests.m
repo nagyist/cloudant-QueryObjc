@@ -622,19 +622,6 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
             });
         });
 
-        describe(@"when using $ne operator", ^{
-            it(@"uses correct SQL operator and translates $ne to $not..$eq", ^{
-                CDTQSqlParts *parts = [CDTQQuerySqlTranslator
-                    wherePartsForAndClause:@[
-                                              @{ @"name" : @{@"$ne" : @"mike"} }
-                                           ] usingIndex:@"named"];
-                NSString *expected = @"_id NOT IN (SELECT _id "
-                                                 @"FROM _t_cloudant_sync_query_index_named "
-                                                 @"WHERE \"name\" = ?)";
-                expect(parts.sqlWithPlaceholders).to.equal(expected);
-            });
-        });
-
         describe(@"when using the $exists operator", ^{
             it(@"uses correct SQL operator for $exits : true", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
@@ -764,16 +751,6 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 expect(parts.sqlWithPlaceholders).to.equal(expected);
             });
         });
-
-        describe(@"when using $ne operator", ^{
-            it(@"uses correct SQL operator", ^{
-                CDTQSqlParts *parts = [CDTQQuerySqlTranslator
-                    wherePartsForAndClause:@[
-                                              @{ @"name" : @{@"$not" : @{@"$ne" : @"mike"}} }
-                                           ] usingIndex:@"named"];
-                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ?");
-            });
-        });
     });
 
     describe(@"when multiple conditions on one field", ^{
@@ -798,7 +775,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 @{ @"age" : @{@"$gt" : @12} },
                 @{ @"age" : @{@"$lte" : @54} },
                 @{ @"name" : @{@"$eq" : @"mike"} },
-                @{ @"age" : @{@"$ne" : @30} },
+                @{ @"age" : @{ @"$not" : @{@"$eq" : @30} } },
                 @{ @"age" : @{@"$eq" : @42} },
             ];
             CDTQSqlParts *parts = [CDTQQuerySqlTranslator wherePartsForAndClause:clause
@@ -892,6 +869,63 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                     @{@"age" : @{@"$eq" : @12}}
                 ]
             });
+        });
+        
+        it(@"correctly normalizes query with an even number of NOT operators", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pet" : @{ @"$not" : @{ @"$not" : @{ @"$eq" : @"cat" } } }
+                                                                                   }];
+            expect(actual).to.equal( @{ @"$and" : @[ @{ @"pet" : @{ @"$eq" : @"cat"} } ] } );
+        });
+        
+        it(@"correctly normalizes query with a single NE operator", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pet" : @{ @"$ne" : @"cat" }
+                                                                                   }];
+            expect(actual).to.equal( @{
+                @"$and" : @[ @{ @"pet" : @{ @"$not" : @{ @"$eq" : @"cat"} } } ]
+                                      } );
+        });
+        
+        it(@"correctly normalizes query with an even number of NOT operators and an NE operator", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pet" : @{ @"$not" : @{ @"$not" : @{ @"$ne" : @"cat" } } }
+                                                                                   }];
+            expect(actual).to.equal( @{
+                @"$and" : @[ @{ @"pet" : @{ @"$not" : @{ @"$eq" : @"cat"} } } ]
+                                       } );
+        });
+        
+        it(@"correctly normalizes query with an odd number of NOT operators", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pet" : @{ @"$not" : @{ @"$not" : @{ @"$not" : @{ @"$eq" : @"cat" } } } }
+                                                                                   }];
+            expect(actual).to.equal( @{
+                @"$and" : @[ @{ @"pet" : @{ @"$not" : @{ @"$eq" : @"cat"} } } ]
+                                       } );
+        });
+        
+        it(@"correctly normalizes query with an odd number of NOT operators and an NE operator", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pet" : @{ @"$not" : @{ @"$not" : @{ @"$not" : @{ @"$ne" : @"cat" } } } }
+                                                                                   }];
+            expect(actual).to.equal( @{
+                @"$and" : @[ @{ @"pet" : @{ @"$eq" : @"cat"} } ]
+                                       } );
+        });
+        
+        it(@"correctly normalizes multi-level query with multiple NOT operators", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"$or" : @[ @{ @"name": @{ @"$eq" : @"mike" } },
+                           @{ @"$and" : @[ @{ @"pet": @{ @"$not": @{ @"$not": @{ @"$not":
+                                                      @{ @"$eq": @"cat" } } } } },
+                                           @{ @"age": @{ @"$eq" : @12 } }
+                                        ]}
+                         ] } ];
+            expect(actual).to.equal( @{
+                @"$or" : @[ @{ @"name" : @{ @"$eq" : @"mike" } },
+                            @{ @"$and" : @[ @{ @"pet" : @{ @"$not" : @{ @"$eq" : @"cat" } } },
+                                            @{ @"age" : @{ @"$eq" : @12 } } ] } ] } );
         });
         
         it(@"returns nil for query containing invalid operator", ^{

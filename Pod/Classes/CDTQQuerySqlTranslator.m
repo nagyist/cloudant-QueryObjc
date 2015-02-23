@@ -66,8 +66,6 @@ static NSString *const AND = @"$and";
 static NSString *const OR = @"$or";
 static NSString *const EQ = @"$eq";
 static NSString *const EXISTS = @"$exists";
-static NSString *const NOT = @"$not";
-static NSString *const NE = @"$ne";  // $ne is used as shorthand for $not..$eq
 
 + (CDTQQueryNode *)translateQuery:(NSDictionary *)query
                      toUseIndexes:(NSDictionary *)indexes
@@ -147,76 +145,78 @@ static NSString *const NE = @"$ne";  // $ne is used as shorthand for $not..$eq
         }
     }];
 
-    if (query[AND]) {
-        // For an AND query, we require a single compound index and we generate a
-        // single SQL statement to use that index to satisfy the clauses.
-
-        NSString *chosenIndex =
-            [CDTQQuerySqlTranslator chooseIndexForAndClause:basicClauses fromIndexes:indexes];
-        if (!chosenIndex) {
-            state.atLeastOneIndexMissing = YES;
-
-            LogWarn(@"No single index contains all of %@; add index for these fields to "
-                    @"query efficiently.",
-                    basicClauses);
-        } else {
-            state.atLeastOneIndexUsed = YES;
-
-            // Execute SQL on that index with appropriate values
-            CDTQSqlParts *select = [CDTQQuerySqlTranslator selectStatementForAndClause:basicClauses
-                                                                            usingIndex:chosenIndex];
-
-            if (!select) {
-                LogError(@"Error generating SELECT clause for %@", basicClauses);
-                return nil;
-            }
-
-            CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
-            sql.sql = select;
-
-            [root.children addObject:sql];
-        }
-
-    } else if (query[OR]) {
-        // OR nodes require a query for each clause.
-        //
-        // We want to allow OR clauses to use separate indexes, unlike for AND, to allow
-        // users to query over multiple indexes during a single query. This prevents users
-        // having to create a single huge index just because one query in their application
-        // requires it, slowing execution of all the other queries down.
-        //
-        // We could optimise for OR parts where we have an appropriate compound index,
-        // but we don't for now.
-
-        for (NSDictionary *clause in basicClauses) {
-            NSArray *wrappedClause = @[ clause ];
-
+    if (basicClauses.count > 0) {
+        if (query[AND]) {
+            // For an AND query, we require a single compound index and we generate a
+            // single SQL statement to use that index to satisfy the clauses.
+            
             NSString *chosenIndex =
-                [CDTQQuerySqlTranslator chooseIndexForAndClause:wrappedClause fromIndexes:indexes];
+            [CDTQQuerySqlTranslator chooseIndexForAndClause:basicClauses fromIndexes:indexes];
             if (!chosenIndex) {
                 state.atLeastOneIndexMissing = YES;
-                state.atLeastOneORIndexMissing = YES;
-
+                
                 LogWarn(@"No single index contains all of %@; add index for these fields to "
                         @"query efficiently.",
                         basicClauses);
             } else {
                 state.atLeastOneIndexUsed = YES;
-
+                
                 // Execute SQL on that index with appropriate values
-                CDTQSqlParts *select =
-                    [CDTQQuerySqlTranslator selectStatementForAndClause:wrappedClause
-                                                             usingIndex:chosenIndex];
-
+                CDTQSqlParts *select = [CDTQQuerySqlTranslator selectStatementForAndClause:
+                                        basicClauses usingIndex:chosenIndex];
+                
                 if (!select) {
                     LogError(@"Error generating SELECT clause for %@", basicClauses);
                     return nil;
                 }
-
+                
                 CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
                 sql.sql = select;
-
+                
                 [root.children addObject:sql];
+            }
+            
+        } else if (query[OR]) {
+            // OR nodes require a query for each clause.
+            //
+            // We want to allow OR clauses to use separate indexes, unlike for AND, to allow
+            // users to query over multiple indexes during a single query. This prevents users
+            // having to create a single huge index just because one query in their application
+            // requires it, slowing execution of all the other queries down.
+            //
+            // We could optimise for OR parts where we have an appropriate compound index,
+            // but we don't for now.
+            
+            for (NSDictionary *clause in basicClauses) {
+                NSArray *wrappedClause = @[ clause ];
+                
+                NSString *chosenIndex =
+                [CDTQQuerySqlTranslator chooseIndexForAndClause:wrappedClause fromIndexes:indexes];
+                if (!chosenIndex) {
+                    state.atLeastOneIndexMissing = YES;
+                    state.atLeastOneORIndexMissing = YES;
+                    
+                    LogWarn(@"No single index contains all of %@; add index for these fields to "
+                            @"query efficiently.",
+                            basicClauses);
+                } else {
+                    state.atLeastOneIndexUsed = YES;
+                    
+                    // Execute SQL on that index with appropriate values
+                    CDTQSqlParts *select =
+                    [CDTQQuerySqlTranslator selectStatementForAndClause:wrappedClause
+                                                             usingIndex:chosenIndex];
+                    
+                    if (!select) {
+                        LogError(@"Error generating SELECT clause for %@", basicClauses);
+                        return nil;
+                    }
+                    
+                    CDTQSqlQueryNode *sql = [[CDTQSqlQueryNode alloc] init];
+                    sql.sql = select;
+                    
+                    [root.children addObject:sql];
+                }
             }
         }
     }
@@ -350,19 +350,11 @@ static NSString *const NE = @"$ne";  // $ne is used as shorthand for $not..$eq
                     [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
 
             } else {
-                NSString *sqlClause;
-                if ([operator isEqualToString:NE]) {
-                    // Treat $not..$ne as $eq
-                    NSString *sqlOperator = operatorMap[EQ];
-                    sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", fieldName,
-                                   sqlOperator];
-                } else {
-                    NSString *sqlOperator = operatorMap[operator];
-                    NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
-                    sqlClause = [CDTQQuerySqlTranslator whereClauseForNot:fieldName
-                                                            usingOperator:sqlOperator
-                                                                 forTable:tableName];
-                }
+                NSString *sqlOperator = operatorMap[operator];
+                NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
+                NSString *sqlClause = [CDTQQuerySqlTranslator whereClauseForNot:fieldName
+                                                                  usingOperator:sqlOperator
+                                                                       forTable:tableName];
                 
                 [sqlClauses addObject:sqlClause];
                 predicateValue = [negatedPredicate objectForKey:operator];
@@ -382,18 +374,9 @@ static NSString *const NE = @"$ne";  // $ne is used as shorthand for $not..$eq
                     [sqlParameters addObject:[predicate objectForKey:operator]];
 
             } else {
-                NSString *sqlClause;
-                if ([operator isEqualToString:NE]) {
-                    NSString *sqlOperator = operatorMap[EQ];
-                    NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
-                    sqlClause = [CDTQQuerySqlTranslator whereClauseForNot:fieldName
-                                                            usingOperator:sqlOperator
-                                                                 forTable:tableName];
-                } else {
-                    NSString *sqlOperator = operatorMap[operator];
-                    sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", fieldName,
-                                 sqlOperator];
-                }
+                NSString *sqlOperator = operatorMap[operator];
+                NSString *sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", fieldName,
+                                       sqlOperator];
                 
                 [sqlClauses addObject:sqlClause];
                 NSObject * predicateValue = [predicate objectForKey:operator];
