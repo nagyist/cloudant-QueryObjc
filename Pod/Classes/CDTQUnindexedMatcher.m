@@ -37,8 +37,6 @@
 static NSString *const AND = @"$and";
 static NSString *const OR = @"$or";
 static NSString *const NOT = @"$not";
-static NSString *const NE = @"$ne";
-static NSString *const EQ = @"$eq";
 
 #pragma mark Creating matcher
 
@@ -83,14 +81,7 @@ static NSString *const EQ = @"$eq";
         NSDictionary *clause = (NSDictionary *)obj;
         NSString *field = clause.allKeys[0];
         if (![field hasPrefix:@"$"]) {
-            NSDictionary *converted = nil;
-            converted = [CDTQUnindexedMatcher convertNeClauseToNotEq:field
-                                                            onClause:[clause objectForKey:field]];
-            if (!converted) {
-                [basicClauses addObject:clauses[idx]];
-            } else {
-                [basicClauses addObject:converted];
-            }
+            [basicClauses addObject:clauses[idx]];
         }
     }];
 
@@ -130,27 +121,6 @@ static NSString *const EQ = @"$eq";
     }];
 
     return root;
-}
-
-+ (NSDictionary *)convertNeClauseToNotEq:(NSString *)field onClause:(NSDictionary *)clause
-{
-    // We either have { "$not" : { "$operator" : "value" } }
-    //     or         { "$operator" : "value" }
-    NSDictionary *converted = nil;
-    NSString *operator = clause.allKeys[0];
-    if ([operator isEqualToString:NE]) {
-        // Convert { "$ne" : "value" } to { "$not" : { "$eq" : "value" } }
-        converted = @{ field : @{ NOT : @{ EQ : [clause objectForKey:operator] } } };
-    } else if ([operator isEqualToString:NOT]) {
-        NSDictionary *subClause = [clause objectForKey:operator];
-        NSString *subOperator = subClause.allKeys[0];
-        if ([subOperator isEqualToString:NE]) {
-            // Convert { "$not" : { "$ne" : "value" } } to { "$eq" : "value" }
-            converted = @{ field : @{ EQ : [subClause objectForKey:subOperator] } };
-        }
-    }
-    
-    return converted;
 }
 
 #pragma mark Matching documents
