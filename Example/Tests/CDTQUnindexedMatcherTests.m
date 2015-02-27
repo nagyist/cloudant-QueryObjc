@@ -550,6 +550,70 @@ describe(@"matches", ^{
             CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
             expect([matcher matches:rev]).to.beTruthy();
         });
+        
+        it(@"matches on array using $in", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pets" : @{@"$in" : @[ @"white_cat", @"tabby_cat" ] }
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beTruthy();
+        });
+        
+        it(@"doesn't match on array using $in with bad items", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pets" : @{@"$in" : @[ @"grey_cat", @"tabby_cat" ] }
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beFalsy();
+        });
+        
+        it(@"matches on non-array field using $in", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"name" : @{@"$in" : @[ @"mike", @"fred" ] }
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beTruthy();
+        });
+        
+        it(@"doesn't match on non-array field using $in with bad items", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"name" : @{@"$in" : @[ @"john", @"fred" ] }
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beFalsy();
+        });
+        
+        it(@"matches on array using $not $in with bad items", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pets" : @{ @"$not" : @{@"$in" : @[ @"grey_cat", @"tabby_cat" ] } }
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beTruthy();
+        });
+        
+        it(@"doesn't match on array using $not $in", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"pets" : @{ @"$not" : @{@"$in" : @[ @"white_cat", @"tabby_cat" ] } }
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beFalsy();
+        });
+        
+        it(@"matches on non-array field using $not $in with bad items", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"name" : @{ @"$not" : @{@"$in" : @[ @"john", @"fred" ] } }
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beTruthy();
+        });
+        
+        it(@"doesn't match on non-array field using $not $in", ^{
+            NSDictionary *selector = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"name" : @{ @"$not" : @{@"$in" : @[ @"mike", @"fred" ] } }
+            }];
+            CDTQUnindexedMatcher *matcher = [CDTQUnindexedMatcher matcherWithSelector:selector];
+            expect([matcher matches:rev]).to.beFalsy();
+        });
     });
 
     context(@"dotted fields", ^{

@@ -16,6 +16,7 @@ static NSString *const OR = @"$or";
 static NSString *const EQ = @"$eq";
 static NSString *const NOT = @"$not";
 static NSString *const NE = @"$ne";
+static NSString *const IN = @"$in";
 
 // notOperators dictionary is used for operator shorthand processing.
 // Presently only $ne is supported.  More to come soon...
@@ -258,12 +259,12 @@ static NSString *const NE = @"$ne";
         }
 
         NSString *key = [obj allKeys][0];
-        if ([@[ @"$or", @"$not", @"$and" ] containsObject:key]) {
+        if ([@[ OR, NOT, AND ] containsObject:key]) {
             // this should have an array as top level type
-            id compundClauses = [obj objectForKey:key];
-            if ([CDTQQueryValidator validateCompoundOperatorOperand:compundClauses]) {
+            id compoundClauses = [obj objectForKey:key];
+            if ([CDTQQueryValidator validateCompoundOperatorOperand:compoundClauses]) {
                 // validate array
-                valid = [CDTQQueryValidator validateCompoundOperatorClauses:compundClauses];
+                valid = [CDTQQueryValidator validateCompoundOperatorClauses:compoundClauses];
             }
         } else if (![key hasPrefix:@"$"]) {
             // this should have a dict
@@ -287,26 +288,44 @@ static NSString *const NE = @"$ne";
     //$exits lt
 
     NSArray *validOperators =
-        @[ @"$eq", @"$lt", @"$gt", @"$exists", @"$not", @"$ne", @"$gte", @"$lte" ];
+        @[ @"$eq", @"$lt", @"$gt", @"$exists", @"$not", @"$gte", @"$lte", @"$in" ];
 
     if ([clause count] == 1) {
         NSString *operator= [clause allKeys][0];
 
-    if ([validOperators containsObject:operator]) {
-        // contains correct operator
-        id clauseOperand = [clause objectForKey:[clause allKeys][0]];
-        // handle special case, $notis the only op that expects a dict
-        if ([operator isEqualToString:@"$not"] && [clauseOperand isKindOfClass:[NSDictionary class]]) {
-            return [CDTQQueryValidator validateClause:clauseOperand];
+        if ([validOperators containsObject:operator]) {
+            // contains correct operator
+            id clauseOperand = [clause objectForKey:[clause allKeys][0]];
+            // handle special case, $notis the only op that expects a dict
+            if ([operator isEqualToString:NOT]) {
+                return [clauseOperand isKindOfClass:[NSDictionary class]] &&
+                       [CDTQQueryValidator validateClause:clauseOperand];
 
-        } else if ([CDTQQueryValidator validatePredicateValue:clauseOperand
-                                                  forOperator:[clause allKeys][0]]) {
-            return YES;
+            } else if ([operator isEqualToString:IN]) {
+                return [clauseOperand isKindOfClass:[NSArray class]] &&
+                       [CDTQQueryValidator validateInListValues:clauseOperand];
+            } else {
+                return [CDTQQueryValidator validatePredicateValue:clauseOperand
+                                                      forOperator:operator];
+            }
         }
-    }
     }
 
     return NO;
+}
+
++ (BOOL)validateInListValues:(NSArray *)inListValues
+{
+    BOOL valid = YES;
+    
+    for (NSObject *value in inListValues) {
+        if (![CDTQQueryValidator validatePredicateValue:value forOperator:IN]) {
+            valid = NO;
+            break;
+        }
+    }
+    
+    return valid;
 }
 
 + (BOOL)validatePredicateValue:(NSObject *)predicateValue forOperator:(NSString *) operator

@@ -102,7 +102,7 @@ static NSString *const NOT = @"$not";
     [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
         NSDictionary *clause = (NSDictionary *)obj;
         NSString *field = clause.allKeys[0];
-        if ([field hasPrefix:@"$or"]) {
+        if ([field isEqualToString:OR]) {
             CDTQQueryNode *orNode =
                 [CDTQUnindexedMatcher buildExecutionTreeForSelector:clauses[idx]];
             [root.children addObject:orNode];
@@ -113,7 +113,7 @@ static NSString *const NOT = @"$not";
     [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
         NSDictionary *clause = (NSDictionary *)obj;
         NSString *field = clause.allKeys[0];
-        if ([field hasPrefix:@"$and"]) {
+        if ([field isEqualToString:AND]) {
             CDTQQueryNode *andNode =
                 [CDTQUnindexedMatcher buildExecutionTreeForSelector:clauses[idx]];
             [root.children addObject:andNode];
@@ -178,24 +178,30 @@ static NSString *const NOT = @"$not";
         BOOL invertResult = [operator isEqualToString:NOT];
         if (invertResult) {
             operatorExpression = operatorExpression[NOT];
-            operator= operatorExpression.allKeys[0];
+            operator = operatorExpression.allKeys[0];
         }
 
-        NSObject *expected = operatorExpression[operator];
+        NSObject *expectedValues = operatorExpression[operator];
+        if (![expectedValues isKindOfClass:[NSArray class]]) {
+            expectedValues = @[ expectedValues ];
+        }
         NSObject *actual = [CDTQValueExtractor extractValueForFieldName:fieldName fromRevision:rev];
 
         BOOL passed = NO;
-        if ([actual isKindOfClass:[NSArray class]]) {
-            for (NSObject *item in(NSArray *)actual) {
-                // OR as any value in the array can match
-                passed = passed || [self actualValue:item
+        for (NSObject *expected in (NSArray *)expectedValues) {
+            if ([actual isKindOfClass:[NSArray class]]) {
+                for (NSObject *actualItem in (NSArray *)actual) {
+                    // OR since any actual item can match any value in the expected NSArray
+                    passed = passed || [self actualValue:actualItem
+                                         matchesOperator:operator
+                                        andExpectedValue:expected];
+                }
+            } else {
+                // OR since any value in the expected NSArray can match the actual
+                passed = passed || [self actualValue:actual
                                      matchesOperator:operator
                                     andExpectedValue:expected];
             }
-        } else {
-            passed = [self actualValue:actual
-                       matchesOperator:operator 
-                      andExpectedValue:expected];
         }
 
         return invertResult ? !passed : passed;
@@ -212,7 +218,7 @@ static NSString *const NOT = @"$not";
 {
     BOOL passed = NO;
 
-    if ([operator isEqualToString:@"$eq"]) {
+    if ([operator isEqualToString:@"$eq"] || [operator isEqualToString:@"$in"]) {
         passed = [self eqL:actual R:expected];
 
     } else if ([operator isEqualToString:@"$lt"]) {

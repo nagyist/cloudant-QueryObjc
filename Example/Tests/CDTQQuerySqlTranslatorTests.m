@@ -652,6 +652,21 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 expect(parts.sqlWithPlaceholders).to.equal(@"(\"name\" IS NULL)");
             });
         });
+        
+        describe(@"when using the $in operator", ^{
+            it(@"constructs valid WHERE clause when using a single element in an array", ^{
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator
+                    wherePartsForAndClause:@[@{ @"name" : @{ @"$in" : @[ @"mike" ]} }]
+                                usingIndex:@"named"];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" = ?");
+            });
+            it(@"constructs valid WHERE clause when using multiple elements in an array", ^{
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator
+                    wherePartsForAndClause:@[@{ @"name" : @{ @"$in" : @[ @"mike", @"fred" ]} }]
+                                usingIndex:@"named"];
+                expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" IN ( ?, ? )");
+            });
+        });
     });
 
     describe(@"when generating WHERE with $not", ^{
@@ -748,6 +763,19 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 NSString *expected = @"_id NOT IN (SELECT _id "
                                                  @"FROM _t_cloudant_sync_query_index_named "
                                                  @"WHERE \"name\" <= ?)";
+                expect(parts.sqlWithPlaceholders).to.equal(expected);
+            });
+        });
+        
+        describe(@"when using the $in operator", ^{
+            it(@"uses correct SQL operator", ^{
+                CDTQSqlParts *parts = [CDTQQuerySqlTranslator
+                    wherePartsForAndClause:@[
+                                 @{ @"name" : @{ @"$not" : @{ @"$in" : @[ @"mike", @"fred" ]} } }
+                                            ] usingIndex:@"named"];
+                NSString *expected = @"_id NOT IN (SELECT _id "
+                                     @"FROM _t_cloudant_sync_query_index_named "
+                                     @"WHERE \"name\" IN ( ?, ? ))";
                 expect(parts.sqlWithPlaceholders).to.equal(expected);
             });
         });
@@ -928,6 +956,13 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                             @{ @"age" : @{ @"$eq" : @12 } } ] } ] } );
         });
         
+        it(@"correctly normalizes multi-level query with IN", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"name" : @{ @"$in" : @[ @"mike", @"fred"] } } ];
+            expect(actual).to.equal( @{
+                @"$and" : @[ @{ @"name" : @{ @"$in" : @[ @"mike", @"fred"] } } ] } );
+        });
+        
         it(@"returns nil for query containing invalid operator", ^{
             NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
                 @"name" : @{ @"$blah" : @"mike" } } ];
@@ -939,6 +974,19 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                 @"name" : @{ @"$not" : @{ @"$blah" : @"mike" } } } ];
             expect(actual).to.beNil;
         });
+        
+        it(@"returns nil for query using $not without additional operator", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"name" : @{ @"$not" : @"mike" } } ];
+            expect(actual).to.beNil;
+        });
+        
+        it(@"returns nil for query using $in without an array", ^{
+            NSDictionary *actual = [CDTQQueryValidator normaliseAndValidateQuery:@{
+                @"name" : @{ @"$in" : @"mike" } } ];
+            expect(actual).to.beNil;
+        });
+        
     });
 
     describe(@"when extracting and clause field names", ^{
