@@ -356,32 +356,26 @@ static NSString *const IN = @"$in";
                 NSString *sqlClause;
                 NSString *sqlOperator = operatorMap[operator];
                 NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
-                NSString *argument;
+                NSString *placeholder;
                 if ([operator isEqualToString:IN]) {
                     // The predicate dictionary value must be an NSArray here.
                     // This was validated during normalization.
                     NSArray *inList = [negatedPredicate objectForKey:operator];
-                    argument = [CDTQQuerySqlTranslator buildWhereClauseArgument:inList
+                    placeholder = [CDTQQuerySqlTranslator placeholdersForInList:inList
                                                                  withParameters:sqlParameters];
-                    // If the argument is a single "?" placeholder then we are
-                    // dealing with a single equality comparison.  Therefore,
-                    // we set the operator to $eq.
-                    if ([argument isEqualToString:@"?"]) {
-                        sqlOperator = operatorMap[EQ];
-                    }
                 } else {
+                    // The predicate dictionary value must be either a
+                    // NSString or a NSNumber here.
+                    // This was validated during normalization.
                     predicateValue = [negatedPredicate objectForKey:operator];
-                    argument = [CDTQQuerySqlTranslator buildWhereClauseArgument:@[ predicateValue ]
-                                                                 withParameters:sqlParameters];
+                    placeholder = @"?";
+                    [sqlParameters addObject:predicateValue];
                 }
-                if (!argument) {
-                    // An error occurred and logged in buildWhereClauseArgument:withParameters
-                    return nil;
-                }
+
                 sqlClause = [CDTQQuerySqlTranslator whereClauseForNot:fieldName
                                                         usingOperator:sqlOperator
                                                              forTable:tableName
-                                                           forOperand:argument];
+                                                           forOperand:placeholder];
                 [sqlClauses addObject:sqlClause];
             }
         } else {
@@ -394,31 +388,22 @@ static NSString *const IN = @"$in";
             } else {
                 NSString *sqlClause;
                 NSString *sqlOperator = operatorMap[operator];
-                NSString *argument;
+                NSString *placeholder;
                 if ([operator isEqualToString:IN]) {
                     // The predicate dictionary value must be an NSArray here.
                     // This was validated during normalization.
                     NSArray *inList = [predicate objectForKey:operator];
-                    argument = [CDTQQuerySqlTranslator buildWhereClauseArgument:inList
+                    placeholder = [CDTQQuerySqlTranslator placeholdersForInList:inList
                                                                  withParameters:sqlParameters];
-                    // If the argument is a single "?" placeholder then we are
-                    // dealing with a single equality comparison.  Therefore,
-                    // we set the operator to $eq.
-                    if ([argument isEqualToString:@"?"]) {
-                        sqlOperator = operatorMap[EQ];
-                    }
                 } else {
                     NSObject * predicateValue = [predicate objectForKey:operator];
-                    argument = [CDTQQuerySqlTranslator buildWhereClauseArgument:@[ predicateValue ]
-                                                                 withParameters:sqlParameters];
+                    placeholder = @"?";
+                    [sqlParameters addObject:predicateValue];
                 }
-                if (!argument) {
-                    // An error occurred and logged in buildWhereClauseArgument:withParameters
-                    return nil;
-                }
+
                 sqlClause = [NSString stringWithFormat:@"\"%@\" %@ %@", fieldName,
                                                                         sqlOperator,
-                                                                        argument];
+                                                                        placeholder];
                 [sqlClauses addObject:sqlClause];
             }
         }
@@ -428,26 +413,16 @@ static NSString *const IN = @"$in";
                           parameters:sqlParameters];
 }
 
-+ (NSString *)buildWhereClauseArgument:(NSArray *)values
-                        withParameters:(NSMutableArray *)sqlParameters
++ (NSString *)placeholdersForInList:(NSArray *)values withParameters:(NSMutableArray *)sqlParameters
 {
     NSMutableArray *inOperands = [NSMutableArray array];
     for (NSObject *value in values) {
-        if ([CDTQQuerySqlTranslator validatePredicateValue:value]) {
-            [inOperands addObject:@"?"];
-            [sqlParameters addObject:value];
-        } else {
-            LogError(@"Predicate value is invalid.");
-            return nil;
-        }
+        [inOperands addObject:@"?"];
+        [sqlParameters addObject:value];
     }
     
-    if ([inOperands count] == 1) {
-        return inOperands[0];
-    } else {
-        NSString *joined = [inOperands componentsJoinedByString:@", "];
-        return [NSString stringWithFormat:@"( %@ )", joined];
-    }
+    NSString *joined = [inOperands componentsJoinedByString:@", "];
+    return [NSString stringWithFormat:@"( %@ )", joined];
 }
 
 /**
@@ -485,12 +460,6 @@ static NSString *const IN = @"$in";
         sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NULL)", fieldName];
     }
     return sqlClause;
-}
-
-+ (BOOL)validatePredicateValue:(NSObject *)predicateValue
-{
-    return (([predicateValue isKindOfClass:[NSString class]] ||
-             [predicateValue isKindOfClass:[NSNumber class]]));
 }
 
 + (CDTQSqlParts *)selectStatementForAndClause:(NSArray *)clause usingIndex:(NSString *)indexName

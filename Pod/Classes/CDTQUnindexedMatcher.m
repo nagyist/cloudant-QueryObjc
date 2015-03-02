@@ -181,26 +181,28 @@ static NSString *const NOT = @"$not";
             operator = operatorExpression.allKeys[0];
         }
 
-        NSObject *expectedValues = operatorExpression[operator];
-        if (![expectedValues isKindOfClass:[NSArray class]]) {
-            expectedValues = @[ expectedValues ];
-        }
+        NSObject *expected = operatorExpression[operator];
         NSObject *actual = [CDTQValueExtractor extractValueForFieldName:fieldName fromRevision:rev];
-
+        // Since $in is the same as a series of $eq comparisons -
+        // Treat them the same by:
+        // - Ensuring that both expected and actual are NSArrays.
+        // - Convert the $in operator to the $eq operator.
+        if (![expected isKindOfClass:[NSArray class]]) {
+            expected = @[ expected ];
+        }
+        if (![actual isKindOfClass:[NSArray class]]) {
+            actual = @[ actual ? : [NSNull null] ];
+        }
+        if ([operator isEqualToString:@"$in"]) {
+            operator = @"$eq";
+        }
         BOOL passed = NO;
-        for (NSObject *expected in (NSArray *)expectedValues) {
-            if ([actual isKindOfClass:[NSArray class]]) {
-                for (NSObject *actualItem in (NSArray *)actual) {
-                    // OR since any actual item can match any value in the expected NSArray
-                    passed = passed || [self actualValue:actualItem
-                                         matchesOperator:operator
-                                        andExpectedValue:expected];
-                }
-            } else {
-                // OR since any value in the expected NSArray can match the actual
-                passed = passed || [self actualValue:actual
+        for (NSObject *expectedItem in (NSArray *)expected) {
+            for (NSObject *actualItem in (NSArray *)actual) {
+                // OR since any actual item can match any value in the expected NSArray
+                passed = passed || [self actualValue:actualItem
                                      matchesOperator:operator
-                                    andExpectedValue:expected];
+                                    andExpectedValue:expectedItem];
             }
         }
 
@@ -218,7 +220,7 @@ static NSString *const NOT = @"$not";
 {
     BOOL passed = NO;
 
-    if ([operator isEqualToString:@"$eq"] || [operator isEqualToString:@"$in"]) {
+    if ([operator isEqualToString:@"$eq"]) {
         passed = [self eqL:actual R:expected];
 
     } else if ([operator isEqualToString:@"$lt"]) {
@@ -235,7 +237,7 @@ static NSString *const NOT = @"$not";
 
     } else if ([operator isEqualToString:@"$exists"]) {
         BOOL expectedBool = [((NSNumber *)expected)boolValue];
-        BOOL exists = (actual != nil);
+        BOOL exists = (![actual isEqual:[NSNull null]]);
         passed = (exists == expectedBool);
 
     } else {
@@ -258,8 +260,8 @@ static NSString *const NOT = @"$not";
 //  4. BLOB
 - (BOOL)ltL:(NSObject *)l R:(NSObject *)r
 {
-    if (l == nil) {
-        return NO;  // nil fails all lt/gt/lte/gte tests
+    if ([l isEqual:[NSNull null]]) {
+        return NO;  // NSNull fails all lt/gt/lte/gte tests
 
     } else if (!([l isKindOfClass:[NSString class]] || [l isKindOfClass:[NSNumber class]])) {
         LogWarn(@"Value in document not NSNumber or NSString: %@", l);
@@ -294,8 +296,8 @@ static NSString *const NOT = @"$not";
 
 - (BOOL)lteL:(NSObject *)l R:(NSObject *)r
 {
-    if (l == nil) {
-        return NO;  // nil fails all lt/gt/lte/gte tests
+    if ([l isEqual:[NSNull null]]) {
+        return NO;  // NSNull fails all lt/gt/lte/gte tests
     }
 
     if (!([l isKindOfClass:[NSString class]] || [l isKindOfClass:[NSNumber class]])) {
@@ -308,8 +310,8 @@ static NSString *const NOT = @"$not";
 
 - (BOOL)gtL:(NSObject *)l R:(NSObject *)r
 {
-    if (l == nil) {
-        return NO;  // nil fails all lt/gt/lte/gte tests
+    if ([l isEqual:[NSNull null]]) {
+        return NO;  // NSNull fails all lt/gt/lte/gte tests
     }
 
     if (!([l isKindOfClass:[NSString class]] || [l isKindOfClass:[NSNumber class]])) {
@@ -322,8 +324,8 @@ static NSString *const NOT = @"$not";
 
 - (BOOL)gteL:(NSObject *)l R:(NSObject *)r
 {
-    if (l == nil) {
-        return NO;  // nil fails all lt/gt/lte/gte tests
+    if ([l isEqual:[NSNull null]]) {
+        return NO;  // NSNull fails all lt/gt/lte/gte tests
     }
 
     if (!([l isKindOfClass:[NSString class]] || [l isKindOfClass:[NSNumber class]])) {

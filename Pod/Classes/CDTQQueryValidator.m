@@ -17,17 +17,21 @@ static NSString *const EQ = @"$eq";
 static NSString *const NOT = @"$not";
 static NSString *const NE = @"$ne";
 static NSString *const IN = @"$in";
+static NSString *const NIN = @"$nin";
 
-// notOperators dictionary is used for operator shorthand processing.
-// Presently only $ne is supported.  More to come soon...
-+ (NSDictionary *)getNotOperators
+// negatedShortHand is used for operator shorthand processing.
+// A shorthand operator like $ne has a longhand representation
+// that is { "$not" : { "$eq" : ... } }.  Therefore the negation
+// of the $ne operator is $eq.
++ (NSDictionary *)negatedShortHand
 {
-    static NSDictionary *notOperators = nil;
+    static NSDictionary *negatedShortHandDict = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        notOperators = @{ NE : EQ };
+        negatedShortHandDict = @{ NE : EQ ,
+                                  NIN : IN };
     });
-    return notOperators;
+    return negatedShortHandDict;
 }
 
 + (NSDictionary *)normaliseAndValidateQuery:(NSDictionary *)query
@@ -40,25 +44,31 @@ static NSString *const IN = @"$in";
 
     // At this point we will have a single entry dict, key AND or OR,
     // forming the compound predicate.
-    // Next make sure all the predicates have an operator -- the EQ
-    // operator is implicit and we need to add it if there isn't one.
-    // Take
-    //     @[ @{"field1": @"mike"}, ... ]
-    // and make
-    //     @[ @{"field1": @{ @"$eq": @"mike"} }, ... ]
-    //
-    // Then if possible, simplify and clarify the query.  In the
-    // event that extraneous $not operators and/or shorthand operators like
-    // $ne have been used then these operators must be dealt with appropriately.
-    // Take
-    //     [ { "field1": { "$not" : { $"not" : { "$ne": "mike"} } } }, ... ]
-    // and make
-    //     [ { "field1": { "$not" : { "$eq": "mike"} } }, ... ]
     NSString *compoundOperator = [query allKeys][0];
     NSArray *predicates = query[compoundOperator];
     if ([predicates isKindOfClass:[NSArray class]]) {
+        // Next make sure all the predicates have an operator -- the EQ
+        // operator is implicit and we need to add it if there isn't one.
+        // Take
+        //     [ {"field1": "mike"}, ... ]
+        // and make
+        //     [ {"field1": { "$eq": "mike"} }, ... ]
         predicates = [CDTQQueryValidator addImplicitEq:predicates];
         
+        // Then all shorthand operators like $ne, if present, need to be
+        // converted to their logical longhand equivalent.
+        // Take
+        //     [ { "field1": { "$ne": "mike"} }, ... ]
+        // and make
+        //     [ { "field1": { "$not" : { "$eq": "mike"} } }, ... ]
+        predicates = [CDTQQueryValidator handleShortHandOperators:predicates];
+        
+        // Now in the event that extraneous $not operators exist in the query,
+        // these operators must be compressed down to the their logical equivalent.
+        // Take
+        //     [ { "field1": { "$not" : { $"not" : { "$eq": "mike"} } } }, ... ]
+        // and make
+        //     [ { "field1": { "$eq": "mike"} }, ... ]
         predicates = [CDTQQueryValidator compressMultipleNotOperators:predicates];
     }
 
@@ -111,13 +121,13 @@ static NSString *const IN = @"$in";
         //  or     @{ @"$or": @[ ... ] } -- we don't
         NSObject *predicate = nil;
         NSString *fieldName = nil;
-        // if this isn't a dictionary, we don't know what to do so add the clause
-        // to the accumulator to be dealt with later as part of the final selector
-        // validation.
         if ([fieldClause isKindOfClass:[NSDictionary class]] && [fieldClause count] != 0) {
             fieldName = fieldClause.allKeys[0];
             predicate = fieldClause[fieldName];
         } else {
+            // if this isn't a dictionary, we don't know what to do so add the clause
+            // to the accumulator to be dealt with later as part of the final selector
+            // validation.
             [accumulator addObject:fieldClause];
             continue;
         }
@@ -139,73 +149,37 @@ static NSString *const IN = @"$in";
     return [NSArray arrayWithArray:accumulator];
 }
 
-+ (NSArray *)compressMultipleNotOperators:(NSArray *)clause
++ (NSArray *)handleShortHandOperators:(NSArray *)clause
 {
     NSMutableArray *accumulator = [NSMutableArray array];
     
     for (NSDictionary *fieldClause in clause) {
         NSObject *predicate = nil;
         NSString *fieldName = nil;
-        // if this isn't a dictionary, we don't know what to do so add the clause
-        // to the accumulator to be dealt with later as part of the final selector
-        // validation.
         if ([fieldClause isKindOfClass:[NSDictionary class]] && [fieldClause count] != 0) {
             fieldName = fieldClause.allKeys[0];
             predicate = fieldClause[fieldName];
-        } else {
-            [accumulator addObject:fieldClause];
-            continue;
-        }
-        
-        if ([fieldName hasPrefix:@"$"] && [predicate isKindOfClass:[NSArray class]]) {
-            predicate = [CDTQQueryValidator compressMultipleNotOperators:(NSArray *) predicate];
-        } else {
-            NSObject *operatorPredicate = nil;
-            NSString *operator = nil;
-            // if this isn't a dictionary, we don't know what to do so add the clause
-            // to the accumulator to be dealt with later as part of the final selector
-            // validation.
-            if ([predicate isKindOfClass:[NSDictionary class]] &&
-                [(NSDictionary *)predicate count] != 0) {
-                operator = ((NSDictionary *)predicate).allKeys[0];
-                operatorPredicate = ((NSDictionary *)predicate)[operator];
+            if ([fieldName hasPrefix:@"$"] && [predicate isKindOfClass:[NSArray class]]) {
+                predicate = [CDTQQueryValidator handleShortHandOperators:(NSArray *) predicate];
+            } else if ([predicate isKindOfClass:[NSDictionary class]] &&
+                       [(NSDictionary *)predicate count] != 0) {
+                // if the clause isn't a special clause (the field name starts with
+                // $, e.g., $and), we need to check whether the clause has a shorthand
+                // operator like $ne. If it does, we need to convert it to its longhand
+                // version.
+                // Take:  { "$ne" : ... }
+                // Make:  { "$not" : { "$eq" : ... } }
+                predicate = [CDTQQueryValidator replaceWithLonghand:(NSDictionary *)predicate];
             } else {
                 [accumulator addObject:fieldClause];
                 continue;
             }
-            if ([CDTQQueryValidator getNotOperators][operator]) {
-                predicate = [CDTQQueryValidator replaceNotShortHandOperators:
-                             (NSDictionary *)predicate];
-            } else if ([operator isEqualToString:NOT]) {
-                BOOL notOpFound = YES;
-                BOOL invert = NO;
-                NSObject *originalOperatorPredicate = operatorPredicate;
-                while (notOpFound) {
-                    if ([operatorPredicate isKindOfClass:[NSDictionary class]]) {
-                        NSDictionary *notClause = (NSDictionary *)operatorPredicate;
-                        NSString *nextOperator = notClause.allKeys[0];
-                        if ([nextOperator isEqualToString:NOT]) {
-                            invert = !invert;
-                            operatorPredicate = notClause[nextOperator];
-                        } else {
-                            notOpFound = NO;
-                        }
-                    } else {
-                        // unexpected condition - revert back to original
-                        operatorPredicate = originalOperatorPredicate;
-                        invert = NO;
-                        notOpFound = NO;
-                    }
-                }
-                if (invert) {
-                    NSDictionary *operatorPredicateDict = (NSDictionary *)operatorPredicate;
-                    operator = operatorPredicateDict.allKeys[0];
-                    operatorPredicate = operatorPredicateDict[operator];
-                }
-                
-                predicate = [CDTQQueryValidator replaceNotShortHandOperators:
-                             @{operator : operatorPredicate}];
-            }
+        } else {
+            // if this isn't a dictionary, we don't know what to do so add the clause
+            // to the accumulator to be dealt with later as part of the final selector
+            // validation.
+            [accumulator addObject:fieldClause];
+            continue;
         }
         
         [accumulator addObject:@{fieldName : predicate}];  // can't put nil in this
@@ -215,28 +189,115 @@ static NSString *const IN = @"$in";
 }
 
 /**
- * This method take a predicate and checks it for NOT shorthand operators.
- * If found the predicate is normalized to the appropriate longhand
- * operator(s).
+ * This method traverses the predicate dictionary and once it reaches the last operator
+ * in the tree, it checks it for a shorthand representation.  If one exists then
+ * that shorthand representation is replaced with its longhand version.
+ * For example:   { "$ne" : ... }
+ * is replaced by { "$not" : { "$eq" : ... } }
  */
-+ (NSDictionary *)replaceNotShortHandOperators:(NSDictionary *)predicate
++ (NSDictionary *)replaceWithLonghand:(NSDictionary *)predicate
 {
+    NSMutableDictionary *accumulator = [NSMutableDictionary dictionary];
+    
+    if (!predicate || [predicate count] == 0) {
+        return predicate;
+    }
+    
     NSString *operator = predicate.allKeys[0];
-    if ([CDTQQueryValidator getNotOperators][operator]) {
-        predicate =
-            @{ NOT : @{ [CDTQQueryValidator getNotOperators][operator] : predicate[operator] } };
-    } else if ([operator isEqualToString:NOT]) {
-        NSObject *rawClause = predicate[operator];
-        if ([rawClause isKindOfClass:[NSDictionary class]]) {
-            NSDictionary *clause = (NSDictionary *)rawClause;
-            NSString *subOperator = clause.allKeys[0];
-            if ([CDTQQueryValidator getNotOperators][subOperator]) {
-                predicate =
-                    @{ [CDTQQueryValidator getNotOperators][subOperator] : clause[subOperator] };
+    NSObject *subPredicate = predicate[operator];
+    if ([subPredicate isKindOfClass:[NSDictionary class]]) {
+        [ accumulator setValue:[CDTQQueryValidator replaceWithLonghand:(NSDictionary *)subPredicate]
+                        forKey:operator];
+    } else if ([CDTQQueryValidator negatedShortHand][operator]) {
+        [accumulator setValue: @{ [CDTQQueryValidator negatedShortHand][operator] : subPredicate }
+                       forKey:NOT];
+    } else {
+        [accumulator setValue:subPredicate forKey:operator];
+    }
+    
+    return [NSDictionary dictionaryWithDictionary:accumulator];
+}
+
+/**
+ * This method takes a string of $not operators down to either none or a single $not
+ * operator.  For example:  { "$not" : { "$not" : { "$eq" : "mike" } } }
+ * should compress down to  { "$not" : { "$eq" : "mike" } }
+ */
++ (NSArray *)compressMultipleNotOperators:(NSArray *)clause
+{
+    NSMutableArray *accumulator = [NSMutableArray array];
+    
+    for (NSDictionary *fieldClause in clause) {
+        NSObject *predicate = nil;
+        NSString *fieldName = nil;
+        if ([fieldClause isKindOfClass:[NSDictionary class]] && [fieldClause count] != 0) {
+            fieldName = fieldClause.allKeys[0];
+            predicate = fieldClause[fieldName];
+        } else {
+            // if this isn't a dictionary, we don't know what to do so add the clause
+            // to the accumulator to be dealt with later as part of the final selector
+            // validation.
+            [accumulator addObject:fieldClause];
+            continue;
+        }
+        
+        if ([fieldName hasPrefix:@"$"] && [predicate isKindOfClass:[NSArray class]]) {
+            predicate = [CDTQQueryValidator compressMultipleNotOperators:(NSArray *) predicate];
+        } else {
+            NSObject *operatorPredicate = nil;
+            NSString *operator = nil;
+            if ([predicate isKindOfClass:[NSDictionary class]] &&
+                [(NSDictionary *)predicate count] != 0) {
+                operator = ((NSDictionary *)predicate).allKeys[0];
+                operatorPredicate = ((NSDictionary *)predicate)[operator];
+            } else {
+                // if this isn't a dictionary, we don't know what to do so add the clause
+                // to the accumulator to be dealt with later as part of the final selector
+                // validation.
+                [accumulator addObject:fieldClause];
+                continue;
+            }
+            if ([operator isEqualToString:NOT]) {
+                // If a $not operator is encountered we need to check for
+                // a series of nested $not operators.
+                BOOL notOpFound = YES;
+                BOOL negateOperator = NO;
+                NSObject *originalOperatorPredicate = operatorPredicate;
+                while (notOpFound) {
+                    // if a series of nested $not operators are found then they need to
+                    // be compressed down to one $not operator or in the case of an
+                    // even set of $not operators, down to zero $not operators.
+                    if ([operatorPredicate isKindOfClass:[NSDictionary class]]) {
+                        NSDictionary *notClause = (NSDictionary *)operatorPredicate;
+                        NSString *nextOperator = notClause.allKeys[0];
+                        if ([nextOperator isEqualToString:NOT]) {
+                            // Each time we find a $not operator we flip the negateOperator's
+                            // boolean value.
+                            negateOperator = !negateOperator;
+                            operatorPredicate = notClause[nextOperator];
+                        } else {
+                            notOpFound = NO;
+                        }
+                    } else {
+                        // unexpected condition - revert back to original
+                        operatorPredicate = originalOperatorPredicate;
+                        negateOperator = NO;
+                        notOpFound = NO;
+                    }
+                }
+                if (negateOperator) {
+                    NSDictionary *operatorPredicateDict = (NSDictionary *)operatorPredicate;
+                    operator = operatorPredicateDict.allKeys[0];
+                    operatorPredicate = operatorPredicateDict[operator];
+                }
+                predicate = @{ operator : operatorPredicate };
             }
         }
+        
+        [accumulator addObject:@{fieldName : predicate}];  // can't put nil in this
     }
-    return predicate;
+    
+    return [NSArray arrayWithArray:accumulator];
 }
 
 #pragma validation class methods
