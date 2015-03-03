@@ -206,16 +206,20 @@ both over thirty _and_ named `mike`:
 ### Executing queries
 
 To find documents matching a query, use the `CDTQIndexManager` objects `-find:`
-function. This returns an object that can be used in `for..in` loops to
-enumerate over the results.
+function. Use the returned object's `-enumerateObjectsUsingBlock:` method to iterate
+over the results:
 
 ```objc
 CDTQResultSet *result = [ds find:query];
-for (CDTDocumentRevision *rev in result) {
+[result enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger idx, BOOL *stop) {
     // The returned revision object contains all fields for
     // the object. You cannot project certain fields in the
     // current implementation.
-}
+    //
+    // rev: the result revision.
+    // idx: the index of this result.
+    // stop: set to YES to stop the iteration.
+}];
 ```
 
 There is an extended version of the `-find:` method which supports:

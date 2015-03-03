@@ -38,11 +38,13 @@ typedef void (^CDTQResultSetBuilderBlock)(CDTQResultSetBuilder *configuration);
 /**
  Enumerator over documents resulting from query.
 
- Use a forin query to loop over this object:
-
- for (DocumentRevision revision : queryResultObject) {
- // do something
- }
+ Use -enumerateObjectsUsingBlock: to iterate results:
+ 
+ [result enumerateObjectsUsingBlock:^(CDTDocumentRevision *rev, NSUInteger idx, BOOL *stop) {
+    // rev: the result revision.
+    // idx: the index of this result.
+    // stop: set to YES to stop the iteration.
+ }];
  */
 @interface CDTQResultSet : NSObject {
     CDTDatastore *_datastore;
