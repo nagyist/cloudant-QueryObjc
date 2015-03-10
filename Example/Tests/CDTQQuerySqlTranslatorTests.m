@@ -589,6 +589,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                               @{ @"name" : @{@"$gt" : @"mike"} }
                                            ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" > ?");
+                expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
         });
 
@@ -599,6 +600,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                               @{ @"name" : @{@"$gte" : @"mike"} }
                                            ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" >= ?");
+                expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
         });
 
@@ -609,6 +611,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                               @{ @"name" : @{@"$lt" : @"mike"} }
                                            ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" < ?");
+                expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
         });
 
@@ -619,6 +622,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                               @{ @"name" : @{@"$lte" : @"mike"} }
                                            ] usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" <= ?");
+                expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
         });
 
@@ -659,12 +663,14 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                     wherePartsForAndClause:@[@{ @"name" : @{ @"$in" : @[ @"mike" ]} }]
                                 usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" IN ( ? )");
+                expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
             it(@"constructs valid WHERE clause when using multiple elements in an array", ^{
                 CDTQSqlParts *parts = [CDTQQuerySqlTranslator
                     wherePartsForAndClause:@[@{ @"name" : @{ @"$in" : @[ @"mike", @"fred" ]} }]
                                 usingIndex:@"named"];
                 expect(parts.sqlWithPlaceholders).to.equal(@"\"name\" IN ( ?, ? )");
+                expect(parts.placeholderValues).to.equal(@[ @"mike", @"fred" ]);
             });
         });
     });
@@ -725,6 +731,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                                  @"FROM _t_cloudant_sync_query_index_named "
                                                  @"WHERE \"name\" > ?)";
                 expect(parts.sqlWithPlaceholders).to.equal(expected);
+                expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
         });
 
@@ -738,6 +745,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                                  @"FROM _t_cloudant_sync_query_index_named "
                                                  @"WHERE \"name\" >= ?)";
                 expect(parts.sqlWithPlaceholders).to.equal(expected);
+                expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
         });
 
@@ -751,6 +759,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                                  @"FROM _t_cloudant_sync_query_index_named "
                                                  @"WHERE \"name\" < ?)";
                 expect(parts.sqlWithPlaceholders).to.equal(expected);
+                expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
         });
 
@@ -764,6 +773,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                                  @"FROM _t_cloudant_sync_query_index_named "
                                                  @"WHERE \"name\" <= ?)";
                 expect(parts.sqlWithPlaceholders).to.equal(expected);
+                expect(parts.placeholderValues).to.equal(@[ @"mike" ]);
             });
         });
         
@@ -777,6 +787,7 @@ SpecBegin(CDTQQuerySqlTranslator) describe(@"cdtq", ^{
                                      @"FROM _t_cloudant_sync_query_index_named "
                                      @"WHERE \"name\" IN ( ?, ? ))";
                 expect(parts.sqlWithPlaceholders).to.equal(expected);
+                expect(parts.placeholderValues).to.equal(@[ @"mike", @"fred" ]);
             });
         });
     });

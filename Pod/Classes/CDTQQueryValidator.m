@@ -1,23 +1,23 @@
 //
 //  CDTQQueryValidator.m
-//  Pods
 //
 //  Created by Rhys Short on 06/11/2014.
+//  Copyright (c) 2014 Cloudant. All rights reserved.
 //
-//
+//  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+//  except in compliance with the License. You may obtain a copy of the License at
+//    http://www.apache.org/licenses/LICENSE-2.0
+//  Unless required by applicable law or agreed to in writing, software distributed under the
+//  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+//  either express or implied. See the License for the specific language governing permissions
+//  and limitations under the License.
 
 #import "CDTQQueryValidator.h"
+#import "CDTQQueryConstants.h"
+
 #import "CDTQLogging.h"
 
 @implementation CDTQQueryValidator
-
-static NSString *const AND = @"$and";
-static NSString *const OR = @"$or";
-static NSString *const EQ = @"$eq";
-static NSString *const NOT = @"$not";
-static NSString *const NE = @"$ne";
-static NSString *const IN = @"$in";
-static NSString *const NIN = @"$nin";
 
 // negatedShortHand is used for operator shorthand processing.
 // A shorthand operator like $ne has a longhand representation
@@ -189,16 +189,14 @@ static NSString *const NIN = @"$nin";
 }
 
 /**
- * This method traverses the predicate dictionary and once it reaches the last operator
- * in the tree, it checks it for a shorthand representation.  If one exists then
+ * This method traverses the predicate dictionary until it reaches the last operator
+ * in the tree, it then checks it for a shorthand representation.  If one exists then
  * that shorthand representation is replaced with its longhand version.
  * For example:   { "$ne" : ... }
  * is replaced by { "$not" : { "$eq" : ... } }
  */
 + (NSDictionary *)replaceWithLonghand:(NSDictionary *)predicate
 {
-    NSMutableDictionary *accumulator = [NSMutableDictionary dictionary];
-    
     if (!predicate || [predicate count] == 0) {
         return predicate;
     }
@@ -206,16 +204,16 @@ static NSString *const NIN = @"$nin";
     NSString *operator = predicate.allKeys[0];
     NSObject *subPredicate = predicate[operator];
     if ([subPredicate isKindOfClass:[NSDictionary class]]) {
-        [ accumulator setValue:[CDTQQueryValidator replaceWithLonghand:(NSDictionary *)subPredicate]
-                        forKey:operator];
+        // Recurse down nested predicates, like { $not: { $not: { $ne: "blah" } } }
+        return @{ operator: [CDTQQueryValidator replaceWithLonghand:(NSDictionary *)subPredicate] };
     } else if ([CDTQQueryValidator negatedShortHand][operator]) {
-        [accumulator setValue: @{ [CDTQQueryValidator negatedShortHand][operator] : subPredicate }
-                       forKey:NOT];
+        // We got to the end and found an expandable operator, { $ne: "blah" }
+        return @{ NOT: @{ [CDTQQueryValidator negatedShortHand][operator] : subPredicate } };
     } else {
-        [accumulator setValue:subPredicate forKey:operator];
+        // We got to the end and found an normal operator, { $eq: "blah" }
+        return @{ operator: subPredicate };
     }
     
-    return [NSDictionary dictionaryWithDictionary:accumulator];
 }
 
 /**
@@ -346,10 +344,11 @@ static NSString *const NIN = @"$nin";
 
 + (BOOL)validateClause:(NSDictionary *)clause
 {
-    //$exits lt
-
-    NSArray *validOperators =
-        @[ @"$eq", @"$lt", @"$gt", @"$exists", @"$not", @"$gte", @"$lte", @"$in" ];
+    // The replaceWithLonghand: method translates something like { "$ne" : "blah" }
+    // to { "$not" : { "$eq" : "blah" } } before reaching this validation.  So
+    // operators like $ne and $nin will be negated $eq and $in by the time this
+    // validation is reached.
+    NSArray *validOperators =  @[ EQ, LT, GT, EXISTS, NOT, GTE, LTE, IN ];
 
     if ([clause count] == 1) {
         NSString *operator= [clause allKeys][0];
@@ -357,14 +356,14 @@ static NSString *const NIN = @"$nin";
         if ([validOperators containsObject:operator]) {
             // contains correct operator
             id clauseOperand = [clause objectForKey:[clause allKeys][0]];
-            // handle special case, $notis the only op that expects a dict
+            // handle special case, $not is the only op that expects a dict
             if ([operator isEqualToString:NOT]) {
                 return [clauseOperand isKindOfClass:[NSDictionary class]] &&
                        [CDTQQueryValidator validateClause:clauseOperand];
 
             } else if ([operator isEqualToString:IN]) {
                 return [clauseOperand isKindOfClass:[NSArray class]] &&
-                       [CDTQQueryValidator validateInListValues:clauseOperand];
+                       [CDTQQueryValidator validateListValues:clauseOperand];
             } else {
                 return [CDTQQueryValidator validatePredicateValue:clauseOperand
                                                       forOperator:operator];
@@ -375,11 +374,11 @@ static NSString *const NIN = @"$nin";
     return NO;
 }
 
-+ (BOOL)validateInListValues:(NSArray *)inListValues
++ (BOOL)validateListValues:(NSArray *)listValues
 {
     BOOL valid = YES;
     
-    for (NSObject *value in inListValues) {
+    for (NSObject *value in listValues) {
         if (![CDTQQueryValidator validatePredicateValue:value forOperator:IN]) {
             valid = NO;
             break;
@@ -391,7 +390,7 @@ static NSString *const NIN = @"$nin";
 
 + (BOOL)validatePredicateValue:(NSObject *)predicateValue forOperator:(NSString *) operator
 {
-    if([operator isEqualToString:@"$exists"]){
+    if([operator isEqualToString:EXISTS]){
         return [CDTQQueryValidator validateExistsArgument:predicateValue];
     } else {
         return (([predicateValue isKindOfClass:[NSString class]] ||
@@ -431,7 +430,7 @@ static NSString *const NIN = @"$nin";
 
     // top level op can only be $and after normalisation
 
-    if ([@[ @"$and", @"$or" ] containsObject:topLevelOp]) {
+    if ([@[ AND, OR ] containsObject:topLevelOp]) {
         // top level should be $and or $or they should have arrays
         id topLevelArg = [selector objectForKey:topLevelOp];
 

@@ -1,5 +1,5 @@
 //
-//  CDTQUnindexedQuery.h
+//  CDTQUnindexedMatcher.h
 //  Pods
 //
 //  Created by Michael Rhodes on 31/10/2014.

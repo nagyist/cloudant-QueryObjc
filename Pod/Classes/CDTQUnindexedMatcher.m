@@ -1,5 +1,5 @@
 //
-//  CDTQUnindexedQuery.m
+//  CDTQUnindexedMatcher.m
 //  Pods
 //
 //  Created by Michael Rhodes on 31/10/2014.
@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #import "CDTQUnindexedMatcher.h"
+#import "CDTQQueryConstants.h"
 
 #import "CDTQQuerySqlTranslator.h"
 #import "CDTQLogging.h"
@@ -33,10 +34,6 @@
 @end
 
 @implementation CDTQUnindexedMatcher
-
-static NSString *const AND = @"$and";
-static NSString *const OR = @"$or";
-static NSString *const NOT = @"$not";
 
 #pragma mark Creating matcher
 
@@ -191,10 +188,10 @@ static NSString *const NOT = @"$not";
             expected = @[ expected ];
         }
         if (![actual isKindOfClass:[NSArray class]]) {
-            actual = @[ actual ? : [NSNull null] ];
+            actual = actual ? @[ actual ] : @[ [NSNull null] ];
         }
-        if ([operator isEqualToString:@"$in"]) {
-            operator = @"$eq";
+        if ([operator isEqualToString:IN]) {
+            operator = EQ;
         }
         BOOL passed = NO;
         for (NSObject *expectedItem in (NSArray *)expected) {
@@ -220,22 +217,22 @@ static NSString *const NOT = @"$not";
 {
     BOOL passed = NO;
 
-    if ([operator isEqualToString:@"$eq"]) {
+    if ([operator isEqualToString:EQ]) {
         passed = [self eqL:actual R:expected];
 
-    } else if ([operator isEqualToString:@"$lt"]) {
+    } else if ([operator isEqualToString:LT]) {
         passed = [self ltL:actual R:expected];
 
-    } else if ([operator isEqualToString:@"$lte"]) {
+    } else if ([operator isEqualToString:LTE]) {
         passed = [self lteL:actual R:expected];
 
-    } else if ([operator isEqualToString:@"$gt"]) {
+    } else if ([operator isEqualToString:GT]) {
         passed = [self gtL:actual R:expected];
 
-    } else if ([operator isEqualToString:@"$gte"]) {
+    } else if ([operator isEqualToString:GTE]) {
         passed = [self gteL:actual R:expected];
 
-    } else if ([operator isEqualToString:@"$exists"]) {
+    } else if ([operator isEqualToString:EXISTS]) {
         BOOL expectedBool = [((NSNumber *)expected)boolValue];
         BOOL exists = (![actual isEqual:[NSNull null]]);
         passed = (exists == expectedBool);
