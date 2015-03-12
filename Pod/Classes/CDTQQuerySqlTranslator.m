@@ -13,6 +13,7 @@
 //  and limitations under the License.
 
 #import "CDTQQuerySqlTranslator.h"
+#import "CDTQQueryConstants.h"
 
 #import "CDTQQueryExecutor.h"
 #import "CDTQIndexManager.h"
@@ -62,10 +63,6 @@
 
 @implementation CDTQQuerySqlTranslator
 
-static NSString *const AND = @"$and";
-static NSString *const OR = @"$or";
-static NSString *const EQ = @"$eq";
-static NSString *const EXISTS = @"$exists";
 
 + (CDTQQueryNode *)translateQuery:(NSDictionary *)query
                      toUseIndexes:(NSDictionary *)indexes
@@ -231,7 +228,7 @@ static NSString *const EXISTS = @"$exists";
     [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
         NSDictionary *clause = (NSDictionary *)obj;
         NSString *field = clause.allKeys[0];
-        if ([field hasPrefix:@"$or"]) {
+        if ([field isEqualToString:OR]) {
             CDTQQueryNode *orNode = [CDTQQuerySqlTranslator translateQuery:clauses[idx]
                                                               toUseIndexes:indexes
                                                                      state:state];
@@ -243,7 +240,7 @@ static NSString *const EXISTS = @"$exists";
     [clauses enumerateObjectsUsingBlock:^void(id obj, NSUInteger idx, BOOL *stop) {
         NSDictionary *clause = (NSDictionary *)obj;
         NSString *field = clause.allKeys[0];
-        if ([field hasPrefix:@"$and"]) {
+        if ([field isEqualToString:AND]) {
             CDTQQueryNode *andNode = [CDTQQuerySqlTranslator translateQuery:clauses[idx]
                                                                toUseIndexes:indexes
                                                                       state:state];
@@ -304,11 +301,12 @@ static NSString *const EXISTS = @"$exists";
     NSMutableArray *sqlClauses = [NSMutableArray array];
     NSMutableArray *sqlParameters = [NSMutableArray array];
     NSDictionary *operatorMap = @{
-        @"$eq" : @"=",
-        @"$gt" : @">",
-        @"$gte" : @">=",
-        @"$lt" : @"<",
-        @"$lte" : @"<="
+        EQ : @"=",
+        GT : @">",
+        GTE : @">=",
+        LT : @"<",
+        LTE : @"<=",
+        IN : @"IN"
     };
 
     for (NSDictionary *component in clause) {
@@ -328,8 +326,8 @@ static NSString *const EXISTS = @"$exists";
         NSString *operator= predicate.allKeys[0];
 
         // $not specifies ALL documents NOT in the set of documents that match the operator.
-        if ([operator isEqualToString:@"$not"]) {
-            NSDictionary *negatedPredicate = predicate[@"$not"];
+        if ([operator isEqualToString:NOT]) {
+            NSDictionary *negatedPredicate = predicate[NOT];
 
             if (negatedPredicate.count != 1) {
                 LogError(@"Expected single operator per predicate dictionary, got %@", component);
@@ -341,57 +339,88 @@ static NSString *const EXISTS = @"$exists";
 
             if([operator isEqualToString:EXISTS]){
                 // what we do here depends on the value of the exists are
-                predicateValue = [negatedPredicate objectForKey:operator];
+                predicateValue = negatedPredicate[operator];
 
                 BOOL exists = ![(NSNumber *)predicateValue boolValue];
                 // since this clause is negated we need to negate the bool value
                 [sqlClauses
                     addObject:[self convertExistsToSqlClauseForFieldName:fieldName exists:exists]];
-                    [sqlParameters addObject:[negatedPredicate objectForKey:operator]];
+                    [sqlParameters addObject:negatedPredicate[operator]];
 
             } else {
+                NSString *sqlClause;
                 NSString *sqlOperator = operatorMap[operator];
                 NSString *tableName = [CDTQIndexManager tableNameForIndex:indexName];
-                NSString *sqlClause = [CDTQQuerySqlTranslator whereClauseForNot:fieldName
-                                                                  usingOperator:sqlOperator
-                                                                       forTable:tableName];
-                
-                [sqlClauses addObject:sqlClause];
-                predicateValue = [negatedPredicate objectForKey:operator];
-                if ([self validatePredicateValue:predicateValue]) {
-                    [sqlParameters addObject:predicateValue];
+                NSString *placeholder;
+                if ([operator isEqualToString:IN]) {
+                    // The predicate dictionary value must be an NSArray here.
+                    // This was validated during normalization.
+                    NSArray *inList = negatedPredicate[operator];
+                    placeholder =
+                        [CDTQQuerySqlTranslator placeholdersForList:inList
+                                            updatingParameterValues:sqlParameters];
                 } else {
-                    LogError(@"Predicate value is invalid.");
-                    return nil;
+                    // The predicate dictionary value must be either a
+                    // NSString or a NSNumber here.
+                    // This was validated during normalization.
+                    predicateValue = negatedPredicate[operator];
+                    placeholder = @"?";
+                    [sqlParameters addObject:predicateValue];
                 }
-            }
 
+                sqlClause = [CDTQQuerySqlTranslator whereClauseForNot:fieldName
+                                                        usingOperator:sqlOperator
+                                                             forTable:tableName
+                                                           forOperand:placeholder];
+                [sqlClauses addObject:sqlClause];
+            }
         } else {
             if ([operator isEqualToString:EXISTS]){
                     BOOL  exists = [(NSNumber *)predicate[operator] boolValue];
                     [sqlClauses addObject:[self convertExistsToSqlClauseForFieldName:fieldName
                                                                               exists:exists]];
-                    [sqlParameters addObject:[predicate objectForKey:operator]];
+                    [sqlParameters addObject:predicate[operator]];
 
             } else {
+                NSString *sqlClause;
                 NSString *sqlOperator = operatorMap[operator];
-                NSString *sqlClause = [NSString stringWithFormat:@"\"%@\" %@ ?", fieldName,
-                                       sqlOperator];
-                
-                [sqlClauses addObject:sqlClause];
-                NSObject * predicateValue = [predicate objectForKey:operator];
-                if ([self validatePredicateValue:predicateValue]) {
-                    [sqlParameters addObject:predicateValue];
+                NSString *placeholder;
+                if ([operator isEqualToString:IN]) {
+                    // The predicate dictionary value must be an NSArray here.
+                    // This was validated during normalization.
+                    NSArray *inList = predicate[operator];
+                    placeholder =
+                        [CDTQQuerySqlTranslator placeholdersForList:inList
+                                            updatingParameterValues:sqlParameters];
                 } else {
-                    LogError(@"Predicate value is invalid.");
-                    return nil;
+                    NSObject * predicateValue = predicate[operator];
+                    placeholder = @"?";
+                    [sqlParameters addObject:predicateValue];
                 }
+
+                sqlClause = [NSString stringWithFormat:@"\"%@\" %@ %@", fieldName,
+                                                                        sqlOperator,
+                                                                        placeholder];
+                [sqlClauses addObject:sqlClause];
             }
         }
     }
 
     return [CDTQSqlParts partsForSql:[sqlClauses componentsJoinedByString:@" AND "]
                           parameters:sqlParameters];
+}
+
++ (NSString *)placeholdersForList:(NSArray *)values
+            updatingParameterValues:(NSMutableArray *)sqlParameters
+{
+    NSMutableArray *operands = [NSMutableArray array];
+    for (NSObject *value in values) {
+        [operands addObject:@"?"];
+        [sqlParameters addObject:value];
+    }
+    
+    NSString *joined = [operands componentsJoinedByString:@", "];
+    return [NSString stringWithFormat:@"( %@ )", joined];
 }
 
 /**
@@ -405,10 +434,12 @@ static NSString *const EXISTS = @"$exists";
 + (NSString *)whereClauseForNot:(NSString *)fieldName
                   usingOperator:(NSString *)sqlOperator
                        forTable:(NSString *)tableName
+                     forOperand:(NSString *)operand;
 {
-    NSString *whereForSubSelect = [NSString stringWithFormat:@"\"%@\" %@ ?",
+    NSString *whereForSubSelect = [NSString stringWithFormat:@"\"%@\" %@ %@",
                                    fieldName,
-                                   sqlOperator];
+                                   sqlOperator,
+                                   operand];
     NSString *subSelect = [NSString stringWithFormat:@"SELECT _id FROM %@ WHERE %@",
                            tableName,
                            whereForSubSelect];
@@ -427,12 +458,6 @@ static NSString *const EXISTS = @"$exists";
         sqlClause = [NSString stringWithFormat:@"(\"%@\" IS NULL)", fieldName];
     }
     return sqlClause;
-}
-
-+ (BOOL)validatePredicateValue:(NSObject *)predicateValue
-{
-    return (([predicateValue isKindOfClass:[NSString class]] ||
-             [predicateValue isKindOfClass:[NSNumber class]]));
 }
 
 + (CDTQSqlParts *)selectStatementForAndClause:(NSArray *)clause usingIndex:(NSString *)indexName

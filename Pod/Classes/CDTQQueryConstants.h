@@ -1,8 +1,8 @@
 //
-//  CDTQQueryValidator.h
+//  CDTQQueryConstants.h
 //
-//  Created by Rhys Short on 06/11/2014.
-//  Copyright (c) 2014 Cloudant. All rights reserved.
+//  Created by Al Finkelstein on 03/10/2015.
+//  Copyright (c) 2015 Cloudant. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -12,15 +12,26 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#import <Foundation/Foundation.h>
+extern NSString *const AND;
 
-// This class contains common validation options for the
-// two different implementations of query
-@interface CDTQQueryValidator : NSObject
+extern NSString *const OR;
 
-/**
- Expand implicit operators in a query, and validate
- */
-+ (NSDictionary *)normaliseAndValidateQuery:(NSDictionary *)query;
+extern NSString *const NOT;
 
-@end
+extern NSString *const EXISTS;
+
+extern NSString *const EQ;
+
+extern NSString *const NE;
+
+extern NSString *const LT;
+
+extern NSString *const LTE;
+
+extern NSString *const GT;
+
+extern NSString *const GTE;
+
+extern NSString *const IN;
+
+extern NSString *const NIN;

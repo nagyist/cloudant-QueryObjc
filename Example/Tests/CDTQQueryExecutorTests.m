@@ -1211,6 +1211,94 @@ SharedExamplesBegin(QueryExecution)
                 expect([result.documentIds count]).to.equal(1);
             });
         });
+        
+        describe(@"when using the $in operator", ^{
+            
+            __block CDTDatastore* ds;
+            __block CDTQIndexManager* im;
+            
+            beforeEach(^{
+                ds = [factory datastoreNamed:@"test" error:nil];
+                expect(ds).toNot.beNil();
+                
+                CDTMutableDocumentRevision* rev = [CDTMutableDocumentRevision revision];
+                
+                rev.docId = @"mike12";
+                rev.body = @{ @"name" : @"mike", @"age" : @12, @"pet" : @[ @"cat", @"dog" ] };
+                [ds createDocumentFromRevision:rev error:nil];
+                
+                rev.docId = @"fred34";
+                rev.body = @{ @"name" : @"fred", @"age" : @34, @"pet" : @"parrot" };
+                [ds createDocumentFromRevision:rev error:nil];
+                
+                rev.docId = @"mike34";
+                rev.body = @{ @"name" : @"mike",
+                              @"age" : @34,
+                              @"pet" : @[ @"cat", @"dog", @"fish" ] };
+                [ds createDocumentFromRevision:rev error:nil];
+                
+                rev.docId = @"fred12";
+                rev.body = @{ @"name" : @"fred", @"age" : @12 };
+                [ds createDocumentFromRevision:rev error:nil];
+                
+                rev.docId = @"john44";
+                rev.body = @{ @"name" : @"john", @"age" : @44, @"pet" : @[ @"hamster", @"snake" ] };
+                [ds createDocumentFromRevision:rev error:nil];
+                
+                rev.docId = @"john22";
+                rev.body = @{ @"name" : @"john", @"age" : @22, @"pet" : @"cat" };
+                [ds createDocumentFromRevision:rev error:nil];
+                
+                im = [imClass managerUsingDatastore:ds error:nil];
+                expect(im).toNot.beNil();
+                
+                expect([im ensureIndexed:@[ @"name", @"pet", @"age" ] withName:@"pet"])
+                .toNot.beNil();
+            });
+            
+            it(@"can find documents with arrays using $in", ^{
+                NSDictionary* query = @{ @"pet" : @{ @"$in" : @[ @"fish", @"hamster" ] } };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(2);
+                expect(result.documentIds).to.containAllElements(@[ @"mike34", @"john44" ]);
+            });
+            
+            it(@"can find documents without arrays using $in", ^{
+                NSDictionary* query = @{ @"pet" : @{ @"$in" : @[ @"parrot", @"turtle" ] } };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(1);
+                expect(result.documentIds).to.containAllElements(@[ @"fred34" ]);
+            });
+            
+            it(@"can find documents with and without arrays using $in", ^{
+                NSDictionary* query = @{ @"pet" : @{ @"$in" : @[ @"cat", @"dog" ] } };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(3);
+                expect(result.documentIds).to.containAllElements(@[ @"mike12",
+                                                                    @"mike34",
+                                                                    @"john22" ]);
+            });
+            
+            it(@"returns an empty result set when no matches found using $in", ^{
+                NSDictionary* query = @{ @"pet" : @{ @"$in" : @[ @"turtle", @"pig" ] } };
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(0);
+            });
+            
+            it(@"can find documents using $not $in", ^{
+                NSDictionary* query = @{ @"pet" : @{ @"$not" : @{ @"$in" : @[ @"cat", @"dog" ] }}};
+                CDTQResultSet* result = [im find:query];
+                expect(result).toNot.beNil();
+                expect(result.documentIds.count).to.equal(3);
+                expect(result.documentIds).to.containAllElements(@[ @"fred12",
+                                                                    @"fred34",
+                                                                    @"john44" ]);
+            });
+        });
 
         describe(@"stopping enumeration", ^{
 
