@@ -35,5 +35,5 @@ Pod::Spec.new do |s|
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
   s.dependency 'CDTDatastore', '>= 0.13'
-  s.dependency 'CocoaLumberjack', '= 2.0.0-rc'
+  s.dependency 'CocoaLumberjack', '~> 2.0'
 end
