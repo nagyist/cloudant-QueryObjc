@@ -34,6 +34,7 @@ Pod::Spec.new do |s|
   s.source_files = 'Pod/Classes'
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
-  s.dependency 'CDTDatastore', '>= 0.14'
+  s.dependency 'CDTDatastore', '>= 0.15'
   s.dependency 'CocoaLumberjack', '~> 2.0'
+  s.dependency 'FMDB', '= 2.3'
 end
