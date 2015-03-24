@@ -14,7 +14,7 @@ EOT
 
 Pod::Spec.new do |s|
   s.name             = "CloudantQueryObjc"
-  s.version          = "1.0.2"
+  s.version          = "1.0.3"
   s.summary          = "Implements Cloudant Query for CDTDatastore"
   s.description      = <<-DESC
                        This package adds support for a subset of Cloudant Query
