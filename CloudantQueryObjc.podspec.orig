@@ -14,8 +14,13 @@ EOT
 
 Pod::Spec.new do |s|
   s.name             = "CloudantQueryObjc"
+<<<<<<< HEAD
   s.version          = "1.0.3"
+  s.summary          = "Implements Cloudant Query for CDTDatastore"
+=======
+  s.version          = "1.0.2"
   s.summary          = "This package is now included in CDTDatastore.  Do NOT use in new projects."
+>>>>>>> Remove all code from CloudantQueryObjc
   s.description      = <<-DESC
                        This package adds support for a subset of Cloudant Query
                        to Cloudant Sync's iOS implementation, CDTDatastore.
@@ -34,7 +39,6 @@ Pod::Spec.new do |s|
   s.source_files = 'Pod/Classes'
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
-  s.dependency 'CDTDatastore', '>= 0.15'
+  s.dependency 'CDTDatastore', '>= 0.14'
   s.dependency 'CocoaLumberjack', '~> 2.0'
-  s.dependency 'FMDB', '= 2.3'
 end
